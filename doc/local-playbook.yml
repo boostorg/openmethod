@@ -29,6 +29,9 @@ ui:
     url: https://github.com/boostorg/website-v2-docs/releases/download/ui-master/ui-bundle.zip
     snapshot: true
 
+output:
+  dir: html
+  
 antora:
   extensions:
     - require: '@antora/lunr-extension' # https://gitlab.com/antora/antora-lunr-extension

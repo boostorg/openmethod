@@ -120,7 +120,7 @@ jobs:
         if: matrix.os == 'ubuntu-latest'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: doc/build/site
+          path: doc/html
 
       - name: Deploy to GitHub Pages (jll63)
         if: matrix.os == 'ubuntu-latest' && github.repository_owner == 'jll63' && github.ref_name == 'feature/doc'
