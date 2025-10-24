@@ -636,10 +636,6 @@ inline auto final_virtual_ptr(Arg&& obj) {
 //! {{BOOST_OPENMETHOD_DEFAULT_REGISTRY}}
 //! preprocessor symbol.
 //!
-//! The default value for `Registry` can be customized by defining the
-//! xref:BOOST_OPENMETHOD_DEFAULT_REGISTRY.adoc[`BOOST_OPENMETHOD_DEFAULT_REGISTRY`]
-//! preprocessor symbol.
-//!
 //! @par Requirements
 //!
 //! @li @ref virtual_traits must be specialized for `Class&`.

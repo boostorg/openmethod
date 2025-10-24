@@ -33,7 +33,7 @@ npx antora --clean --fetch "$PLAYBOOK" --stacktrace --log-level all
 
 echo "Fixing links to non-mrdocs URIs..."
 
-for f in $(find build/site -name '*.html'); do
+for f in $(find html -name '*.html'); do
   perl -i -pe 's{&lcub;&lcub;(.*?)&rcub;&rcub;}{<a href="../../../$1.html">$1</a>}g' "$f"
 done
 
