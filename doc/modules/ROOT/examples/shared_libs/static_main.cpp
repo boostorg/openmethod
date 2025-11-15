@@ -30,7 +30,7 @@ auto make_tiger() -> Animal*;
 }
 
 auto main() -> int {
-    initialize();
+    boost::openmethod::initialize();
 
     std::unique_ptr<Animal> gracie(new Cow());
     std::unique_ptr<Animal> willy(new Wolf());

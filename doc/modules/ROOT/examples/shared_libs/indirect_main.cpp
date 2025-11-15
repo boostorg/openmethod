@@ -37,7 +37,7 @@ auto main() -> int {
     using namespace boost::openmethod::aliases;
 
     std::cout << "Before loading the shared library.\n";
-    initialize();
+    boost::openmethod::initialize();
 
     auto gracie = make_unique_virtual<Cow>();
     auto willy = make_unique_virtual<Wolf>();
@@ -53,7 +53,7 @@ auto main() -> int {
         boost::dll::program_location().parent_path() / LIBRARY_NAME,
         boost::dll::load_mode::rtld_now);
 
-    initialize();
+    boost::openmethod::initialize();
 
     std::cout << "cow meets wolf -> " << meet(*gracie, *willy) << "\n"; // run
     std::cout << "wolf meets cow -> " << meet(*willy, *gracie) << "\n"; // hunt

@@ -1675,10 +1675,6 @@ inline auto finalize(Options&&... opts) -> void {
     Registry::finalize(std::forward<Options>(opts)...);
 }
 
-namespace aliases {
-using boost::openmethod::initialize;
-}
-
 } // namespace boost::openmethod
 
 #ifdef _MSC_VER
