@@ -339,7 +339,7 @@ BOOST_AUTO_TEST_CASE(simple) {
     if constexpr (std::is_same_v<test_registry::vptr, policies::vptr_vector>) {
         BOOST_TEST(
             !detail::vptr_vector_vptrs<test_registry::registry_type>.empty());
-        test_registry::finalize();
+        finalize<test_registry>();
         static_assert(detail::has_finalize_aux<
                       void, test_registry::policy<policies::vptr>,
                       std::tuple<>>::value);

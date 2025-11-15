@@ -22,6 +22,8 @@ inaccessible-bases: never
 # implementation-defined:
 #   - 'boost::openmethod::detail::**'
 exclude-symbols:
+  - 'boost::openmethod::registry::initialize'
+  - 'boost::openmethod::registry::finalize'
   - 'boost::openmethod::boost_openmethod_bases'
   - 'boost::openmethod::boost_openmethod_registry'
 

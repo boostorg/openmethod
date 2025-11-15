@@ -1657,9 +1657,22 @@ auto registry<Policies...>::finalize(Options... opts) -> void {
     initialized = false;
 }
 
-//! Finalize the default registry
-inline auto finalize() -> void {
-    BOOST_OPENMETHOD_DEFAULT_REGISTRY::finalize();
+//! Release resources held by registry.
+//!
+//! `finalize` may be called to release any resources allocated by
+//! @ref registry::initialize.
+//!
+//! @note
+//! A translation unit that contains a call to `finalize` must include the
+//! `<boost/openmethod/initialize.hpp>` header.
+//!
+//! @tparam Registry The registry to finalize.
+//! @tparam Options... Zero or more option types, deduced from the function
+//! arguments.
+//! @param options Zero or more option objects.
+template<class Registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY, class... Options>
+inline auto finalize(Options&&... opts) -> void {
+    Registry::finalize(std::forward<Options>(opts)...);
 }
 
 namespace aliases {

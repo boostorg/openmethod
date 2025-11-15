@@ -946,16 +946,6 @@ class registry : detail::registry_base {
     //! @li @ref not_initialized: The registry is not initialized.
     static void require_initialized();
 
-    //! Releases the resources held by the registry.
-    //!
-    //! `finalize` may be called to release any resources allocated by
-    //! @ref registry::initialize.
-    //!
-    //! @note
-    //! A translation unit that contains a call to `finalize` must include the
-    //! `<boost/openmethod/initialize.hpp>` header.
-    //!
-    //! @tparam Options A registry.
     template<class... Options>
     static void finalize(Options... opts);
 
