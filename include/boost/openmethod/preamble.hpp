@@ -933,6 +933,7 @@ class registry : detail::registry_base {
 
     template<class... Options>
     struct compiler;
+
     // template<class Registry, typename... Options>
     // friend compiler<Options...> initialize(Options...);
 

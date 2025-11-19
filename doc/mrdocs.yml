@@ -22,6 +22,7 @@ inaccessible-bases: never
 # implementation-defined:
 #   - 'boost::openmethod::detail::**'
 exclude-symbols:
+  - 'boost::openmethod::registry::compiler'
   - 'boost::openmethod::registry::initialize'
   - 'boost::openmethod::registry::finalize'
   - 'boost::openmethod::boost_openmethod_bases'
@@ -38,7 +39,7 @@ auto-function-metadata: false
 
 # Generator
 generate: adoc
-base-url: https://www.github.com/boostorg/openmethod/blob/develop/
+base-url: https://www.github.com/boostorg/openmethod/blob/master/
 
 # Style
 verbose: true
