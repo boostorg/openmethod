@@ -50,7 +50,7 @@ if [ -n "${BOOST_SRC_DIR:-}" ]; then
       LIB=$(basename "$(git rev-parse --show-toplevel)")
       REPOSITORY="${ACCOUNT}/${LIB}"
     fi
-    SHA=$(git -C "$BOOST_SRC_DIR/libs" ls-tree HEAD | grep openmethod | awk '{print $3}')
+    SHA=$(git -C "$BOOST_SRC_DIR/libs" ls-tree HEAD | grep -w openmethod | awk '{print $3}')
   elif [ -n "${GITHUB_REPOSITORY:-}" ]; then
     REPOSITORY="${GITHUB_REPOSITORY}"
     SHA="${GITHUB_SHA}"
