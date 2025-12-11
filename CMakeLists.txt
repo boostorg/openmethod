@@ -37,10 +37,35 @@ set(__ignore__ ${CMAKE_C_COMPILER})
 # Options
 #
 #-------------------------------------------------
-option(BOOST_OPENMETHOD_BUILD_TESTS "Build boost::openmethod tests even if BUILD_TESTING is OFF" OFF)
-option(BOOST_OPENMETHOD_BUILD_EXAMPLES "Build boost::openmethod examples" ${BOOST_OPENMETHOD_IS_ROOT})
-option(BOOST_OPENMETHOD_MRDOCS_BUILD "Build the target for MrDocs: see mrdocs.yml" OFF)
-option(BOOST_OPENMETHOD_WARNINGS_AS_ERRORS "Treat warnings as errors" OFF)
+
+option(
+    BOOST_OPENMETHOD_BUILD_TESTS
+    "Build boost::openmethod tests even if BUILD_TESTING is OFF"
+    ${BOOST_OPENMETHOD_IS_ROOT})
+
+if (${BUILD_TESTING})
+    set(BOOST_OPENMETHOD_BUILD_TESTS ON)
+endif ()
+
+option(
+    BOOST_OPENMETHOD_BUILD_EXAMPLES
+    "Build boost::openmethod examples"
+    ${BOOST_OPENMETHOD_IS_ROOT})
+option(
+    BOOST_OPENMETHOD_MRDOCS_BUILD
+    "Build the target for MrDocs: see mrdocs.yml"
+    OFF)
+option(
+    BOOST_OPENMETHOD_WARNINGS_AS_ERRORS
+    "Treat warnings as errors"
+    OFF)
+
+if (BOOST_OPENMETHOD_BUILD_EXAMPLES AND NOT BOOST_OPENMETHOD_BUILD_TESTS)
+    message(
+        WARNING
+        "BOOST_OPENMETHOD_BUILD_EXAMPLES requires BOOST_OPENMETHOD_BUILD_TESTS. Examples will not be built.")
+    set(BOOST_OPENMETHOD_BUILD_EXAMPLES OFF)
+endif()
 
 # Check if environment variable BOOST_SRC_DIR is set
 if (NOT DEFINED BOOST_SRC_DIR AND DEFINED ENV{BOOST_SRC_DIR})
@@ -77,9 +102,9 @@ endforeach ()
 if (NOT BOOST_OPENMETHOD_MRDOCS_BUILD)
     if (BUILD_TESTING OR BOOST_OPENMETHOD_BUILD_TESTS)
         set(BOOST_OPENMETHOD_UNIT_TEST_LIBRARIES test)
-    endif()
-    if (BOOST_OPENMETHOD_BUILD_EXAMPLES)
-        set(BOOST_OPENMETHOD_EXAMPLE_LIBRARIES dll)
+        if (BOOST_OPENMETHOD_BUILD_EXAMPLES)
+            set(BOOST_OPENMETHOD_EXAMPLE_LIBRARIES dll)
+        endif()
     endif()
 endif()
 # Complete dependency list
@@ -175,20 +200,15 @@ endif()
 # Tests
 #
 #-------------------------------------------------
-if (BUILD_TESTING OR BOOST_OPENMETHOD_BUILD_TESTS)
+if (BOOST_OPENMETHOD_BUILD_TESTS)
     enable_testing()
     add_subdirectory(test)
     if (BOOST_OPENMETHOD_IS_ROOT)
         add_custom_target(all_with_tests ALL DEPENDS tests)
     endif()
-endif ()
 
-#-------------------------------------------------
-#
-# Examples
-#
-#-------------------------------------------------
-if (BOOST_OPENMETHOD_BUILD_EXAMPLES)
-    enable_testing()
-    add_subdirectory(doc/modules/ROOT/examples)
+    # Examples
+    if (BOOST_OPENMETHOD_BUILD_EXAMPLES)
+        add_subdirectory(doc/modules/ROOT/examples)
+    endif ()
 endif ()
