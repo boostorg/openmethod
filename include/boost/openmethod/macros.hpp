@@ -62,8 +62,6 @@ struct va_args<ReturnType> {
         ::boost::openmethod::detail::va_args<__VA_ARGS__>::registry>
 
 #define BOOST_OPENMETHOD(NAME, ARGS, ...)                                      \
-    template<typename...>                                                      \
-    struct BOOST_OPENMETHOD_OVERRIDERS(NAME);                                  \
     struct BOOST_OPENMETHOD_ID(NAME);                                          \
     template<typename... ForwarderParameters>                                  \
     typename ::boost::openmethod::detail::enable_forwarder<                    \
@@ -72,14 +70,16 @@ struct va_args<ReturnType> {
         ForwarderParameters...>::type                                          \
         BOOST_OPENMETHOD_GUIDE(NAME)(ForwarderParameters && ... args);         \
     template<typename... ForwarderParameters>                                  \
-    inline auto NAME(ForwarderParameters&&... args) ->                         \
-        typename ::boost::openmethod::detail::enable_forwarder<                \
+    inline auto NAME(ForwarderParameters&&... args)                            \
+        ->typename ::boost::openmethod::detail::enable_forwarder<              \
             void, BOOST_OPENMETHOD_TYPE(NAME, ARGS, __VA_ARGS__),              \
             ::boost::openmethod::detail::va_args<__VA_ARGS__>::return_type,    \
             ForwarderParameters...>::type {                                    \
         return BOOST_OPENMETHOD_TYPE(NAME, ARGS, __VA_ARGS__)::fn(             \
             std::forward<ForwarderParameters>(args)...);                       \
-    }
+    }                                                                          \
+    template<typename...>                                                      \
+    struct BOOST_OPENMETHOD_OVERRIDERS(NAME)
 
 #define BOOST_OPENMETHOD_DETAIL_LOCATE_METHOD(NAME, ARGS)                      \
     template<typename T>                                                       \
@@ -88,7 +88,7 @@ struct va_args<ReturnType> {
     struct boost_openmethod_detail_locate_method_aux<void(A...)> {             \
         using type =                                                           \
             decltype(BOOST_OPENMETHOD_GUIDE(NAME)(std::declval<A>()...));      \
-    };
+    }
 
 #define BOOST_OPENMETHOD_DECLARE_OVERRIDER(NAME, ARGS, ...)                    \
     template<typename...>                                                      \
@@ -102,13 +102,15 @@ struct va_args<ReturnType> {
         static auto next(Args&&... args) -> decltype(auto);                    \
     };                                                                         \
     inline auto BOOST_OPENMETHOD_OVERRIDERS(                                   \
-        NAME)<__VA_ARGS__ ARGS>::has_next() -> bool {                          \
+        NAME)<__VA_ARGS__ ARGS>::has_next()                                    \
+        ->bool {                                                               \
         return boost_openmethod_detail_locate_method_aux<                      \
             void ARGS>::type::has_next<fn>();                                  \
     }                                                                          \
     template<typename... Args>                                                 \
     inline auto BOOST_OPENMETHOD_OVERRIDERS(NAME)<__VA_ARGS__ ARGS>::next(     \
-        Args&&... args) -> decltype(auto) {                                    \
+        Args&&... args)                                                        \
+        ->decltype(auto) {                                                     \
         return boost_openmethod_detail_locate_method_aux<                      \
             void ARGS>::type::next<fn>(std::forward<Args>(args)...);           \
     }
@@ -123,7 +125,7 @@ struct va_args<ReturnType> {
 #define BOOST_OPENMETHOD_DEFINE_OVERRIDER(NAME, ARGS, ...)                     \
     BOOST_OPENMETHOD_DETAIL_REGISTER_OVERRIDER(NAME, ARGS, __VA_ARGS__)        \
     auto BOOST_OPENMETHOD_OVERRIDER(NAME, ARGS, __VA_ARGS__)::fn ARGS          \
-        -> boost::mp11::mp_back<boost::mp11::mp_list<__VA_ARGS__>>
+        ->boost::mp11::mp_back<boost::mp11::mp_list<__VA_ARGS__>>
 
 #define BOOST_OPENMETHOD_OVERRIDE(NAME, ARGS, ...)                             \
     BOOST_OPENMETHOD_DECLARE_OVERRIDER(NAME, ARGS, __VA_ARGS__)                \
@@ -133,9 +135,9 @@ struct va_args<ReturnType> {
     BOOST_OPENMETHOD_DECLARE_OVERRIDER(NAME, ARGS, __VA_ARGS__)                \
     BOOST_OPENMETHOD_DETAIL_REGISTER_OVERRIDER(NAME, ARGS, __VA_ARGS__)        \
     inline auto BOOST_OPENMETHOD_OVERRIDER(NAME, ARGS, __VA_ARGS__)::fn ARGS   \
-        -> boost::mp11::mp_back<boost::mp11::mp_list<__VA_ARGS__>>
+        ->boost::mp11::mp_back<boost::mp11::mp_list<__VA_ARGS__>>
 
 #define BOOST_OPENMETHOD_CLASSES(...)                                          \
-    BOOST_OPENMETHOD_REGISTER(::boost::openmethod::use_classes<__VA_ARGS__>);
+    BOOST_OPENMETHOD_REGISTER(::boost::openmethod::use_classes<__VA_ARGS__>)
 
 #endif
