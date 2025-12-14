@@ -43,7 +43,7 @@ option(
     "Build boost::openmethod tests even if BUILD_TESTING is OFF"
     ${BOOST_OPENMETHOD_IS_ROOT})
 
-if (${BUILD_TESTING})
+if (BUILD_TESTING)
     set(BOOST_OPENMETHOD_BUILD_TESTS ON)
 endif ()
 
