@@ -34,6 +34,12 @@ namespace policies {
 //! function for the set of registered type_ids. This means that the hash
 //! function is collision-free and the codomain is exactly the size of the
 //! domain, resulting in a dense range [0, n-1] for n inputs.
+//!
+//! Unlike @ref fast_perfect_hash, which uses a hash table of size 2^k
+//! (typically larger than needed) and may have unused slots, this policy
+//! ensures the hash table has exactly n slots for n type_ids, with all
+//! slots filled. This minimizes memory usage but may require more search
+//! attempts during initialization.
 struct minimal_perfect_hash : type_hash {
 
     //! Cannot find hash factors
@@ -249,6 +255,9 @@ void minimal_perfect_hash::fn<Registry>::initialize(
             }
 
             // Verify that we have a minimal perfect hash (all buckets used)
+            // This is the key difference from fast_perfect_hash: we require that
+            // all N buckets are filled, ensuring the codomain size equals the
+            // domain size, making it a truly minimal perfect hash function.
             for (std::size_t i = 0; i < hash_size; ++i) {
                 if (detail::uintptr(buckets[i]) == detail::uintptr_max) {
                     collision_found = true;
