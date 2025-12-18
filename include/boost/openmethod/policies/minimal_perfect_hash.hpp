@@ -17,7 +17,7 @@
 #pragma warning(disable : 4702) // unreachable code
 #endif
 
-namespace boost::openmethod::detail {
+namespace {
 
 #if defined(UINTPTR_MAX)
 using uintptr = std::uintptr_t;
@@ -30,7 +30,7 @@ using uintptr = std::size_t;
 constexpr uintptr uintptr_max = (std::numeric_limits<std::size_t>::max)();
 #endif
 
-} // namespace boost::openmethod::detail
+} // anonymous namespace
 
 namespace boost::openmethod {
 
@@ -142,8 +142,8 @@ struct minimal_perfect_hash : type_hash {
         //! @return The hash value
         BOOST_FORCEINLINE
         static auto hash(type_id type) -> std::size_t {
-            auto pilot = (mult * reinterpret_cast<detail::uintptr>(type)) >> shift;
-            auto group = (group_mult * reinterpret_cast<detail::uintptr>(type)) >> group_shift;
+            auto pilot = (mult * reinterpret_cast<uintptr>(type)) >> shift;
+            auto group = (group_mult * reinterpret_cast<uintptr>(type)) >> group_shift;
             auto index = (pilot + detail::minimal_perfect_hash_displacements<Registry>[group]) % table_size;
 
             if constexpr (Registry::has_runtime_checks) {
@@ -289,13 +289,13 @@ void minimal_perfect_hash::fn<Registry>::initialize(
         // Partition keys into groups
         std::vector<std::vector<type_id>> groups(num_groups);
         for (auto key : keys) {
-            auto group_idx = ((group_mult * reinterpret_cast<detail::uintptr>(key)) >> group_shift) % num_groups;
+            auto group_idx = ((group_mult * reinterpret_cast<uintptr>(key)) >> group_shift) % num_groups;
             groups[group_idx].push_back(key);
         }
 
         // Try to find displacements for each group
         detail::minimal_perfect_hash_displacements<Registry>.assign(num_groups, 0);
-        buckets.assign(table_size, type_id(detail::uintptr_max));
+        buckets.assign(table_size, type_id(uintptr_max));
         std::vector<bool> used(table_size, false);
         bool success = true;
 
@@ -324,7 +324,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
                 positions.reserve(groups[g].size());
                 bool valid = true;
                 for (auto key : groups[g]) {
-                    auto pilot = (mult * reinterpret_cast<detail::uintptr>(key)) >> shift;
+                    auto pilot = (mult * reinterpret_cast<uintptr>(key)) >> shift;
                     auto pos = (pilot + disp) % table_size;
                     if (used[pos]) {
                         valid = false;
@@ -354,7 +354,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
             // Count how many positions are used
             std::size_t used_count = 0;
             for (std::size_t i = 0; i < table_size; ++i) {
-                if (detail::uintptr(buckets[i]) != detail::uintptr_max) {
+                if (uintptr(buckets[i]) != uintptr_max) {
                     used_count++;
                 }
             }
