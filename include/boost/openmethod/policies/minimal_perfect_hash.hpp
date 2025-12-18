@@ -88,7 +88,7 @@ struct minimal_perfect_hash : type_hash {
         static std::size_t shift;
         static std::size_t table_size;  // N for minimal perfect hash
         static std::size_t num_groups;
-        static std::size_t group_mult;
+        static std::uint32_t group_mult;  // Smaller type to avoid overflow
         static std::size_t group_shift;
 
         static void check(std::size_t index, type_id type);
@@ -179,7 +179,7 @@ template<class Registry>
 std::size_t minimal_perfect_hash::fn<Registry>::num_groups;
 
 template<class Registry>
-std::size_t minimal_perfect_hash::fn<Registry>::group_mult;
+std::uint32_t minimal_perfect_hash::fn<Registry>::group_mult;
 
 template<class Registry>
 std::size_t minimal_perfect_hash::fn<Registry>::group_shift;
@@ -275,7 +275,10 @@ void minimal_perfect_hash::fn<Registry>::initialize(
     // Try different pilot hash parameters
     for (std::size_t pass = 0; pass < MAX_PASSES && total_attempts < MAX_ATTEMPTS; ++pass) {
         mult = uniform_dist(rnd) | 1;
-        group_mult = uniform_dist(rnd) | 1;
+        // Use a smaller multiplier for group hash to avoid overflow
+        // We only need enough bits to distinguish between num_groups
+        std::uniform_int_distribution<std::uint32_t> group_dist;
+        group_mult = group_dist(rnd) | 1;
 
         // Calculate M for pilot hash (number of bits for table_size range)
         std::size_t M = 0;
