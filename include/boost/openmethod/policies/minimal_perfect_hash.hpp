@@ -49,7 +49,7 @@ namespace policies {
 //! determine values for `M` and `N` that result in a minimal perfect hash
 //! function for the set of registered type_ids. This means that the hash
 //! function is collision-free and the codomain is approximately the size of
-//! the domain, resulting in a dense range [0, n-1] for n inputs.
+//! the domain, resulting in a dense range [0, 1.1*n-1] for n inputs.
 //!
 //! Unlike @ref fast_perfect_hash, which uses a hash table of size 2^k
 //! (typically larger than needed) and may have unused slots, this policy
@@ -194,10 +194,8 @@ void minimal_perfect_hash::fn<Registry>::initialize(
     }
 
     // Table size is N * 1.1 to allow up to 10% waste (makes finding hash easier)
-    table_size = N + N / 10;
-    if (table_size == N && N > 0) {
-        table_size = N + 1;  // Ensure at least 1 extra slot for N > 0
-    }
+    // Use (N * 11 + 9) / 10 to ensure proper rounding up for small N
+    table_size = (N * 11 + 9) / 10;
     
     if (table_size == 0) {
         shift = 0;
