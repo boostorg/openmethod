@@ -99,7 +99,7 @@ struct minimal_perfect_hash : type_hash {
         //!
         //! Uses the PtHash algorithm to find:
         //! - Pilot hash parameters (M, N) for H(x) = (M * x) >> N
-        //! - Bucket assignment parameters 
+        //! - Bucket assignment parameters
         //! - Displacement values for each bucket to achieve minimal perfect hashing
         //!
         //! If no suitable values are found, calls the error handler with
@@ -199,7 +199,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
     constexpr std::size_t WASTE_FACTOR_DENOMINATOR = 10;
     constexpr std::size_t ROUNDING_ADJUSTMENT = 9;         // For ceiling division
     table_size = (N * WASTE_FACTOR_NUMERATOR + ROUNDING_ADJUSTMENT) / WASTE_FACTOR_DENOMINATOR;
-    
+
     if (table_size == 0) {
         shift = 0;
         mult = 1;
@@ -209,7 +209,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
         detail::minimal_perfect_hash_displacements<Registry>.clear();
         return;
     }
-    
+
     if (table_size == 1) {
         // Special case: only one type
         constexpr std::size_t bits_per_type_id = 8 * sizeof(type_id);
@@ -254,7 +254,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
     // Number of groups: typically sqrt(N) to N/4 for good performance
     num_groups = (std::max)(std::size_t(1), table_size / DEFAULT_GROUP_DIVISOR);
     if (num_groups > table_size) num_groups = table_size;
-    
+
     // Calculate bits needed for num_groups
     std::size_t GM = 0;
     std::size_t power = 1;
@@ -272,7 +272,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
     for (std::size_t pass = 0; pass < MAX_PASSES && total_attempts < MAX_ATTEMPTS; ++pass) {
         mult = uniform_dist(rnd) | 1;
         group_mult = uniform_dist(rnd) | 1;
-        
+
         // Calculate M for pilot hash (number of bits for table_size range)
         std::size_t M = 0;
         power = 1;
@@ -298,7 +298,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
         // Process groups in descending order of size (larger groups first)
         std::vector<std::size_t> group_order(num_groups);
         for (std::size_t i = 0; i < num_groups; ++i) group_order[i] = i;
-        std::sort(group_order.begin(), group_order.end(), 
+        std::sort(group_order.begin(), group_order.end(),
                   [&groups](std::size_t a, std::size_t b) {
                       return groups[a].size() > groups[b].size();
                   });
@@ -359,7 +359,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
             if (used_count == keys.size()) {
                 if constexpr (InitializeContext::template has_option<trace>) {
                     ctx.tr << "  Found minimal perfect hash after " << total_attempts
-                           << " attempts; " << used_count << "/" << table_size 
+                           << " attempts; " << used_count << "/" << table_size
                            << " slots used\n";
                 }
                 return;
@@ -396,7 +396,7 @@ void minimal_perfect_hash::fn<Registry>::check(std::size_t index, type_id type) 
 
 template<class Registry, class Stream>
 auto minimal_perfect_hash::search_error::write(Stream& os) const -> void {
-    os << "could not find minimal perfect hash factors after " << attempts 
+    os << "could not find minimal perfect hash factors after " << attempts
        << " attempts using " << buckets << " buckets\n";
 }
 

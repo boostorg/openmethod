@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(minimal_hash_properties) {
     BOOST_TEST(get_id(d3) == 3);
     BOOST_TEST(get_id(d4) == 4);
     BOOST_TEST(get_id(d5) == 5);
-    
+
     // Verify that the hash function produces a minimal perfect hash
     // (This is implicit - if it didn't, initialization would fail or we'd get wrong results)
 }
