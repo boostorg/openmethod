@@ -189,8 +189,8 @@ void minimal_perfect_hash::fn<Registry>::initialize(
 
     const auto N = std::distance(ctx.classes_begin(), ctx.classes_end());
 
-    if constexpr (mp11::mp_contains<mp11::mp_list<Options...>, trace>::value) {
-        Registry::output::os << "Finding minimal perfect hash using PtHash for " << N << " types\n";
+    if constexpr (InitializeContext::template has_option<trace>) {
+        ctx.tr << "Finding minimal perfect hash using PtHash for " << N << " types\n";
     }
 
     // Table size is exactly N for minimal perfect hash
@@ -208,11 +208,12 @@ void minimal_perfect_hash::fn<Registry>::initialize(
     
     if (table_size == 1) {
         // Special case: only one type
-        shift = 8 * sizeof(type_id);
+        constexpr std::size_t bits_per_type_id = 8 * sizeof(type_id);
+        shift = bits_per_type_id;
         mult = 1;
         num_groups = 1;
         group_mult = 1;
-        group_shift = 8 * sizeof(type_id);
+        group_shift = bits_per_type_id;
         detail::minimal_perfect_hash_displacements<Registry>.assign(1, 0);
         buckets.resize(1);
         for (auto iter = ctx.classes_begin(); iter != ctx.classes_end(); ++iter) {
@@ -233,13 +234,21 @@ void minimal_perfect_hash::fn<Registry>::initialize(
         }
     }
 
-    std::default_random_engine rnd(13081963);
+    // Constants for PtHash algorithm
+    constexpr std::size_t DEFAULT_RANDOM_SEED = 13081963; // Same seed as fast_perfect_hash
+    constexpr std::size_t MAX_PASSES = 10;
+    constexpr std::size_t MAX_ATTEMPTS = 100000;
+    constexpr std::size_t DEFAULT_GROUP_DIVISOR = 4;  // N/4 groups for balance between memory and speed
+    constexpr std::size_t DISTRIBUTION_FACTOR = 2;     // 2*N range for better distribution
+    constexpr std::size_t bits_per_type_id = 8 * sizeof(type_id);
+
+    std::default_random_engine rnd(DEFAULT_RANDOM_SEED);
     std::uniform_int_distribution<std::size_t> uniform_dist;
     std::size_t total_attempts = 0;
 
     // PtHash algorithm: partition keys into groups, then find displacements
     // Number of groups: typically sqrt(N) to N/4 for good performance
-    num_groups = (std::max)(std::size_t(1), table_size / 4);
+    num_groups = (std::max)(std::size_t(1), table_size / DEFAULT_GROUP_DIVISOR);
     if (num_groups > table_size) num_groups = table_size;
     
     // Calculate bits needed for num_groups
@@ -249,25 +258,25 @@ void minimal_perfect_hash::fn<Registry>::initialize(
         power <<= 1;
         ++GM;
     }
-    group_shift = 8 * sizeof(type_id) - GM;
+    group_shift = bits_per_type_id - GM;
 
     if constexpr (InitializeContext::template has_option<trace>) {
         ctx.tr << "  Using " << num_groups << " groups for " << table_size << " keys\n";
     }
 
     // Try different pilot hash parameters
-    for (std::size_t pass = 0; pass < 10 && total_attempts < 100000; ++pass) {
+    for (std::size_t pass = 0; pass < MAX_PASSES && total_attempts < MAX_ATTEMPTS; ++pass) {
         mult = uniform_dist(rnd) | 1;
         group_mult = uniform_dist(rnd) | 1;
         
         // Calculate M for pilot hash (number of bits for table_size range)
         std::size_t M = 0;
         power = 1;
-        while (power < table_size * 2) {  // Use 2*N for better distribution
+        while (power < table_size * DISTRIBUTION_FACTOR) {
             power <<= 1;
             ++M;
         }
-        shift = 8 * sizeof(type_id) - M;
+        shift = bits_per_type_id - M;
 
         // Partition keys into groups
         std::vector<std::vector<type_id>> groups(num_groups);
@@ -295,9 +304,9 @@ void minimal_perfect_hash::fn<Registry>::initialize(
 
             // Try different displacement values
             bool found = false;
-            for (std::size_t disp = 0; disp < table_size * 2 && !found; ++disp) {
+            for (std::size_t disp = 0; disp < table_size * DISTRIBUTION_FACTOR && !found; ++disp) {
                 ++total_attempts;
-                if (total_attempts > 100000) {
+                if (total_attempts > MAX_ATTEMPTS) {
                     success = false;
                     break;
                 }
