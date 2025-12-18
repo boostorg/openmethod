@@ -169,17 +169,33 @@ void minimal_perfect_hash::fn<Registry>::initialize(
         mult = 1;
         return;
     }
+    
+    if (hash_size == 1) {
+        // Special case: only one type, any hash function works
+        min_value = 0;
+        max_value = 0;
+        shift = 8 * sizeof(type_id); // Shift everything away, result is always 0
+        mult = 1;
+        buckets.resize(1);
+        for (auto iter = ctx.classes_begin(); iter != ctx.classes_end(); ++iter) {
+            for (auto type_iter = iter->type_id_begin();
+                 type_iter != iter->type_id_end(); ++type_iter) {
+                buckets[0] = *type_iter;
+            }
+        }
+        return;
+    }
 
     std::default_random_engine rnd(13081963);
     std::size_t total_attempts = 0;
     
-    // Calculate M (number of bits needed to represent hash_size)
+    // Calculate M (number of bits needed for the hash range)
+    // We need 2^M >= hash_size, so M = ceil(log2(hash_size))
     std::size_t M = 0;
-    for (auto size = hash_size; size > 0; size >>= 1) {
+    std::size_t power = 1;
+    while (power < hash_size) {
+        power <<= 1;
         ++M;
-    }
-    if (M > 0) {
-        M--;
     }
 
     std::uniform_int_distribution<std::size_t> uniform_dist;
