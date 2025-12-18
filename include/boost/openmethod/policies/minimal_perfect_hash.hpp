@@ -313,6 +313,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
 
                 // Check if this displacement works for all keys in group
                 std::vector<std::size_t> positions;
+                positions.reserve(groups[g].size());
                 bool valid = true;
                 for (auto key : groups[g]) {
                     auto pilot = (mult * reinterpret_cast<detail::uintptr>(key)) >> shift;
