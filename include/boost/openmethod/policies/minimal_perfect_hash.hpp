@@ -194,8 +194,11 @@ void minimal_perfect_hash::fn<Registry>::initialize(
     }
 
     // Table size is N * 1.1 to allow up to 10% waste (makes finding hash easier)
-    // Use (N * 11 + 9) / 10 to ensure proper rounding up for small N
-    table_size = (N * 11 + 9) / 10;
+    // Formula: ceil(N * 1.1) = (N * 11 + 9) / 10 ensures proper rounding for all N
+    constexpr std::size_t WASTE_FACTOR_NUMERATOR = 11;    // 1.1 = 11/10
+    constexpr std::size_t WASTE_FACTOR_DENOMINATOR = 10;
+    constexpr std::size_t ROUNDING_ADJUSTMENT = 9;         // For ceiling division
+    table_size = (N * WASTE_FACTOR_NUMERATOR + ROUNDING_ADJUSTMENT) / WASTE_FACTOR_DENOMINATOR;
     
     if (table_size == 0) {
         shift = 0;
@@ -242,7 +245,6 @@ void minimal_perfect_hash::fn<Registry>::initialize(
     constexpr std::size_t DEFAULT_GROUP_DIVISOR = 4;  // N/4 groups for balance between memory and speed
     constexpr std::size_t DISTRIBUTION_FACTOR = 2;     // 2*N range for better distribution
     constexpr std::size_t bits_per_type_id = 8 * sizeof(type_id);
-    // Allow 10% waste to make finding a hash function easier while still being memory-efficient
 
     std::default_random_engine rnd(DEFAULT_RANDOM_SEED);
     std::uniform_int_distribution<std::size_t> uniform_dist;
