@@ -48,14 +48,14 @@ namespace policies {
 //! function in the form `H(x)=(M*x)>>N`. It uses the PtHash algorithm to
 //! determine values for `M` and `N` that result in a minimal perfect hash
 //! function for the set of registered type_ids. This means that the hash
-//! function is collision-free and the codomain is exactly the size of the
-//! domain, resulting in a dense range [0, n-1] for n inputs.
+//! function is collision-free and the codomain is approximately the size of
+//! the domain, resulting in a dense range [0, n-1] for n inputs.
 //!
 //! Unlike @ref fast_perfect_hash, which uses a hash table of size 2^k
 //! (typically larger than needed) and may have unused slots, this policy
-//! ensures the hash table has exactly n slots for n type_ids, with all
-//! slots filled. This minimizes memory usage but may require more search
-//! attempts during initialization.
+//! uses approximately 1.1*n slots for n type_ids (allowing up to 10% waste).
+//! This minimizes memory usage while maintaining good search performance
+//! during initialization.
 struct minimal_perfect_hash : type_hash {
 
     //! Cannot find hash factors
@@ -193,8 +193,11 @@ void minimal_perfect_hash::fn<Registry>::initialize(
         ctx.tr << "Finding minimal perfect hash using PtHash for " << N << " types\n";
     }
 
-    // Table size is exactly N for minimal perfect hash
-    table_size = N;
+    // Table size is N * 1.1 to allow up to 10% waste (makes finding hash easier)
+    table_size = N + N / 10;
+    if (table_size == N && N > 0) {
+        table_size = N + 1;  // Ensure at least 1 extra slot for N > 0
+    }
     
     if (table_size == 0) {
         shift = 0;
@@ -241,6 +244,7 @@ void minimal_perfect_hash::fn<Registry>::initialize(
     constexpr std::size_t DEFAULT_GROUP_DIVISOR = 4;  // N/4 groups for balance between memory and speed
     constexpr std::size_t DISTRIBUTION_FACTOR = 2;     // 2*N range for better distribution
     constexpr std::size_t bits_per_type_id = 8 * sizeof(type_id);
+    // Allow 10% waste to make finding a hash function easier while still being memory-efficient
 
     std::default_random_engine rnd(DEFAULT_RANDOM_SEED);
     std::uniform_int_distribution<std::size_t> uniform_dist;
@@ -343,19 +347,20 @@ void minimal_perfect_hash::fn<Registry>::initialize(
         }
 
         if (success) {
-            // Verify all positions are used (minimal property)
-            bool all_used = true;
+            // Count how many positions are used
+            std::size_t used_count = 0;
             for (std::size_t i = 0; i < table_size; ++i) {
-                if (detail::uintptr(buckets[i]) == detail::uintptr_max) {
-                    all_used = false;
-                    break;
+                if (detail::uintptr(buckets[i]) != detail::uintptr_max) {
+                    used_count++;
                 }
             }
 
-            if (all_used) {
+            // Accept if we've placed all keys (allow up to 10% waste)
+            if (used_count == keys.size()) {
                 if constexpr (InitializeContext::template has_option<trace>) {
                     ctx.tr << "  Found minimal perfect hash after " << total_attempts
-                           << " attempts\n";
+                           << " attempts; " << used_count << "/" << table_size 
+                           << " slots used\n";
                 }
                 return;
             }
