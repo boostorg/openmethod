@@ -116,6 +116,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         unique_virtual_ptr<Dog, Registry> p(std::make_unique<Dog>());
         auto dog = p.get();
         unique_virtual_ptr<Dog, Registry> q(std::move(p));
+        // coverity[use_after_move]
         BOOST_TEST(q.get() == dog);
         BOOST_TEST(q.vptr() == Registry::template static_vptr<Dog>);
         BOOST_TEST(p.get() == nullptr);
@@ -127,6 +128,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         unique_virtual_ptr<Dog, Registry> p(std::make_unique<Dog>());
         auto dog = p.get();
         unique_virtual_ptr<Animal, Registry> q(std::move(p));
+        // coverity[use_after_move]
         BOOST_TEST(q.get() == dog);
         BOOST_TEST(q.vptr() == Registry::template static_vptr<Dog>);
         BOOST_TEST(p.get() == nullptr);
