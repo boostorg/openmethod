@@ -59,6 +59,43 @@ struct aggregate_reports<mp11::mp_list<Reports...>, mp11::mp_list<>, Void> {
     struct type : Reports... {};
 };
 
+// Policy initialization helpers
+
+#if defined(_MSC_VER) && _MSC_VER <= 1950
+template<typename, class, class...>
+struct has_initialize_aux : std::false_type {};
+
+template<class T, class... Args>
+struct has_initialize_aux<
+    std::void_t<decltype(&T::template initialize<std::decay_t<Args>...>)>,
+    T, Args...> : std::true_type {};
+
+template<class T, class... Args>
+constexpr bool has_initialize = has_initialize_aux<void, T, Args...>::value;
+#else
+BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(initialize);
+#endif
+
+// Call initialize on a single policy if it has the function
+template<typename Policy, typename Registry, typename Context, typename Options>
+void initialize_policy(const Context& ctx, const Options& options) {
+    using PolicyFn = typename Policy::template fn<Registry>;
+    if constexpr (has_initialize<PolicyFn, const Context&, const Options&>) {
+        PolicyFn::initialize(ctx, options);
+    }
+}
+
+template<typename Registry, typename Policies = typename Registry::policy_list>
+struct initialize_policies;
+
+template<typename Registry, typename... Policies>
+struct initialize_policies<Registry, mp11::mp_list<Policies...>> {
+    template<typename Context, typename Options>
+    static void fn(const Context& ctx, const Options& options) {
+        (initialize_policy<Policies, Registry>(ctx, options), ...);
+    }
+};
+
 inline void merge_into(boost::dynamic_bitset<>& a, boost::dynamic_bitset<>& b) {
     if (b.size() < a.size()) {
         b.resize(a.size());
@@ -93,8 +130,7 @@ struct generic_compiler {
     };
 
     struct class_ {
-        bool is_abstract = false;
-        std::vector<type_id> type_ids;
+        std::vector<detail::class_info*> ci;
         std::vector<class_*> transitive_bases;
         std::vector<class_*> direct_bases;
         std::vector<class_*> direct_derived;
@@ -105,22 +141,13 @@ struct generic_compiler {
         std::size_t first_slot = 0;
         std::size_t mark = 0; // temporary mark to detect cycles
         std::vector<vtbl_entry> vtbl;
-        vptr_type* static_vptr;
 
         auto is_base_of(class_* other) const -> bool {
             return transitive_derived.find(other) != transitive_derived.end();
         }
 
-        auto vptr() const -> const vptr_type& {
-            return *static_vptr;
-        }
-
-        auto type_id_begin() const {
-            return type_ids.begin();
-        }
-
-        auto type_id_end() const {
-            return type_ids.end();
+        auto is_abstract() const -> bool {
+            return ci[0]->is_abstract;
         }
     };
 
@@ -185,12 +212,80 @@ struct generic_compiler {
 
     std::deque<class_> classes;
 
+    class const_class_iterator {
+      public:
+        using iterator_category = std::forward_iterator_tag;
+        using value_type = const detail::class_info*;
+        using difference_type = std::ptrdiff_t;
+        using pointer = const detail::class_info**;
+        using reference = const detail::class_info*&;
+
+        const_class_iterator() = default;
+
+        const_class_iterator(
+            std::deque<class_>::const_iterator class_iter,
+            std::deque<class_>::const_iterator class_end)
+            : class_iter_(class_iter), class_end_(class_end) {
+            if (class_iter_ != class_end_) {
+                ci_iter_ = class_iter_->ci.begin();
+                advance_to_valid();
+            }
+        }
+        auto operator->() const -> const detail::class_info* {
+            return *ci_iter_;
+        }
+        auto operator*() const -> const detail::class_info* {
+            return *ci_iter_;
+        }
+
+        auto operator++() -> const_class_iterator& {
+            ++ci_iter_;
+            advance_to_valid();
+            return *this;
+        }
+
+        auto operator++(int) -> const_class_iterator {
+            const_class_iterator tmp = *this;
+            ++(*this);
+            return tmp;
+        }
+
+        auto operator==(const const_class_iterator& other) const -> bool {
+            if (class_iter_ != other.class_iter_) {
+                return false;
+            }
+            if (class_iter_ == class_end_) {
+                return true;
+            }
+            return ci_iter_ == other.ci_iter_;
+        }
+
+        auto operator!=(const const_class_iterator& other) const -> bool {
+            return !(*this == other);
+        }
+
+      private:
+        void advance_to_valid() {
+            while (class_iter_ != class_end_ &&
+                   ci_iter_ == class_iter_->ci.end()) {
+                ++class_iter_;
+                if (class_iter_ != class_end_) {
+                    ci_iter_ = class_iter_->ci.begin();
+                }
+            }
+        }
+
+        std::deque<class_>::const_iterator class_iter_;
+        std::deque<class_>::const_iterator class_end_;
+        std::vector<detail::class_info*>::const_iterator ci_iter_;
+    };
+
     auto classes_begin() const {
-        return classes.begin();
+        return const_class_iterator(classes.begin(), classes.end());
     }
 
     auto classes_end() const {
-        return classes.end();
+        return const_class_iterator(classes.end(), classes.end());
     }
 
     std::vector<method> methods;
@@ -248,7 +343,7 @@ template<class Compiler>
 auto operator<<(trace_stream<Compiler>& tr, const generic_compiler::class_& cls)
     -> trace_stream<Compiler>& {
     if constexpr (Compiler::has_trace) {
-        tr << type_name(cls.type_ids[0]);
+        tr << type_name(cls.ci[0]->type);
     }
 
     return tr;
@@ -298,7 +393,20 @@ auto operator<<(trace_stream<Compiler>& tr, const spec_name& sn)
 }
 
 template<typename Iterator>
-struct range;
+struct range {
+    range(Iterator first, Iterator last) : first(first), last(last) {
+    }
+
+    Iterator first, last;
+
+    auto begin() const -> Iterator {
+        return first;
+    }
+
+    auto end() const -> Iterator {
+        return last;
+    }
+};
 
 template<class Compiler, typename T, typename F>
 auto write_range(trace_stream<Compiler>& tr, range<T> range, F fn) -> auto& {
@@ -425,8 +533,8 @@ struct registry<Policies...>::compiler : detail::generic_compiler {
     static void select_dominant_overriders(
         std::vector<overrider*>& dominants, std::size_t& pick,
         std::size_t& remaining);
-    static auto
-    is_more_specific(const overrider* a, const overrider* b) -> bool;
+    static auto is_more_specific(const overrider* a, const overrider* b)
+        -> bool;
     static auto is_base(const overrider* a, const overrider* b) -> bool;
 
     std::tuple<Options...> options;
@@ -473,7 +581,7 @@ template<class... Options>
 void registry<Policies...>::compiler<Options...>::initialize() {
     compile();
     install_global_tables();
-    registry<Policies...>::initialized = true;
+    registry<Policies...>::static_::st.initialized = true;
 }
 
 #ifdef _MSC_VER
@@ -542,7 +650,7 @@ void registry<Policies...>::compiler<Options...>::augment_classes() {
         // The standard does not guarantee that there is exactly one
         // type_info object per class. However, it guarantees that the
         // type_index for a class has a unique value.
-        for (auto& cr : registry::classes) {
+        for (auto& cr : registry::static_::st.classes) {
             if constexpr (has_deferred_static_rtti) {
                 static_cast<deferred_class_info&>(cr).resolve_type_ids();
             }
@@ -550,21 +658,28 @@ void registry<Policies...>::compiler<Options...>::augment_classes() {
             {
                 indent _(tr);
                 ++tr << type_name(cr.type) << ": "
-                     << range{cr.first_base, cr.last_base} << "\n";
+                     << range{cr.first_base, cr.last_base}
+                     << ", type = " << cr.type << ", &vptr = " << &cr.vptr()
+                     << "\n";
             }
 
             auto& rtc = class_map[rtti::type_index(cr.type)];
 
             if (rtc == nullptr) {
                 rtc = &classes.emplace_back();
-                rtc->is_abstract = cr.is_abstract;
-                rtc->static_vptr = cr.static_vptr;
             }
 
-            if (std::find(
-                    rtc->type_ids.begin(), rtc->type_ids.end(), cr.type) ==
-                rtc->type_ids.end()) {
-                rtc->type_ids.push_back(cr.type);
+            bool new_type_id = true;
+
+            for (auto ci : rtc->ci) {
+                if (ci->type == cr.type) {
+                    new_type_id = false;
+                    break;
+                }
+            }
+
+            if (new_type_id) {
+                rtc->ci.push_back(&cr);
             }
         }
     }
@@ -572,7 +687,7 @@ void registry<Policies...>::compiler<Options...>::augment_classes() {
     // All known classes now have exactly one associated class_* in the
     // map. Collect the bases.
 
-    for (auto& cr : registry::classes) {
+    for (auto& cr : registry::static_::st.classes) {
         auto rtc = class_map[rtti::type_index(cr.type)];
 
         for (auto& base : range{cr.first_base, cr.last_base}) {
@@ -701,14 +816,14 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
     using namespace policies;
     using namespace detail;
 
-    methods.resize(registry::methods.size());
+    methods.resize(registry::static_::st.methods.size());
 
     ++tr << "Methods:\n";
     indent _(tr);
 
     auto meth_iter = methods.begin();
 
-    for (auto& meth_info : registry::methods) {
+    for (auto& meth_info : registry::static_::st.methods) {
         if constexpr (has_deferred_static_rtti) {
             static_cast<deferred_method_info&>(meth_info).resolve_type_ids();
         }
@@ -842,8 +957,8 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
 
                 if (!vp->is_base_of(overrider.vp[param_index])) {
                     missing_base error;
-                    error.base = overrider.vp[param_index]->type_ids[0];
-                    error.derived = vp->type_ids[0];
+                    error.base = overrider.vp[param_index]->ci[0]->type;
+                    error.derived = vp->ci[0]->type;
 
                     if constexpr (has_error_handler) {
                         error_handler::error(error);
@@ -1052,7 +1167,7 @@ void registry<Policies...>::compiler<Options...>::build_dispatch_tables() {
                     auto& group = dim_group[mask];
                     group.classes.push_back(covariant_class);
                     group.has_concrete_classes = group.has_concrete_classes ||
-                        !covariant_class->is_abstract;
+                        !covariant_class->is_abstract();
 
                     ++tr << "-> mask: " << mask << "\n";
                 }
@@ -1083,7 +1198,7 @@ void registry<Policies...>::compiler<Options...>::build_dispatch_tables() {
 
                 for (auto cls : group.classes) {
                     indent _(tr);
-                    ++tr << type_name(cls->type_ids[0]) << "\n";
+                    ++tr << type_name(cls->ci[0]->type) << "\n";
                     auto& entry = cls->vtbl[m.slots[dim] - cls->first_slot];
                     entry.method_index = &m - &methods[0];
                     entry.vp_index = dim;
@@ -1152,7 +1267,7 @@ void registry<Policies...>::compiler<Options...>::build_dispatch_table(
                  << "\n";
             indent _(tr);
             for (auto cls : range{group.classes.begin(), group.classes.end()}) {
-                ++tr << type_name(cls->type_ids[0]) << "\n";
+                ++tr << type_name(cls->ci[0]->type) << "\n";
             }
         }
 
@@ -1367,7 +1482,9 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
     ++tr << "Initializing v-tables at " << gv_iter << "\n";
 
     for (auto& cls : classes) {
-        *cls.static_vptr = gv_iter - cls.first_slot;
+        for (auto& ci : cls.ci) {
+            *ci->static_vptr = gv_iter - cls.first_slot;
+        }
 
         ++tr << rflush(4, gv_iter - gv_first) << " " << gv_iter << " vtbl for "
              << cls << " slots " << cls.first_slot << "-"
@@ -1407,11 +1524,9 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
 
     ++tr << rflush(4, dispatch_data_size) << " " << gv_iter << " end\n";
 
-    if constexpr (has_vptr) {
-        vptr::initialize(*this, options);
-    }
+    detail::initialize_policies<registry>::fn(*this, options);
 
-    new_dispatch_data.swap(dispatch_data);
+    new_dispatch_data.swap(static_::st.dispatch_data);
 }
 
 template<class... Policies>
@@ -1630,14 +1745,7 @@ inline auto initialize(Options&&... options) {
 
 namespace detail {
 
-template<typename, class Policy, class... Options>
-struct has_finalize_aux : std::false_type {};
-
-template<class Policy, class... Options>
-struct has_finalize_aux<
-    std::void_t<decltype(Policy::finalize(
-        std::declval<std::tuple<Options...>>()))>,
-    Policy, Options...> : std::true_type {};
+BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(finalize);
 
 } // namespace detail
 
@@ -1647,13 +1755,13 @@ auto registry<Policies...>::finalize(Options... opts) -> void {
     std::tuple<Options...> options(opts...); // gcc-8 doesn't like CTAD here
     mp11::mp_for_each<policy_list>([&options](auto policy) {
         using fn = typename decltype(policy)::template fn<registry>;
-        if constexpr (detail::has_finalize_aux<void, fn, Options...>::value) {
+        if constexpr (detail::has_finalize<fn, const std::tuple<Options...>&>) {
             fn::finalize(options);
         }
     });
 
-    dispatch_data.clear();
-    initialized = false;
+    static_::dispatch_data.clear();
+    static_::initialized = false;
 }
 
 //! Release resources held by registry.

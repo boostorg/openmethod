@@ -7,10 +7,23 @@
 // extensions.cpp
 #include "animals.hpp"
 
-using namespace boost::openmethod::aliases;
+using namespace boost::openmethod;
+
+static_assert(std::is_same_v<default_registry::declspec, dllimport>);
+
+static_assert(std::is_same_v<
+              BOOST_OPENMETHOD_TYPE(
+                  meet, (virtual_ptr<Animal>, virtual_ptr<Animal>),
+                  std::string)::declspec,
+              dllimport>);
 
 BOOST_OPENMETHOD_OVERRIDE(
-    meet, (virtual_ptr<Herbivore>, virtual_ptr<Carnivore>), std::string) {
+    meet, (virtual_ptr<Herbivore> a, virtual_ptr<Carnivore> b), std::string) {
+    auto p = BOOST_OPENMETHOD_TYPE(
+        meet, (virtual_ptr<Animal>, virtual_ptr<Animal>),
+        std::string)::next<fn>;
+    BOOST_ASSERT(p);
+    BOOST_ASSERT(p(a, b) == "greet");
     return "run";
 }
 
@@ -28,6 +41,7 @@ extern "C" {
 __declspec(dllexport)
 #endif
 auto make_tiger() -> Animal* {
+    BOOST_ASSERT(default_registry::static_vptr<Carnivore> != nullptr);
     return new Tiger;
 }
 }

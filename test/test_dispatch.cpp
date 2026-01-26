@@ -335,17 +335,6 @@ BOOST_AUTO_TEST_CASE(simple) {
         BOOST_TEST(
             times(diag, 2) == string_pair(DIAGONAL_SCALAR, MATRIX_SCALAR));
     }
-
-    if constexpr (std::is_same_v<test_registry::vptr, policies::vptr_vector>) {
-        BOOST_TEST(
-            !detail::vptr_vector_vptrs<test_registry::registry_type>.empty());
-        finalize<test_registry>();
-        static_assert(detail::has_finalize_aux<
-                      void, test_registry::policy<policies::vptr>,
-                      std::tuple<>>::value);
-        BOOST_TEST(
-            detail::vptr_vector_vptrs<test_registry::registry_type>.empty());
-    }
 }
 
 } // namespace TEST_NS

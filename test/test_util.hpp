@@ -11,19 +11,19 @@
 #include <boost/openmethod/core.hpp>
 #include <boost/openmethod/initialize.hpp>
 
-template<typename Key>
-struct unique final {
-    using category = unique;
+struct unique_category {
+    using category = unique_category;
+};
+
+template<int>
+struct unique final : unique_category {
     template<class Registry>
     struct fn {};
 };
 
 template<int N, class... Policies>
-struct test_registry_ : boost::openmethod::default_registry::with<
-                            unique<test_registry_<N>>, Policies...> {
-    using registry_type = boost::openmethod::default_registry::with<
-        unique<test_registry_<N>>, Policies...>;
-};
+struct test_registry_
+    : boost::openmethod::default_registry::with<unique<N>, Policies...> {};
 
 #define TEST_NS BOOST_PP_CAT(test, __COUNTER__)
 

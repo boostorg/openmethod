@@ -104,3 +104,7 @@ openmethod_compile_fail_test(
     compile_fail_repeated_inheritance "repeated inheritance")
 openmethod_compile_fail_test(
     compile_fail_override_method_not_found "cannot find 'speak' method that accepts the same arguments as the overrider")
+
+if (TARGET Boost::dll)
+    add_subdirectory(dynamic_loading)
+endif()

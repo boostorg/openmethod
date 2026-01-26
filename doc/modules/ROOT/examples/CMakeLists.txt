@@ -26,6 +26,8 @@ foreach (cpp ${cpp_files})
     add_dependencies(tests ${test_target})
 endforeach()
 
+add_subdirectory(shared_libs)
+
 function(boost_openmethod_add_step_by_step dir)
   set(add_test "")
   if(ARGC GREATER 1)
@@ -60,7 +62,3 @@ boost_openmethod_add_step_by_step(ambiguities OFF)
 boost_openmethod_add_step_by_step(core_api)
 boost_openmethod_add_step_by_step(custom_rtti)
 boost_openmethod_add_step_by_step(virtual_ptr_alt)
-
-if (NOT WIN32)
-  add_subdirectory(shared_libs)
-endif()
