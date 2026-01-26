@@ -15,11 +15,8 @@ namespace boost::openmethod {
 
 namespace detail {
 
-template<class Registry>
-inline std::vector<vptr_type> vptr_vector_vptrs;
-
-template<class Registry>
-inline std::vector<const vptr_type*> vptr_vector_indirect_vptrs;
+BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(vptr_vector_vptrs);
+BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(vptr_vector_indirect_vptrs);
 
 } // namespace detail
 
@@ -52,6 +49,13 @@ struct vptr_vector : vptr {
             typename Registry::template policy<policies::type_hash>;
         static constexpr auto has_type_hash = !std::is_same_v<type_hash, void>;
 
+        using static_ = std::conditional_t<
+            Registry::has_indirect_vptr,
+            detail::static_vptr_vector_indirect_vptrs<
+                std::vector<const vptr_type*>, Registry>,
+            detail::static_vptr_vector_vptrs<
+                std::vector<vptr_type>, Registry>>;
+
         //! Stores the v-table pointers.
         //!
         //! If `Registry` contains a @ref type_hash policy, its `initialize`
@@ -63,13 +67,14 @@ struct vptr_vector : vptr {
         //! @param ctx A Context object.
         //! @param options A tuple of option objects.
         template<class Context, class... Options>
-        static auto initialize(
-            const Context& ctx, const std::tuple<Options...>& options) -> void {
+        static auto
+        initialize(const Context& ctx, const std::tuple<Options...>& options)
+            -> void {
             std::size_t size;
             (void)options;
 
             if constexpr (has_type_hash) {
-                auto [_, max_value] = type_hash::initialize(ctx, options);
+                auto [_, max_value] = type_hash::hash_range();
                 size = max_value + 1;
             } else {
                 size = 0;
@@ -86,9 +91,9 @@ struct vptr_vector : vptr {
             }
 
             if constexpr (Registry::has_indirect_vptr) {
-                detail::vptr_vector_indirect_vptrs<Registry>.resize(size);
+                static_::vptr_vector_indirect_vptrs.resize(size);
             } else {
-                detail::vptr_vector_vptrs<Registry>.resize(size);
+                static_::vptr_vector_vptrs.resize(size);
             }
 
             for (auto iter = ctx.classes_begin(); iter != ctx.classes_end();
@@ -104,11 +109,10 @@ struct vptr_vector : vptr {
                     }
 
                     if constexpr (Registry::has_indirect_vptr) {
-                        detail::vptr_vector_indirect_vptrs<Registry>[index] =
+                        static_::vptr_vector_indirect_vptrs[index] =
                             &iter->vptr();
                     } else {
-                        detail::vptr_vector_vptrs<Registry>[index] =
-                            iter->vptr();
+                        static_::vptr_vector_vptrs[index] = iter->vptr();
                     }
                 }
             }
@@ -144,10 +148,9 @@ struct vptr_vector : vptr {
                     std::size_t max_index = 0;
 
                     if constexpr (Registry::has_indirect_vptr) {
-                        max_index =
-                            detail::vptr_vector_indirect_vptrs<Registry>.size();
+                        max_index = static_::vptr_vector_indirect_vptrs.size();
                     } else {
-                        max_index = detail::vptr_vector_vptrs<Registry>.size();
+                        max_index = static_::vptr_vector_vptrs.size();
                     }
 
                     if (index >= max_index) {
@@ -163,9 +166,9 @@ struct vptr_vector : vptr {
             }
 
             if constexpr (Registry::has_indirect_vptr) {
-                return *detail::vptr_vector_indirect_vptrs<Registry>[index];
+                return *static_::vptr_vector_indirect_vptrs[index];
             } else {
-                return detail::vptr_vector_vptrs<Registry>[index];
+                return static_::vptr_vector_vptrs[index];
             }
         }
 
@@ -179,9 +182,17 @@ struct vptr_vector : vptr {
             using namespace policies;
 
             if constexpr (Registry::has_indirect_vptr) {
-                detail::vptr_vector_indirect_vptrs<Registry>.clear();
+                static_::vptr_vector_indirect_vptrs.clear();
             } else {
-                detail::vptr_vector_vptrs<Registry>.clear();
+                static_::vptr_vector_vptrs.clear();
+            }
+        }
+
+        static auto id() -> const void* {
+            if constexpr (Registry::has_indirect_vptr) {
+                return &static_::vptr_vector_indirect_vptrs;
+            } else {
+                return &static_::vptr_vector_vptrs;
             }
         }
     };

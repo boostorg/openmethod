@@ -126,8 +126,8 @@ static_assert(
                     is_virtual, mp11::mp_list<virtual_<a&>, b, virtual_<c&>>>>>,
         mp11::mp_list<a, c>>);
 
-struct registry1 : default_registry::with<unique<registry1>> {};
-struct registry2 : default_registry::with<unique<registry2>> {};
+using registry1 = test_registry_<__COUNTER__>;
+using registry2 = test_registry_<__COUNTER__>;
 
 struct non_polymorphic_inplace_vptr {};
 

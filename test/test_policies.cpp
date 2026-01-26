@@ -36,8 +36,8 @@ static_assert(detail::is_registry<default_registry>);
 struct not_a_policy {};
 static_assert(!detail::is_registry<not_a_policy>);
 
-struct registry1 : default_registry::with<unique<registry1>> {};
-struct registry2 : default_registry::with<unique<registry2>> {};
+using registry1 = test_registry_<__COUNTER__>;
+using registry2 = test_registry_<__COUNTER__>;
 
 struct foo {
     using category = foo;
@@ -70,3 +70,13 @@ BOOST_AUTO_TEST_CASE(test_registry) {
     BOOST_TEST(&registry2::static_vptr<void> != &registry1::static_vptr<void>);
     // BOOST_TEST(&registry2::dispatch_data != &registry1::dispatch_data);
 }
+
+static_assert(has_initialize<
+              vptr_vector::fn<registry1>, registry1::compiler<std::tuple<>>,
+              std::tuple<>>);
+static_assert(!has_initialize<
+              std_rtti::fn<registry1>, registry1::compiler<std::tuple<>>,
+              std::tuple<>>);
+static_assert(has_initialize<
+              fast_perfect_hash::fn<registry1>,
+              registry1::compiler<std::tuple<>>, std::tuple<>>);

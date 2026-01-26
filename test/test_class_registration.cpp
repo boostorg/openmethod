@@ -22,6 +22,13 @@ struct Animal {
 struct Dog : Animal {};
 struct Bulldog : Dog {};
 
+BOOST_AUTO_TEST_CASE(registry_own_state) {
+    using r1 = test_registry_<__COUNTER__>;
+    using r2 = test_registry_<__COUNTER__>;
+    static_assert(!std::is_same_v<r1::registry_type, r2::registry_type>);
+    BOOST_CHECK_NE(r1::id(), r2::id());
+}
+
 namespace TEST_NS {
 
 struct registry : test_registry_<__COUNTER__>::with<

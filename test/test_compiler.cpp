@@ -22,7 +22,7 @@ using overrider = detail::generic_compiler::overrider;
 
 auto operator<<(std::ostream& os, const class_* cls) -> std::ostream& {
     return os
-        << reinterpret_cast<const std::type_info*>(cls->type_ids[0])->name();
+        << reinterpret_cast<const std::type_info*>(cls->ci[0]->type)->name();
 }
 
 std::string empty = "{}";
