@@ -66,7 +66,7 @@ specialized for each overrider signature. Macro
 xref:BOOST_OPENMETHOD_OVERRIDER.adoc[BOOST_OPENMETHOD_OVERRIDER] takes the same
 arguments `BOOST_OPENMETHOD_OVERRIDE`, and expands to the corresponding
 specialization of the overrider container. Containers have a static member
-function `fn` that contains the body the overrider, provided by the user. We can
+function `fn` that contains the body of the overrider, provided by the user. We can
 call the overrider for `Employee` like so:
 
 [source,c++]
