@@ -525,12 +525,19 @@ constexpr bool has_vptr_fn = std::is_same_v<
         std::declval<const Class&>(), std::declval<Registry*>())),
     vptr_type>;
 
+BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(dynamic_vptr);
+
 template<class Registry, class ArgType>
 decltype(auto) acquire_vptr(const ArgType& arg) {
     Registry::require_initialized();
 
-    if constexpr (detail::has_vptr_fn<ArgType, Registry>) {
+    if constexpr (has_vptr_fn<ArgType, Registry>) {
         return boost_openmethod_vptr(arg, static_cast<Registry*>(nullptr));
+    } else if constexpr (has_dynamic_vptr<
+                             virtual_traits<const ArgType&, Registry>,
+                             type_id>) {
+        return virtual_traits<const ArgType&, Registry>::dynamic_vptr(
+            arg);
     } else {
         return Registry::template policy<policies::vptr>::dynamic_vptr(arg);
     }
