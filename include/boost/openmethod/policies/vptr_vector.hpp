@@ -133,12 +133,29 @@ struct vptr_vector : vptr {
         //! @return A reference to a the v-table pointer for `Class`.
         template<class Class>
         static auto dynamic_vptr(const Class& arg) -> const vptr_type& {
-            auto dynamic_type = Registry::rtti::dynamic_type(arg);
+            return type_vptr(Registry::rtti::dynamic_type(arg));
+        };
+
+        //! Returns a *reference* to a v-table pointer for a type.
+        //!
+        //! If the registry has a @ref type_hash policy, uses it to convert the
+        //! type id to an index; otherwise, uses the type_id as the index.
+        //!
+        //! If the registry contains the @ref runtime_checks policy, verifies
+        //! that the index falls within the limits of the vector. If it does
+        //! not, and if the registry contains a @ref error_handler policy, calls
+        //! its @ref error function with a @ref missing_class value, then
+        //! terminates the program with @ref abort.
+        //!
+        //! @tparam Class A registered class.
+        //! @param type A `type_id`.
+        //! @return A reference to a the v-table pointer for `type`.
+        static auto type_vptr(type_id type) -> const vptr_type& {
             std::size_t index;
             if constexpr (has_type_hash) {
-                index = type_hash::hash(dynamic_type);
+                index = type_hash::hash(type);
             } else {
-                index = std::size_t(dynamic_type);
+                index = std::size_t(type);
 
                 if constexpr (Registry::has_runtime_checks) {
                     std::size_t max_index = 0;
@@ -153,7 +170,7 @@ struct vptr_vector : vptr {
                     if (index >= max_index) {
                         if constexpr (Registry::has_error_handler) {
                             missing_class error;
-                            error.type = dynamic_type;
+                            error.type = type;
                             Registry::error_handler::error(error);
                         }
 

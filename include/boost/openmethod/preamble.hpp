@@ -5,6 +5,7 @@
 
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/bind.hpp>
+#include <boost/preprocessor/cat.hpp>
 
 #include <stdlib.h>
 #include <vector>
@@ -868,6 +869,17 @@ template<typename, class...>
 struct initialize_aux;
 
 } // namespace detail
+
+#define BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(FN)                              \
+    template<typename, class, class...>                                        \
+    struct BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux)) : std::false_type {};    \
+    template<class T, class... Args>                                           \
+    struct BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux))<                         \
+        std::void_t<decltype(T::FN(std::declval<Args>()...))>, T, Args...>     \
+        : std::true_type {};                                                   \
+    template<class T, class... Args>                                           \
+    constexpr bool BOOST_PP_CAT(has_, FN) =                                    \
+        BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux))<void, T, Args...>::value
 
 //! Methods, classes and policies.
 //!
