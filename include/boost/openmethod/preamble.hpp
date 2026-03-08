@@ -739,8 +739,8 @@ struct TypeHashFn {
     //! blueprint.
     //! @return A pair containing the minimum and maximum hash values.
     template<class Context>
-    static auto
-    initialize(const Context& ctx) -> std::pair<std::size_t, std::size_t>;
+    static auto initialize(const Context& ctx)
+        -> std::pair<std::size_t, std::size_t>;
 
     //! Hash a `type_id`.
     //!
@@ -864,14 +864,19 @@ struct find_first_derived_of_aux<Base, mp11::mp_list<First, More...>, Default> {
         find_first_derived_of<Base, mp11::mp_list<More...>, Default>>;
 };
 
-template<class Registry, class Policy>
+template<class Registry, class Policy, class Default>
 struct get_policy_aux {
     using type = typename Policy::template fn<Registry>;
 };
 
 template<class Registry>
-struct get_policy_aux<Registry, void> {
+struct get_policy_aux<Registry, void, void> {
     using type = void;
+};
+
+template<class Registry, class Default>
+struct get_policy_aux<Registry, void, Default> {
+    using type = typename Default::template fn<Registry>;
 };
 
 template<class Policies, class...>
@@ -944,32 +949,33 @@ struct declspec_none : declspec {};
 namespace detail {
 
 #define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(ID, ...)                          \
-    template<class Type, class Guide = Type&, typename = void>                 \
+    template<class Registry, class Type, class Guide = Type&, typename = void> \
     struct BOOST_PP_CAT(static_, ID) {                                         \
         using declspec = void;                                                 \
         static Type ID;                                                        \
     };                                                                         \
                                                                                \
-    template<class Type, class Guide, typename Enable>                         \
-    Type BOOST_PP_CAT(static_, ID)<Type, Guide, Enable>::ID __VA_ARGS__;       \
+    template<class Registry, class Type, class Guide, typename Enable>         \
+    Type BOOST_PP_CAT(                                                         \
+        static_, ID)<Registry, Type, Guide, Enable>::ID __VA_ARGS__;           \
                                                                                \
-    template<class Type, class Guide>                                          \
+    template<class Registry, class Type, class Guide>                          \
     struct BOOST_PP_CAT(static_, ID)<                                          \
-        Type, Guide,                                                           \
+        Registry, Type, Guide,                                                 \
         std::enable_if_t<std::is_same_v<get_attributes<Guide>, dllexport>>> {  \
         using declspec = dllexport;                                            \
         static BOOST_SYMBOL_EXPORT Type ID __VA_ARGS__;                        \
     };                                                                         \
                                                                                \
-    template<class Type, class Guide>                                          \
+    template<class Registry, class Type, class Guide>                          \
     Type BOOST_PP_CAT(static_, ID)<                                            \
-        Type, Guide,                                                           \
+        Registry, Type, Guide,                                                 \
         std::enable_if_t<std::is_same_v<get_attributes<Guide>, dllexport>>>::  \
         ID;                                                                    \
                                                                                \
-    template<class Type, class Guide>                                          \
+    template<class Registry, class Type, class Guide>                          \
     struct BOOST_PP_CAT(static_, ID)<                                          \
-        Type, Guide,                                                           \
+        Registry, Type, Guide,                                                 \
         std::enable_if_t<std::is_same_v<get_attributes<Guide>, dllimport>>> {  \
         using declspec = dllimport;                                            \
         static BOOST_SYMBOL_IMPORT Type ID;                                    \
@@ -987,16 +993,24 @@ BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(id);
 
 namespace policies {
 
-struct attributes {
-    using category = attributes;
+struct declspec_policy {
+    using category = declspec_policy;
 };
 
 template<typename GuideType>
-struct attributes_guide final : attributes {
-    using guide_type = GuideType;
-
+struct declspec : declspec_policy {
     template<class Registry>
-    struct fn {};
+    struct fn {
+        using guide_type = GuideType;
+    };
+};
+
+template<>
+struct declspec<void> : declspec_policy {
+    template<class Registry>
+    struct fn {
+        struct guide_type {};
+    };
 };
 
 } // namespace policies
@@ -1053,16 +1067,37 @@ struct attributes_guide final : attributes {
 template<class... Policy>
 class registry : public detail::registry_base {
 
+  public:
+    //! List of policies selected in a registry.
+    //!
+    //! `policy_list` is a Boost.Mp11 list containing the policies passed to the
+    //! @ref registry clas template.
+    //!
+    //! @tparam Class A registered class.
+    using policy_list = mp11::mp_list<Policy...>;
+
+    //! Find a policy by category.
+    //!
+    //! `policy` searches for a policy that derives from the specified @ref
+    //! Category. If none is found, it aliases to `void`. Otherwise, it aliases
+    //! to the policy's `fn` metafunction, applied to the registry.
+    //!
+    //! @tparam A policy.
+    template<class Category, typename Default = void>
+    using policy = typename detail::get_policy_aux<
+        registry, detail::find_first_derived_of<Category, policy_list>,
+        Default>::type;
+    using declspec_guide = typename policy<
+        policies::declspec_policy, policies::declspec<void>>::guide_type;
+
+  private:
     template<class...>
     friend struct detail::use_class_aux;
     template<typename Name, typename ReturnType, class Registry>
     friend class method;
 
     using static_ = detail::static_st<
-        detail::registry_state<registry<Policy...>>,
-        typename detail::find_first_derived_of<
-            policies::attributes, mp11::mp_list<Policy...>,
-            policies::attributes_guide<registry<Policy...>>>::guide_type>;
+        registry, detail::registry_state<registry<Policy...>>, declspec_guide>;
 
   public:
     //! The type of this registry.
@@ -1098,25 +1133,6 @@ class registry : public detail::registry_base {
     //! @tparam Class A registered class.
     template<class Class>
     inline static vptr_type static_vptr;
-
-    //! List of policies selected in a registry.
-    //!
-    //! `policy_list` is a Boost.Mp11 list containing the policies passed to the
-    //! @ref registry clas template.
-    //!
-    //! @tparam Class A registered class.
-    using policy_list = mp11::mp_list<Policy...>;
-
-    //! Find a policy by category.
-    //!
-    //! `policy` searches for a policy that derives from the specified @ref
-    //! Category. If none is found, it aliases to `void`. Otherwise, it aliases
-    //! to the policy's `fn` metafunction, applied to the registry.
-    //!
-    //! @tparam A policy.
-    template<class Category>
-    using policy = typename detail::get_policy_aux<
-        registry, detail::find_first_derived_of<Category, policy_list>>::type;
 
     //! Add or replace policies.
     //!
@@ -1210,7 +1226,7 @@ auto final_error::write(Stream& os) const {
 }
 
 struct default_registry_attributes;
-
+struct default_registry;
 } // namespace boost::openmethod
 
 #ifdef _MSC_VER

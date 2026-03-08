@@ -3,40 +3,19 @@
 // See accompanying file LICENSE_1_0.txt
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#define INCLUDED_FROM "lib_overrider.cpp"
+
 #include "method.hpp"
 #include <boost/dll/alias.hpp>
 
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
-BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Dog>), std::string) {
+BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Dog>), const char*) {
     return "woof";
 }
 
-using Method = BOOST_OPENMETHOD_TYPE(speak, (virtual_ptr<Animal>), std::string);
+BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
-constexpr auto n_policies = mp11::mp_size<default_registry::policy_list>::value;
-
-static auto get_policy_ids() -> const void** {
-    static const void* ids[n_policies + 1];
-    static bool init = [] {
-        std::size_t i = 0;
-        mp11::mp_for_each<default_registry::policy_list>([&](auto p) {
-            using P = decltype(p);
-            if constexpr (detail::has_id<default_registry::policy<P>>) {
-                ids[i++] = default_registry::policy<P>::id();
-            }
-        });
-        ids[i] = nullptr;
-        return true;
-    }();
-    (void)init;
-    return ids;
-}
-
-static auto get_method_fn() -> const void* {
-    return static_cast<const void*>(&Method::fn);
-}
-
-BOOST_DLL_ALIAS(get_policy_ids, dl_overrider_get_policy_ids)
-BOOST_DLL_ALIAS(get_method_fn, dl_overrider_get_method_fn)
+BOOST_DLL_ALIAS(get_ids, overrider_get_ids)
+BOOST_DLL_ALIAS(get_fn, overrider_get_fn)

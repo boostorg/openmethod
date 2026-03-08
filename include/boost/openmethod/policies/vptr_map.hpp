@@ -40,7 +40,9 @@ class vptr_map : public vptr {
         using Value = std::conditional_t<
             Registry::has_indirect_vptr, const vptr_type*, vptr_type>;
         using static_ = detail::static_vptrs<
-            typename MapFn::template fn<type_id, Value>, Registry>;
+            Registry, typename MapFn::template fn<type_id, Value>,
+            typename Registry::template policy<
+                policies::declspec_policy>::guide_type>;
 
       public:
         //! Stores the v-table pointers.

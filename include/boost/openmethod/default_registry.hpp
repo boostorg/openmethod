@@ -42,7 +42,7 @@ struct default_registry
           policies::std_rtti, policies::fast_perfect_hash,
           policies::vptr_vector, policies::default_error_handler,
           policies::stderr_output,
-          policies::attributes_guide<default_registry_attributes>
+          policies::declspec<default_registry>
 #ifdef BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS
           ,
           policies::runtime_checks

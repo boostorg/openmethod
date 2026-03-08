@@ -52,9 +52,11 @@ struct vptr_vector : vptr {
         using static_ = std::conditional_t<
             Registry::has_indirect_vptr,
             detail::static_vptr_vector_indirect_vptrs<
-                std::vector<const vptr_type*>, Registry>,
+                Registry, std::vector<const vptr_type*>,
+                typename Registry::declspec_guide>,
             detail::static_vptr_vector_vptrs<
-                std::vector<vptr_type>, Registry>>;
+                Registry, std::vector<vptr_type>,
+                typename Registry::declspec_guide>>;
 
         //! Stores the v-table pointers.
         //!
