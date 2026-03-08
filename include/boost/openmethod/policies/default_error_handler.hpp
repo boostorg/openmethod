@@ -85,8 +85,10 @@ struct default_error_handler : error_handler {
         //! The type of the error handler function object.
         using function_type = std::function<void(const error_variant& error)>;
 
-        using static_ =
-            detail::static_handler<function_type, Registry>;
+        using static_ = detail::static_handler<
+            Registry, function_type,
+            typename Registry::template policy<
+                policies::declspec_policy>::guide_type>;
 
         //! Calls a function with the error object, wrapped in an @ref
         //! error_variant.
@@ -95,8 +97,8 @@ struct default_error_handler : error_handler {
         //! @param error The error object.
         template<class Error>
         static auto error(const Error& error) -> void {
-            auto handler = static_::handler ? static_::handler
-                                                    : default_handler;
+            auto handler =
+                static_::handler ? static_::handler : default_handler;
             handler(error_variant(error));
         }
 
@@ -109,8 +111,7 @@ struct default_error_handler : error_handler {
         //! @return The previous function.
         // coverity[auto_causes_copy]
         static auto set(function_type new_handler) -> function_type {
-            auto prev = std::exchange(
-                static_::handler, std::move(new_handler));
+            auto prev = std::exchange(static_::handler, std::move(new_handler));
             return prev ? prev : default_handler;
         }
 

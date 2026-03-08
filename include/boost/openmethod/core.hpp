@@ -2166,11 +2166,11 @@ template<
 class method<Id, ReturnType(Parameters...), Registry>
     : public detail::method_base<Registry>,
       public detail::static_fn<
-          method<Id, ReturnType(Parameters...), Registry>> {
+          Registry, method<Id, ReturnType(Parameters...), Registry>> {
     template<auto Function, typename FunctionType>
     struct override_aux;
 
-    friend struct detail::static_fn<method>;
+    friend struct detail::static_fn<Registry, method>;
 
     // Aliases used in implementation only. Everything extracted from template
     // arguments is capitalized like the arguments themselves.

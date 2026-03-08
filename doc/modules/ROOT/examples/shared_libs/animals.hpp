@@ -28,7 +28,7 @@
 #endif
 
 namespace boost::openmethod {
-    ANIMALS_API boost_openmethod_declspec(default_registry_attributes);
+    ANIMALS_API boost_openmethod_declspec(default_registry&);
 }
 
 #include <string>

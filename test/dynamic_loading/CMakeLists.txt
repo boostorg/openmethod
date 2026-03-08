@@ -25,7 +25,11 @@ add_executable(
     boost_openmethod-test_dynamic_loading EXCLUDE_FROM_ALL main.cpp)
 target_link_libraries(
     boost_openmethod-test_dynamic_loading
+    PUBLIC Boost::openmethod
     PRIVATE Boost::openmethod Boost::unit_test_framework Boost::dll)
+add_dependencies(
+    boost_openmethod-test_dynamic_loading
+    dl_test_registry dl_test_method dl_test_overrider)
 
 # Put all outputs in the same directory so Boost.DLL can locate the shared
 # libraries relative to the test executable at runtime.
@@ -54,5 +58,3 @@ endforeach()
 add_test(
     NAME boost_openmethod-test_dynamic_loading
     COMMAND boost_openmethod-test_dynamic_loading)
-add_dependencies(
-    tests boost_openmethod-test_dynamic_loading dl_test_overrider)

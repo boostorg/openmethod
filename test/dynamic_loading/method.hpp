@@ -3,19 +3,28 @@
 // See accompanying file LICENSE_1_0.txt
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-#pragma once
-
+#include "registry.hpp"
 #include "classes.hpp"
-
-#if !defined(_MSC_VER)
-#define METHOD_API boost::openmethod::declspec_none
-#elif defined(BOOST_OPENMETHOD_DYNAMIC_LOADING_METHOD_EXPORTS)
-#define METHOD_API boost::openmethod::dllexport
-#else
-#define METHOD_API boost::openmethod::dllimport
-#endif
 
 #include <string>
 
+#if defined(_MSC_VER)
+#if defined(EXPORT_METHOD)
+#pragma message(INCLUDED_FROM ": exporting method")
+#define METHOD_DECLSPEC boost::openmethod::dllexport
+#else
+#pragma message(INCLUDED_FROM ": importing method")
+#define METHOD_DECLSPEC boost::openmethod::dllimport
+#endif
+#else
+#define METHOD_DECLSPEC boost::openmethod::declspec_none
+#endif
+
 BOOST_OPENMETHOD(
-    speak, (boost::openmethod::virtual_ptr<Animal>), std::string, METHOD_API);
+    speak, (boost::openmethod::virtual_ptr<Animal>), const char*,
+    METHOD_DECLSPEC);
+
+inline auto get_fn() {
+    return static_cast<const void*>(&BOOST_OPENMETHOD_TYPE(
+        speak, (boost::openmethod::virtual_ptr<Animal>), const char*)::fn);
+}

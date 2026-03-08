@@ -3,38 +3,34 @@
 // See accompanying file LICENSE_1_0.txt
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-// BOOST_OPENMETHOD_DYNAMIC_LOADING_METHOD_EXPORTS is set via CMake compile
-// definition, making METHOD_API expand to dllexport in method.hpp.
+#define EXPORT_METHOD
+#define INCLUDED_FROM "lib_method.cpp"
+
+#include "registry.hpp"
 #include "method.hpp"
+
+#include <boost/openmethod.hpp>
 #include <boost/dll/alias.hpp>
+
+#include <iostream>
 
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
-using Method = BOOST_OPENMETHOD_TYPE(speak, (virtual_ptr<Animal>), std::string);
+static_assert(std::is_same_v<default_registry::declspec, dllimport>);
 
-constexpr auto n_policies = mp11::mp_size<default_registry::policy_list>::value;
+BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
-static auto get_policy_ids() -> const void** {
-    static const void* ids[n_policies + 1];
-    static bool init = [] {
-        std::size_t i = 0;
-        mp11::mp_for_each<default_registry::policy_list>([&](auto p) {
-            using P = decltype(p);
-            if constexpr (detail::has_id<default_registry::policy<P>>) {
-                ids[i++] = default_registry::policy<P>::id();
-            }
-        });
-        ids[i] = nullptr;
-        return true;
-    }();
-    (void)init;
-    return ids;
+BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
+    return "?";
 }
 
-static auto get_method_fn() -> const void* {
-    return static_cast<const void*>(&Method::fn);
+BOOST_DLL_ALIAS(get_ids, method_get_ids)
+BOOST_DLL_ALIAS(get_fn, method_get_fn)
+
+const char* call_speak() {
+    Dog snoopy;
+    return speak(snoopy);
 }
 
-BOOST_DLL_ALIAS(get_policy_ids, dl_method_get_policy_ids)
-BOOST_DLL_ALIAS(get_method_fn, dl_method_get_method_fn)
+BOOST_DLL_AUTO_ALIAS(call_speak)

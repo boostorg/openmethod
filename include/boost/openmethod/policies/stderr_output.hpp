@@ -25,7 +25,10 @@ namespace policies {
 struct stderr_output : output {
     //! An OutputFn metafunction.
     template<class Registry>
-    struct fn : detail::static_os<detail::ostderr, Registry> {
+    struct fn : detail::static_os<
+                    Registry, detail::ostderr,
+                    typename Registry::template policy<
+                        policies::declspec_policy>::guide_type> {
         //! A @ref LightweightOuputStream.
         // static detail::ostderr os; // now inherited from static_os
 

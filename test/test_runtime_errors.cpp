@@ -113,7 +113,8 @@ BOOST_AUTO_TEST_CASE(initialize_unknown_class) {
         {
             registry::capture capture;
             BOOST_CHECK_THROW(initialize<registry>(), missing_class);
-            BOOST_TEST(capture().find("unknown class") != std::string::npos);
+            auto s = capture();
+            BOOST_TEST(s.find("unknown class") != std::string::npos);
         }
     }
 }
