@@ -8,7 +8,7 @@
 
 #include <string>
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 #if defined(EXPORT_METHOD)
 #pragma message(INCLUDED_FROM ": exporting method")
 #define METHOD_DECLSPEC boost::openmethod::dllexport
