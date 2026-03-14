@@ -739,8 +739,8 @@ struct TypeHashFn {
     //! blueprint.
     //! @return A pair containing the minimum and maximum hash values.
     template<class Context>
-    static auto initialize(const Context& ctx)
-        -> std::pair<std::size_t, std::size_t>;
+    static auto
+    initialize(const Context& ctx) -> std::pair<std::size_t, std::size_t>;
 
     //! Hash a `type_id`.
     //!
@@ -942,22 +942,28 @@ struct initialize_aux;
 // import/export
 
 struct declspec {};
+struct declspec_none : declspec {};
+
+#if defined(__MRDOCS__) || defined(_WIN32)
 struct dllexport : declspec {};
 struct dllimport : declspec {};
-struct declspec_none : declspec {};
+#endif
 
 namespace detail {
 
-#define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(ID, ...)                          \
+#define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS_COMMON(ID, ...)                   \
     template<class Registry, class Type, class Guide = Type&, typename = void> \
     struct BOOST_PP_CAT(static_, ID) {                                         \
-        using declspec = void;                                                 \
-        static Type ID;                                                        \
+        using declspec = declspec_none;                                        \
+        static Type ID __VA_ARGS__;                                            \
     };                                                                         \
                                                                                \
     template<class Registry, class Type, class Guide, typename Enable>         \
-    Type BOOST_PP_CAT(                                                         \
-        static_, ID)<Registry, Type, Guide, Enable>::ID __VA_ARGS__;           \
+    Type BOOST_PP_CAT(static_, ID)<Registry, Type, Guide, Enable>::ID;
+
+#if defined(_WIN32)
+#define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(ID, ...)                          \
+    BOOST_OPENMETHOD_DETAIL_MAKE_STATICS_COMMON(ID, __VA_ARGS__)               \
                                                                                \
     template<class Registry, class Type, class Guide>                          \
     struct BOOST_PP_CAT(static_, ID)<                                          \
@@ -980,6 +986,10 @@ namespace detail {
         using declspec = dllimport;                                            \
         static BOOST_SYMBOL_IMPORT Type ID;                                    \
     }
+#else
+#define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(ID, ...)                          \
+    BOOST_OPENMETHOD_DETAIL_MAKE_STATICS_COMMON(ID, __VA_ARGS__)
+#endif
 
 template<typename Type>
 using get_attributes =

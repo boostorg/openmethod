@@ -26,6 +26,8 @@
 
 using namespace boost::openmethod;
 
+#ifdef _WIN32
+
 static_assert(!std::is_same_v<
               BOOST_OPENMETHOD_TYPE(
                   meet, (virtual_ptr<Animal>, virtual_ptr<Animal>),
@@ -40,6 +42,8 @@ static_assert(std::is_same_v<
 
 static_assert(!std::is_same_v<default_registry::declspec, void>);
 static_assert(std::is_same_v<default_registry::declspec, dllexport>);
+
+#endif
 
 BOOST_OPENMETHOD_CLASSES(Herbivore, Cow, Carnivore, Wolf);
 
