@@ -16,7 +16,9 @@
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
+#ifdef _WIN32
 static_assert(std::is_same_v<default_registry::declspec, dllexport>);
+#endif
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
