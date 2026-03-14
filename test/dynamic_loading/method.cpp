@@ -27,12 +27,7 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
     return "?";
 }
 
-BOOST_DLL_ALIAS(get_ids, method_get_ids)
-BOOST_DLL_ALIAS(get_fn, method_get_fn)
-
-const char* call_speak() {
-    Dog snoopy;
-    return speak(snoopy);
-}
-
-BOOST_DLL_AUTO_ALIAS(call_speak)
+BOOST_DLL_AUTO_ALIAS(get_ids)
+BOOST_DLL_AUTO_ALIAS(get_fn)
+BOOST_DLL_AUTO_ALIAS(make_dog);
+BOOST_DLL_AUTO_ALIAS(call_speak);

@@ -4,9 +4,16 @@
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/openmethod.hpp>
+#include <boost/openmethod/interop/std_unique_ptr.hpp>
+#include <memory>
 
 struct Animal {
     virtual ~Animal() = default;
 };
 
 struct Dog : Animal {};
+
+static auto make_dog() {
+    auto p = &typeid(Dog);
+    return boost::openmethod::make_unique_virtual<Dog>();
+}
