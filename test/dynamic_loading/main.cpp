@@ -66,22 +66,15 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     constexpr auto global_mode =
         dll::load_mode::append_decorations /*| dll::load_mode::rtld_global*/;
 #endif
-    dll::shared_library registry_lib(
-        lib_dir / "boost_openmethod-dl_test_registry", global_mode);
-    auto& registry_get_ids =
-        registry_lib.get_alias<policy_ids_fn>("registry_get_ids");
-
     dll::shared_library method_lib(
         lib_dir / "boost_openmethod-dl_test_method", global_mode);
     auto& method_get_ids =
         method_lib.get_alias<policy_ids_fn>("method_get_ids");
 
-    BOOST_TEST(same_ids(registry_get_ids(), method_get_ids()));
+    BOOST_TEST(same_ids(get_ids(), method_get_ids()));
 
-    auto& registry_initialize =
-        registry_lib.get_alias<void()>("registry_initialize");
     auto& speak = method_lib.get_alias<const char*()>("call_speak");
-    registry_initialize();
+    initialize();
     BOOST_TEST(speak() == "?");
 
     dll::shared_library overrider_lib(
@@ -92,9 +85,9 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     auto& method_get_fn = method_lib.get_alias<method_fn>("method_get_fn");
     auto& overrider_get_fn =
         overrider_lib.get_alias<method_fn>("overrider_get_fn");
-    BOOST_TEST(same_ids(registry_get_ids(), overrider_get_ids()));
-    // BOOST_TEST(method_get_fn() == overrider_get_fn);
+    BOOST_TEST(same_ids(get_ids(), overrider_get_ids()));
+    BOOST_TEST(method_get_fn() == overrider_get_fn());
 
-    registry_initialize();
+    initialize();
     BOOST_TEST(speak() == "woof");
 }

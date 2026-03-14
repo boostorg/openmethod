@@ -27,7 +27,7 @@ add_executable(
     boost_openmethod-test_dynamic_loading main.cpp)
 target_link_libraries(
     boost_openmethod-test_dynamic_loading
-    PUBLIC Boost::openmethod
+    PUBLIC Boost::openmethod boost_openmethod-dl_test_registry
     PRIVATE Boost::openmethod Boost::unit_test_framework Boost::dll)
 add_dependencies(
     boost_openmethod-test_dynamic_loading
