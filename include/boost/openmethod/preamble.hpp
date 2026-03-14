@@ -372,7 +372,9 @@ struct deferred_overrider_info : overrider_info {
 
 #ifdef __MRDOCS__
 
+namespace detail {
 struct unspecified {};
+} // namespace detail
 
 //! Blueprint for a lightweight output stream (exposition only).
 //!
