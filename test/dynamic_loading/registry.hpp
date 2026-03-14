@@ -7,8 +7,8 @@
 #define BOOST_OPENMETHOD_TEST_DYNAMIC_LOADING_REGISTRY_HPP
 
 #include <boost/openmethod/preamble.hpp>
-#if defined(_MSC_VER)
 
+#if defined(_WIN32)
 #if defined(EXPORT_REGISTRY)
 #pragma message(INCLUDED_FROM ": exporting registry")
 #define REGISTRY_DECLSPEC boost::openmethod::dllexport
@@ -16,6 +16,7 @@
 #pragma message(INCLUDED_FROM ": importing registry")
 #define REGISTRY_DECLSPEC boost::openmethod::dllimport
 #endif
+
 namespace boost::openmethod {
 REGISTRY_DECLSPEC
 boost_openmethod_declspec(default_registry&);
