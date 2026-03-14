@@ -56,5 +56,18 @@ foreach(
 endforeach()
 
 add_test(
+    NAME boost_openmethod-test_dynamic_loading-build
+    COMMAND
+        ${CMAKE_COMMAND} --build ${CMAKE_BINARY_DIR}
+        --target boost_openmethod-test_dynamic_loading
+        --config $<CONFIG>)
+set_tests_properties(
+    boost_openmethod-test_dynamic_loading-build
+    PROPERTIES FIXTURES_SETUP boost_openmethod-test_dynamic_loading-fixture)
+
+add_test(
     NAME boost_openmethod-test_dynamic_loading
     COMMAND boost_openmethod-test_dynamic_loading)
+set_tests_properties(
+    boost_openmethod-test_dynamic_loading
+    PROPERTIES FIXTURES_REQUIRED boost_openmethod-test_dynamic_loading-fixture)
