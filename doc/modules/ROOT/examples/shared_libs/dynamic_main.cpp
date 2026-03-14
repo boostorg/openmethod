@@ -12,7 +12,6 @@
 #endif
 #endif
 
-// tag::before[]
 // dynamic_main.cpp
 
 #include "animals.hpp"
@@ -44,6 +43,9 @@ static_assert(!std::is_same_v<default_registry::declspec, void>);
 static_assert(std::is_same_v<default_registry::declspec, dllexport>);
 
 #endif
+
+// tag::before[]
+// dynamic_main.cpp
 
 BOOST_OPENMETHOD_CLASSES(Herbivore, Cow, Carnivore, Wolf);
 
