@@ -995,7 +995,7 @@ namespace detail {
 
 template<typename Type>
 using get_attributes =
-    decltype(boost_openmethod_declspec(std::declval<Type>()));
+    decltype(boost_openmethod_declspec(std::declval<Type&>()));
 
 BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(st);
 
