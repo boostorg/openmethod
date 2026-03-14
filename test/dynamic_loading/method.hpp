@@ -28,3 +28,7 @@ inline auto get_fn() {
     return static_cast<const void*>(&BOOST_OPENMETHOD_TYPE(
         speak, (boost::openmethod::virtual_ptr<Animal>), const char*)::fn);
 }
+
+inline auto call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
+    return speak(animal);
+}

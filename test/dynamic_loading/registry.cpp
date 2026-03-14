@@ -28,4 +28,4 @@ void registry_initialize() {
     boost::openmethod::initialize(trace::from_env());
 }
 
-BOOST_DLL_AUTO_ALIAS(registry_initialize);
+BOOST_DLL_ALIAS(make_dog, registry_make_dog);
