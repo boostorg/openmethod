@@ -9,6 +9,8 @@
 
 using namespace boost::openmethod;
 
+#ifdef _WIN32
+
 static_assert(std::is_same_v<default_registry::declspec, dllimport>);
 
 static_assert(std::is_same_v<
@@ -16,6 +18,8 @@ static_assert(std::is_same_v<
                   meet, (virtual_ptr<Animal>, virtual_ptr<Animal>),
                   std::string)::declspec,
               dllimport>);
+
+#endif
 
 BOOST_OPENMETHOD_OVERRIDE(
     meet, (virtual_ptr<Herbivore> a, virtual_ptr<Carnivore> b), std::string) {

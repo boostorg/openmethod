@@ -21,10 +21,14 @@
 //#pragma GCC diagnostic ignored "-Wundefined-var-template"
 #endif
 
+#ifdef _WIN32
 #ifdef LIBRARY_NAME
 #define ANIMALS_API boost::openmethod::dllexport
 #else
 #define ANIMALS_API boost::openmethod::dllimport
+#endif
+#else
+#define ANIMALS_API boost::openmethod::declspec_none
 #endif
 
 namespace boost::openmethod {
