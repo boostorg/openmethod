@@ -26,7 +26,7 @@ add_executable(
 target_link_libraries(
     boost_openmethod-test_dynamic_loading
     PUBLIC Boost::openmethod
-    PRIVATE Boost::openmethod Boost::unit_test_framework Boost::dll)
+    PRIVATE Boost::openmethod Boost::dll)
 add_dependencies(
     boost_openmethod-test_dynamic_loading
     dl_test_registry dl_test_method dl_test_overrider)
@@ -47,9 +47,9 @@ foreach(
     set_target_properties(
         ${target}
         PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stage/bin/$<CONFIG>"
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stage/bin/$<CONFIG>"
+            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stage/bin/$<CONFIG>"
             ENABLE_EXPORTS ON
             CXX_VISIBILITY_PRESET default
             VISIBILITY_INLINES_HIDDEN OFF)
