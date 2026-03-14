@@ -4,20 +4,22 @@
 # or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 # lib_registry: exports the default registry's static policy state
-add_library(dl_test_registry SHARED registry.cpp)
-target_compile_definitions(
-    dl_test_registry PRIVATE BOOST_OPENMETHOD_DYNAMIC_LOADING_REGISTRY_EXPORTS)
-target_link_libraries(dl_test_registry PUBLIC Boost::openmethod PRIVATE Boost::dll)
+add_library(boost_openmethod-dl_test_registry SHARED registry.cpp)
+target_link_libraries(
+    boost_openmethod-dl_test_registry
+    PUBLIC Boost::openmethod PRIVATE Boost::dll)
 
 # lib_method: exports the speak method; imports registry state from lib_registry
-add_library(dl_test_method SHARED method.cpp)
-target_compile_definitions(
-    dl_test_method PRIVATE BOOST_OPENMETHOD_DYNAMIC_LOADING_METHOD_EXPORTS)
-target_link_libraries(dl_test_method PUBLIC Boost::openmethod dl_test_registry PRIVATE Boost::dll)
+add_library(boost_openmethod-dl_test_method SHARED method.cpp)
+target_link_libraries(
+    boost_openmethod-dl_test_method
+    PUBLIC Boost::openmethod boost_openmethod-dl_test_registry PRIVATE Boost::dll)
 
 # lib_overrider: adds a Dog overrider; imported at runtime via Boost.DLL
-add_library(dl_test_overrider SHARED overrider.cpp)
-target_link_libraries(dl_test_overrider PRIVATE Boost::openmethod dl_test_method Boost::dll)
+add_library(boost_openmethod-dl_test_overrider SHARED overrider.cpp)
+target_link_libraries(
+    boost_openmethod-dl_test_overrider
+    PRIVATE Boost::openmethod boost_openmethod-dl_test_method Boost::dll)
 
 # Test executable: links against lib_method (and lib_registry transitively);
 # dynamically loads lib_overrider at runtime.
@@ -29,21 +31,26 @@ target_link_libraries(
     PRIVATE Boost::openmethod Boost::unit_test_framework Boost::dll)
 add_dependencies(
     boost_openmethod-test_dynamic_loading
-    dl_test_registry dl_test_method dl_test_overrider)
+    boost_openmethod-dl_test_registry
+    boost_openmethod-dl_test_method
+    boost_openmethod-dl_test_overrider)
 
 # Put all outputs in the same directory so Boost.DLL can locate the shared
 # libraries relative to the test executable at runtime.
 # ENABLE_EXPORTS is required so that symbols from each shared library are
-# visible to other shared libraries loaded at runtime (e.g. dl_test_overrider
-# can resolve symbols from dl_test_method/dl_test_registry).
+# visible to other shared libraries loaded at runtime (e.g. boost_openmethod-dl_test_overrider
+# can resolve symbols from boost_openmethod-dl_test_method/boost_openmethod-dl_test_registry).
 # CXX_VISIBILITY_PRESET must be "default" so that the template static variables
 # used as the shared registry state (policy statics) are exported with DEFAULT
 # ELF visibility. With hidden visibility (as set by BoostRoot.cmake in the
 # super-project build) they become UNIQUE HIDDEN and are not deduplicated by
 # the dynamic linker, breaking cross-DSO state sharing.
 foreach(
-    target dl_test_registry dl_test_method dl_test_overrider
-           boost_openmethod-test_dynamic_loading)
+    target
+        boost_openmethod-dl_test_registry
+        boost_openmethod-dl_test_method
+        boost_openmethod-dl_test_overrider
+        boost_openmethod-test_dynamic_loading)
     set_target_properties(
         ${target}
         PROPERTIES
