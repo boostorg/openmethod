@@ -4,6 +4,7 @@
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #define BOOST_TEST_MODULE dynamic_loading
+#define BOOST_TEST_INCLUDED
 #include <boost/test/unit_test.hpp>
 
 #define INCLUDED_FROM "main.cpp"
