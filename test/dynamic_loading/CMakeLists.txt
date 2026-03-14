@@ -4,25 +4,25 @@
 # or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 # lib_registry: exports the default registry's static policy state
-add_library(dl_test_registry SHARED EXCLUDE_FROM_ALL lib_registry.cpp)
+add_library(dl_test_registry SHARED lib_registry.cpp)
 target_compile_definitions(
     dl_test_registry PRIVATE BOOST_OPENMETHOD_DYNAMIC_LOADING_REGISTRY_EXPORTS)
 target_link_libraries(dl_test_registry PUBLIC Boost::openmethod PRIVATE Boost::dll)
 
 # lib_method: exports the speak method; imports registry state from lib_registry
-add_library(dl_test_method SHARED EXCLUDE_FROM_ALL lib_method.cpp)
+add_library(dl_test_method SHARED lib_method.cpp)
 target_compile_definitions(
     dl_test_method PRIVATE BOOST_OPENMETHOD_DYNAMIC_LOADING_METHOD_EXPORTS)
 target_link_libraries(dl_test_method PUBLIC Boost::openmethod dl_test_registry PRIVATE Boost::dll)
 
 # lib_overrider: adds a Dog overrider; imported at runtime via Boost.DLL
-add_library(dl_test_overrider SHARED EXCLUDE_FROM_ALL lib_overrider.cpp)
+add_library(dl_test_overrider SHARED lib_overrider.cpp)
 target_link_libraries(dl_test_overrider PRIVATE Boost::openmethod dl_test_method Boost::dll)
 
 # Test executable: links against lib_method (and lib_registry transitively);
 # dynamically loads lib_overrider at runtime.
 add_executable(
-    boost_openmethod-test_dynamic_loading EXCLUDE_FROM_ALL main.cpp)
+    boost_openmethod-test_dynamic_loading main.cpp)
 target_link_libraries(
     boost_openmethod-test_dynamic_loading
     PUBLIC Boost::openmethod
