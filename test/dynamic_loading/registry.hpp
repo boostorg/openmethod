@@ -26,23 +26,28 @@ boost_openmethod_declspec(default_registry&);
 
 #include <boost/openmethod/default_registry.hpp>
 
-static auto get_ids() -> const void** {
-    using namespace boost::openmethod;
-    namespace mp11 = boost::mp11;
-
-    constexpr auto n_policies = mp11::mp_size<default_registry::policy_list>::value;
-    static const void* ids[1 + n_policies + 1] = {default_registry::id()};
-    std::size_t i = 1;
-
-    mp11::mp_for_each<default_registry::policy_list>([&](auto p) {
-        using P = decltype(p);
-
-        if constexpr (detail::has_id<default_registry::policy<P>>) {
-            ids[i++] = default_registry::policy<P>::id();
-        }
-    });
-
-    return ids;
-}
+// Each TU that needs to export get_ids() should define it as a non-static
+// function so that BOOST_DLL_AUTO_ALIAS can export it on MinGW.
+#define DEFINE_GET_IDS()                                                       \
+    auto get_ids() -> const void** {                                           \
+        using namespace boost::openmethod;                                     \
+        namespace mp11 = boost::mp11;                                          \
+                                                                               \
+        constexpr auto n_policies =                                            \
+            mp11::mp_size<default_registry::policy_list>::value;               \
+        static const void* ids[1 + n_policies + 1] = {                        \
+            default_registry::id()};                                           \
+        std::size_t i = 1;                                                     \
+                                                                               \
+        mp11::mp_for_each<default_registry::policy_list>([&](auto p) {         \
+            using P = decltype(p);                                             \
+                                                                               \
+            if constexpr (detail::has_id<default_registry::policy<P>>) {       \
+                ids[i++] = default_registry::policy<P>::id();                  \
+            }                                                                  \
+        });                                                                    \
+                                                                               \
+        return ids;                                                            \
+    }
 
 #endif

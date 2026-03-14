@@ -27,6 +27,9 @@ using method_fn = const void*();
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
+DEFINE_GET_IDS()
+DEFINE_MAKE_DOG()
+
 bool same_ids(const void** ids1, const void** ids2) {
     using std::setw;
     BOOST_TEST_MESSAGE(

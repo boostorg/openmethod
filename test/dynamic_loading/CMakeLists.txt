@@ -35,6 +35,19 @@ add_dependencies(
     boost_openmethod-dl_test_method
     boost_openmethod-dl_test_overrider)
 
+# On MinGW/GCC+Windows, BOOST_DLL_AUTO_ALIAS only emits a declaration without
+# a definition (relying on --export-all-symbols). Force full alias instantiation
+# so the alias pointer variables are actually defined and exported.
+if(MINGW)
+    foreach(target
+            boost_openmethod-dl_test_registry
+            boost_openmethod-dl_test_method
+            boost_openmethod-dl_test_overrider)
+        target_compile_definitions(
+            ${target} PRIVATE BOOST_DLL_FORCE_ALIAS_INSTANTIATION)
+    endforeach()
+endif()
+
 # Put all outputs in the same directory so Boost.DLL can locate the shared
 # libraries relative to the test executable at runtime.
 # ENABLE_EXPORTS is required so that symbols from each shared library are
