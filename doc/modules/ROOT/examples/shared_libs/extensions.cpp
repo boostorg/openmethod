@@ -3,7 +3,6 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-// tag::content[]
 // extensions.cpp
 #include "animals.hpp"
 
@@ -21,6 +20,7 @@ static_assert(std::is_same_v<
 
 #endif
 
+// tag::content[]
 BOOST_OPENMETHOD_OVERRIDE(
     meet, (virtual_ptr<Herbivore> a, virtual_ptr<Carnivore> b), std::string) {
     auto p = BOOST_OPENMETHOD_TYPE(

@@ -8,7 +8,6 @@
 
 // clang-format off
 
-// tag::content[]
 // animals.hpp
 
 #include <boost/openmethod/preamble.hpp>
@@ -21,6 +20,7 @@
 //#pragma GCC diagnostic ignored "-Wundefined-var-template"
 #endif
 
+// tag::content[]
 #ifdef _WIN32
 #ifdef LIBRARY_NAME
 #define ANIMALS_API boost::openmethod::dllexport

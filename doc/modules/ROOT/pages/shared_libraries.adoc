@@ -36,8 +36,10 @@ If a library only uses its own registries, for example, if using open-methods as
 an implementation detail, it has its own global data, and there is no need to
 call `initialize`.
 
-Let's look at an example. The following header is included by the program and
-the shared library:
+Let's look at an example. The following header is shared between the program and
+the dynamically loaded library. It defines the class hierarchy, the `meet`
+method, and sets up declspec decoration for Windows compatibility (explained in
+the <<Windows>> section below):
 
 [source,c++]
 ----
@@ -52,8 +54,7 @@ The shared library contains an object that adds two overriders, a new class,
 include::{shared}/extensions.cpp[tag=content]
 ----
 
-The main program adds a couple of classes then calls `meet` method. At this
-point, we only have the catch-call overrider:
+The main program provides a catch-all overrider, then calls the `meet` method:
 
 [source,c++]
 ----
@@ -79,36 +80,85 @@ include::{shared}/dynamic_main.cpp[tag=unload]
 
 ## Windows
 
-If we try the example on Windows, the result is disappointing:
+On Windows, each module (executable or DLL) receives its own copy of global and
+static variables by default. Without special measures, the registry state,
+dispatch tables, and method function pointers are duplicated: when a DLL's
+static constructors register classes and overriders, they populate the DLL's own
+copy of the registry, invisible to the main program.
 
-```
-Before loading the shared library.
-cow meets wolf -> greet
-wolf meets cow -> greet
+OpenMethod solves this with _declspec decoration_. Three types are provided in
+`namespace boost::openmethod`:
 
-After loading the shared library.
-cow meets wolf -> greet
-wolf meets cow -> greet
-cow meets tiger -> unknown class struct Tiger
-```
+- `dllexport` -- marks the _owning_ module, which defines and exports shared
+  state
+- `dllimport` -- marks _client_ modules, which import shared state from the
+  owner
+- `declspec_none` -- a no-op for non-Windows platforms, enabling portable
+  headers
 
-What happens here is that the program and the DLL have their own copies of
-"global" variables. When the DLL is loaded, its static constructors run, and
-they add overriders to _their_ copy of the method (the `method::fn` static
-variable for the given name and signature). They are ignored when the main
-program calls `initialize`.
+The `animals.hpp` header shown above demonstrates the pattern. The key elements
+are:
 
-Likewise, `BOOST_OPENMETHOD_CLASSES(Tiger, Carnivore)` in the DLL adds `Tiger`
-to the DLL's copy of the registry. For the perspective of the program's
-registry, the class does not exist.
+1. A preprocessor block that selects `dllexport` or `dllimport` depending on
+   which module is being compiled. The owning module (the executable, in this
+   example) defines a distinguishing macro; client modules (the DLL) do not:
++
+[source,c++]
+----
+#ifdef _WIN32
+#ifdef LIBRARY_NAME
+#define ANIMALS_API boost::openmethod::dllexport
+#else
+#define ANIMALS_API boost::openmethod::dllimport
+#endif
+#else
+#define ANIMALS_API boost::openmethod::declspec_none
+#endif
+----
 
-In theory, this can be fixed by adding `__declspec(dllimport)` and
-`__declspec(dllexport)` attributes where needed. However, this is not practical,
-because programs and DLLs can both import and export registries and methods. The
-underlying objects are instantiated from templates, which complicates the
-matter. Research is being done on this subject. However, as of now, dynamic
-loading is supported on Windows only if it does not attempt to share a registry
-across modules.
+2. A `boost_openmethod_declspec` function declaration in `namespace
+   boost::openmethod` that tells the library how to decorate the registry's
+   static variables:
++
+[source,c++]
+----
+namespace boost::openmethod {
+    ANIMALS_API boost_openmethod_declspec(default_registry&);
+}
+----
+
+3. The declspec type passed as a fourth argument to `BOOST_OPENMETHOD`,
+   decorating the method's function pointer and associated statics:
++
+[source,c++]
+----
+BOOST_OPENMETHOD(meet, (...), std::string, ANIMALS_API);
+----
+
+### CMake Setup
+
+On Windows, the DLL must link against the executable to resolve the imported
+symbols. This is the reverse of the typical linking direction:
+
+[source,cmake]
+----
+add_executable(my_app dynamic_main.cpp)
+set_target_properties(my_app PROPERTIES ENABLE_EXPORTS ON)
+target_link_libraries(my_app Boost::openmethod Boost::dll)
+
+add_library(my_plugin SHARED extensions.cpp)
+target_link_libraries(my_plugin PRIVATE Boost::openmethod my_app)
+----
+
+`ENABLE_EXPORTS ON` on the executable tells CMake to generate an import library
+(`.lib` on MSVC) that the DLL links against. On POSIX, `ENABLE_EXPORTS` adds
+`-rdynamic`, which is the only setup needed.
+
+NOTE: The owning module must compile code that triggers static registration --
+it must include headers containing `BOOST_OPENMETHOD_CLASSES` or
+`BOOST_OPENMETHOD` macros. Simply declaring `boost_openmethod_declspec` is not
+sufficient; the registry state is only instantiated and exported when
+registration code references it.
 
 ## Indirect Vptrs
 
