@@ -3,14 +3,7 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef LIBRARY_NAME
-#ifdef _MSC_VER
-#define LIBRARY_NAME "boost_openmethod-shared.dll"
-#else
-#define LIBRARY_NAME "libboost_openmethod-shared.so"
-
-#endif
-#endif
+#define LIBRARY_NAME "boost_openmethod-shared"
 
 // dynamic_main.cpp
 
@@ -77,11 +70,13 @@ int main() {
         // tag::load[]
         // ...
 
-        std::cout << "\nAfter loading the shared library.\n";
+        std::cout << "\nLoading " << LIBRARY_NAME << ".\n";
 
-        boost::dll::shared_library lib(
-            boost::dll::program_location().parent_path() / LIBRARY_NAME,
-            boost::dll::load_mode::rtld_now);
+        using namespace boost::dll;
+        shared_library lib(
+            program_location().parent_path() / LIBRARY_NAME,
+            load_mode::append_decorations);
+        std::cout << "\nLoaded " << LIBRARY_NAME << ".\n";
         boost::openmethod::initialize(trace::from_env());
 
         std::cout << "cow meets wolf -> "
