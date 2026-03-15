@@ -32,7 +32,19 @@ add_library(boost_openmethod-shared SHARED extensions.cpp)
 target_link_libraries(boost_openmethod-shared PRIVATE Boost::openmethod boost_openmethod-dynamic)
 set_target_properties(boost_openmethod-shared PROPERTIES ENABLE_EXPORTS ON)
 
-add_test(NAME boost_openmethod-dynamic_shared COMMAND boost_openmethod-dynamic)
+foreach(target boost_openmethod-dynamic boost_openmethod-shared)
+    set_target_properties(
+        ${target}
+        PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+endforeach()
+
+add_test(
+    NAME boost_openmethod-dynamic_shared
+    COMMAND boost_openmethod-dynamic
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 # NOTE: build the following target (or ALL) when working on this. Just building
 # boost_openmethod-dynamic will *not* build the DLL.

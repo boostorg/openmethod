@@ -3,11 +3,7 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifdef _MSC_VER
-#define LIBRARY_NAME "indirect_shared.dll"
-#else
-#define LIBRARY_NAME "libindirect_shared.so"
-#endif
+#define LIBRARY_NAME "indirect_shared"
 
 // tag::content[]
 // indirect_main.cpp
@@ -49,9 +45,10 @@ auto main() -> int {
 
     std::cout << "\nAfter loading the shared library.\n";
 
-    boost::dll::shared_library lib(
-        boost::dll::program_location().parent_path() / LIBRARY_NAME,
-        boost::dll::load_mode::rtld_now);
+    using namespace boost::dll;
+    shared_library lib(
+        program_location().parent_path() / LIBRARY_NAME,
+        load_mode::append_decorations);
 
     boost::openmethod::initialize();
 
