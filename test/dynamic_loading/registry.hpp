@@ -35,8 +35,7 @@ boost_openmethod_declspec(default_registry&);
                                                                                \
         constexpr auto n_policies =                                            \
             mp11::mp_size<default_registry::policy_list>::value;               \
-        static const void* ids[1 + n_policies + 1] = {                        \
-            default_registry::id()};                                           \
+        static const void* ids[1 + n_policies + 1] = {default_registry::id()}; \
         std::size_t i = 1;                                                     \
                                                                                \
         mp11::mp_for_each<default_registry::policy_list>([&](auto p) {         \
