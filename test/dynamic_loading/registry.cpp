@@ -22,12 +22,10 @@ static_assert(std::is_same_v<default_registry::declspec, dllexport>);
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
-DEFINE_GET_IDS()
-DEFINE_MAKE_DOG()
-
-BOOST_DLL_AUTO_ALIAS(get_ids)
-BOOST_DLL_AUTO_ALIAS(make_dog)
+BOOST_DLL_ALIAS(get_ids, registry_get_ids);
 
 void registry_initialize() {
     boost::openmethod::initialize(trace::from_env());
 }
+
+BOOST_DLL_ALIAS(make_dog, registry_make_dog);
