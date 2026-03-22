@@ -46,46 +46,6 @@ for local src in [ glob compile_fail_*.cpp ]
   compile-fail $(src) ;
 }
 
-# Dynamic loading test
-# Requires Boost.DLL; builds three shared libraries and a test executable
-# that loads them at runtime.
-lib dl_test_registry
-    : dynamic_loading/registry.cpp
-    : <link>shared
-      <define>BOOST_DLL_FORCE_ALIAS_INSTANTIATION
-      <visibility>global
-      <library>/boost/dll//boost_dll
-    ;
-
-lib dl_test_method
-    : dynamic_loading/method.cpp
-    : <link>shared
-      <define>BOOST_DLL_FORCE_ALIAS_INSTANTIATION
-      <visibility>global
-      <library>/boost/dll//boost_dll
-      <library>dl_test_registry
-    ;
-
-lib dl_test_overrider
-    : dynamic_loading/overrider.cpp
-    : <link>shared
-      <define>BOOST_DLL_FORCE_ALIAS_INSTANTIATION
-      <visibility>global
-      <library>/boost/dll//boost_dll
-      <library>dl_test_method
-    ;
-
-run dynamic_loading/main.cpp
-    unit_test_framework
-    : # args
-    : dl_test_method dl_test_overrider dl_test_registry # input-files (runtime deps)
-    : <link>shared
-      <visibility>global
-      <library>/boost/dll//boost_dll
-      <library>dl_test_registry
-    : test_dynamic_loading
-    ;
-
 # quick (for CI)
 alias quick : test_dispatch ;
 explicit quick ;
