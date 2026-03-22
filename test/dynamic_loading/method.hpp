@@ -27,8 +27,7 @@ BOOST_OPENMETHOD(
 #define DEFINE_GET_FN()                                                        \
     auto get_fn() {                                                            \
         return static_cast<const void*>(&BOOST_OPENMETHOD_TYPE(                \
-            speak, (boost::openmethod::virtual_ptr<Animal>),                   \
-            const char*)::fn);                                                 \
+            speak, (boost::openmethod::virtual_ptr<Animal>), const char*)::fn);\
     }
 
 #define DEFINE_CALL_SPEAK()                                                    \
