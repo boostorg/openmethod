@@ -61,7 +61,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     // Use rtld_global for registry and method so their symbols (fn, policy
     // statics) are visible globally and win over any locally-instantiated
     // copies when the overrider library is subsequently loaded.
-
+    //if (!getenv("FOOBAR")) return;
     dll::shared_library method_lib(
         "boost_openmethod-dl_test_method",
         dll::load_mode::rtld_global | dll::load_mode::append_decorations);
@@ -74,6 +74,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     auto& method_get_fn = method_lib.get_alias<method_fn>("method_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), method_get_ids()));
+    BOOST_TEST(get_fn() == method_get_fn());
 
     initialize();
 
@@ -101,6 +102,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         overrider_lib.get_alias<method_fn>("overrider_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), overrider_get_ids()));
+    BOOST_TEST(get_fn() == overrider_get_fn());
 
     initialize();
     auto overrider_dog = overrider_make_dog();
