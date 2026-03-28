@@ -14,6 +14,5 @@ struct Animal {
 struct Dog : Animal {};
 
 static auto make_dog() {
-    auto p = &typeid(Dog);
     return boost::openmethod::make_unique_virtual<Dog>();
 }
