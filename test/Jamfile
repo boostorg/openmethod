@@ -46,6 +46,8 @@ for local src in [ glob compile_fail_*.cpp ]
   compile-fail $(src) ;
 }
 
+build-project dynamic_loading ;
+
 # quick (for CI)
 alias quick : test_dispatch ;
 explicit quick ;

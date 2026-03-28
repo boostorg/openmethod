@@ -1,0 +1,92 @@
+#  Boost.OpenMethod Library – dynamic_loading test Jamfile
+#
+#  Copyright 2025 Jean-Louis Leroy
+#
+#  Distributed under the Boost Software License, Version 1.0.
+#  See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt
+
+# Reproduce the CMake dynamic-loading test in Boost.Build.
+#
+# Build graph (all shared libraries):
+#
+#   lib_registry  ──▶  lib_method  ──▶  lib_overrider
+#        │                                    (runtime-loaded)
+#        └──────────────────────┐
+#   test executable  ──linked──▶ lib_registry
+#                    ──dlopen──▶ lib_method, lib_overrider
+#
+# Key CMake properties reproduced here:
+#   CXX_VISIBILITY_PRESET = default  →  <local-visibility>global
+#   VISIBILITY_INLINES_HIDDEN = OFF  →  (no extra flag needed)
+#   ENABLE_EXPORTS = ON              →  <linkflags>-rdynamic  (non-Windows)
+#   RUNTIME/LIBRARY_OUTPUT_DIRECTORY →  b2 places all per-toolset/variant
+#                                       outputs in the same bin/ subdir
+
+import testing ;
+
+# -rdynamic: export exe symbols to dynamically loaded libs so that
+# dlopen'd overrider can resolve symbols from the already-loaded method lib.
+local RDYNAMIC =
+    <target-os>linux:<linkflags>"-rdynamic"
+    <target-os>freebsd:<linkflags>"-rdynamic"
+    <target-os>android:<linkflags>"-rdynamic"
+    <target-os>darwin,<toolset>gcc:<linkflags>"-dynamic"
+    <target-os>darwin,<toolset>clang:<linkflags>"-rdynamic"
+    <target-os>qnxnto,<toolset>gcc:<linkflags>"-rdynamic"
+    <target-os>solaris:<linkflags>"-Bdynamic" ;
+
+# Default ELF symbol visibility: template static variables used as shared
+# registry state must be exported with DEFAULT visibility so the dynamic
+# linker deduplicates them across DSOs.  MSVC ignores this property.
+local VISIBILITY = <local-visibility>global ;
+
+# lib_registry: owns and exports the default registry's static policy state.
+# registry.cpp defines EXPORT_REGISTRY and INCLUDED_FROM itself.
+lib boost_openmethod-dl_test_registry
+    : registry.cpp
+    : <link>shared
+      $(VISIBILITY)
+      /boost/dll//boost_dll
+    ;
+
+# lib_method: exports the speak() open-method; imports registry from
+# lib_registry.  method.cpp defines EXPORT_METHOD and INCLUDED_FROM itself.
+lib boost_openmethod-dl_test_method
+    : method.cpp
+    : <link>shared
+      $(VISIBILITY)
+      /boost/dll//boost_dll
+      boost_openmethod-dl_test_registry
+    ;
+
+# lib_overrider: adds the Dog overrider; dynamically loaded at runtime.
+# overrider.cpp defines INCLUDED_FROM itself.
+lib boost_openmethod-dl_test_overrider
+    : overrider.cpp
+    : <link>shared
+      $(VISIBILITY)
+      /boost/dll//boost_dll
+      boost_openmethod-dl_test_method
+    ;
+
+# Test executable:
+#   sources (linked)   : main.cpp, lib_registry, unit_test_framework, boost_dll
+#   input-files (built but not linked, placed in the same bin/ dir):
+#                        lib_method, lib_overrider
+# At runtime the test locates shared libs via dll::program_location().parent_path().
+run main.cpp
+    boost_openmethod-dl_test_registry
+    ../unit_test_framework
+    /boost/dll//boost_dll
+    : # args
+    : boost_openmethod-dl_test_method      # input-files: built, not linked
+      boost_openmethod-dl_test_overrider
+    : <link>shared
+      $(RDYNAMIC)
+      $(VISIBILITY)
+      <target-os>linux:<linkflags>"-ldl"
+      <target-os>freebsd:<linkflags>"-ldl"
+      <target-os>android:<linkflags>"-ldl"
+    : dynamic_loading
+    ;
