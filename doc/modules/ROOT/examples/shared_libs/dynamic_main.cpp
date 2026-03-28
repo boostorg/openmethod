@@ -3,13 +3,7 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#ifndef LIBRARY_NAME
-#ifdef _MSC_VER
 #define LIBRARY_NAME "boost_openmethod-shared"
-#else
-#define LIBRARY_NAME "libboost_openmethod-shared"
-#endif
-#endif
 
 // dynamic_main.cpp
 
@@ -76,21 +70,14 @@ int main() {
         // tag::load[]
         // ...
 
-        std::cout << "\nAfter loading the shared library.\n";
-#ifdef _WIN32
-    constexpr auto global_mode = boost::dll::load_mode::append_decorations;
-#else
-    constexpr auto global_mode =
-        boost::dll::load_mode::append_decorations /*| boost::dll::load_mode::rtld_global*/;
-#endif
+        std::cout << "\nLoading shared object / DLL.\n";
 
-        auto library_path = boost::dll::program_location().parent_path() /
-            boost::dll::shared_library::decorate(LIBRARY_NAME);
-        std::cout << "\nAfter loading " << library_path << ".\n";
+        boost::dll::shared_library lib(
+            LIBRARY_NAME,
+            boost::dll::load_mode::rtld_global |
+                boost::dll::load_mode::append_decorations);
 
-        boost::dll::shared_library lib(library_path, boost::dll::load_mode::rtld_now);
         boost::openmethod::initialize(trace::from_env());
-
 
         std::cout << "cow meets wolf -> "
                   << meet(*std::make_unique<Cow>(), *std::make_unique<Wolf>())

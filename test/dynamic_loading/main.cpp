@@ -62,14 +62,8 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     // Use rtld_global for registry and method so their symbols (fn, policy
     // statics) are visible globally and win over any locally-instantiated
     // copies when the overrider library is subsequently loaded.
-#ifdef _MSC_VER
-#define LIBRARY_PREFIX ""
-#else
-#define LIBRARY_PREFIX "lib"
-#endif
-
     dll::shared_library method_lib(
-        lib_dir / LIBRARY_PREFIX "boost_openmethod-dl_test_method",
+        lib_dir / "boost_openmethod-dl_test_method",
         dll::load_mode::rtld_global | dll::load_mode::append_decorations);
     auto& method_get_ids = method_lib.get_alias<policy_ids_fn>("get_ids");
     auto& method_speak =
@@ -92,7 +86,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST(method_speak(method_dog) == "?");
 
     dll::shared_library overrider_lib(
-        lib_dir / LIBRARY_PREFIX "boost_openmethod-dl_test_overrider",
+        lib_dir / "boost_openmethod-dl_test_overrider",
         dll::load_mode::rtld_global | dll::load_mode::append_decorations);
     auto& overrider_get_ids = overrider_lib.get_alias<policy_ids_fn>("get_ids");
     auto& overrider_speak =
