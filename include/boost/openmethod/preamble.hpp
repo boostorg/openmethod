@@ -741,8 +741,8 @@ struct TypeHashFn {
     //! blueprint.
     //! @return A pair containing the minimum and maximum hash values.
     template<class Context>
-    static auto
-    initialize(const Context& ctx) -> std::pair<std::size_t, std::size_t>;
+    static auto initialize(const Context& ctx)
+        -> std::pair<std::size_t, std::size_t>;
 
     //! Hash a `type_id`.
     //!
@@ -970,7 +970,7 @@ namespace detail {
     template<class Registry, class Type, class Guide>                          \
     struct BOOST_PP_CAT(static_, ID)<                                          \
         Registry, Type, Guide,                                                 \
-        std::enable_if_t<std::is_same_v<get_attributes<Guide>, dllexport>>> {  \
+        std::enable_if_t<std::is_same_v<get_declspec<Guide>, dllexport>>> {    \
         using declspec = dllexport;                                            \
         static BOOST_SYMBOL_EXPORT Type ID __VA_ARGS__;                        \
     };                                                                         \
@@ -978,13 +978,12 @@ namespace detail {
     template<class Registry, class Type, class Guide>                          \
     Type BOOST_PP_CAT(static_, ID)<                                            \
         Registry, Type, Guide,                                                 \
-        std::enable_if_t<std::is_same_v<get_attributes<Guide>, dllexport>>>::  \
-        ID;                                                                    \
+        std::enable_if_t<std::is_same_v<get_declspec<Guide>, dllexport>>>::ID; \
                                                                                \
     template<class Registry, class Type, class Guide>                          \
     struct BOOST_PP_CAT(static_, ID)<                                          \
         Registry, Type, Guide,                                                 \
-        std::enable_if_t<std::is_same_v<get_attributes<Guide>, dllimport>>> {  \
+        std::enable_if_t<std::is_same_v<get_declspec<Guide>, dllimport>>> {    \
         using declspec = dllimport;                                            \
         static BOOST_SYMBOL_IMPORT Type ID;                                    \
     }
@@ -994,8 +993,7 @@ namespace detail {
 #endif
 
 template<typename Type>
-using get_attributes =
-    decltype(boost_openmethod_declspec(std::declval<Type&>()));
+using get_declspec = decltype(boost_openmethod_declspec(std::declval<Type&>()));
 
 BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(st);
 
@@ -1237,7 +1235,6 @@ auto final_error::write(Stream& os) const {
     Registry::rtti::type_name(dynamic_type, os);
 }
 
-struct default_registry_attributes;
 struct default_registry;
 } // namespace boost::openmethod
 
