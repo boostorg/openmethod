@@ -5,10 +5,9 @@
 
 #ifndef LIBRARY_NAME
 #ifdef _MSC_VER
-#define LIBRARY_NAME "boost_openmethod-shared.dll"
+#define LIBRARY_NAME "boost_openmethod-shared"
 #else
-#define LIBRARY_NAME "libboost_openmethod-shared.so"
-
+#define LIBRARY_NAME "libboost_openmethod-shared"
 #endif
 #endif
 
@@ -78,11 +77,20 @@ int main() {
         // ...
 
         std::cout << "\nAfter loading the shared library.\n";
+#ifdef _WIN32
+    constexpr auto global_mode = boost::dll::load_mode::append_decorations;
+#else
+    constexpr auto global_mode =
+        boost::dll::load_mode::append_decorations /*| boost::dll::load_mode::rtld_global*/;
+#endif
 
-        boost::dll::shared_library lib(
-            boost::dll::program_location().parent_path() / LIBRARY_NAME,
-            boost::dll::load_mode::rtld_now);
+        auto library_path = boost::dll::program_location().parent_path() /
+            boost::dll::shared_library::decorate(LIBRARY_NAME);
+        std::cout << "\nAfter loading " << library_path << ".\n";
+
+        boost::dll::shared_library lib(library_path, boost::dll::load_mode::rtld_now);
         boost::openmethod::initialize(trace::from_env());
+
 
         std::cout << "cow meets wolf -> "
                   << meet(*std::make_unique<Cow>(), *std::make_unique<Wolf>())
