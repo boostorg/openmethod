@@ -15,8 +15,6 @@
 
 namespace boost::openmethod {
 
-struct default_registry_attributes {};
-
 //! Default registry.
 //!
 //! `default_registry` is a predefined @ref registry, and the default value of
