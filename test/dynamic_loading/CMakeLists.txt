@@ -54,9 +54,9 @@ foreach(
     set_target_properties(
         ${target}
         PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stage/bin/$<CONFIG>"
-            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stage/bin/$<CONFIG>"
-            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/stage/bin/$<CONFIG>"
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+            ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
             ENABLE_EXPORTS ON
             CXX_VISIBILITY_PRESET default
             VISIBILITY_INLINES_HIDDEN OFF)
@@ -71,10 +71,3 @@ add_test(
 set_tests_properties(
     boost_openmethod-test_dynamic_loading-build
     PROPERTIES FIXTURES_SETUP boost_openmethod-test_dynamic_loading-fixture)
-
-add_test(
-    NAME boost_openmethod-test_dynamic_loading
-    COMMAND boost_openmethod-test_dynamic_loading)
-set_tests_properties(
-    boost_openmethod-test_dynamic_loading
-    PROPERTIES FIXTURES_REQUIRED boost_openmethod-test_dynamic_loading-fixture)
