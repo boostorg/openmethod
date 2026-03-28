@@ -47,7 +47,7 @@ lib boost_openmethod-dl_test_registry
     : registry.cpp
     : <link>shared
       $(VISIBILITY)
-      /boost/dll//boost_dll
+      <library>/boost/dll//boost_dll
     ;
 
 # lib_method: exports the speak() open-method; imports registry from
@@ -56,8 +56,8 @@ lib boost_openmethod-dl_test_method
     : method.cpp
     : <link>shared
       $(VISIBILITY)
-      /boost/dll//boost_dll
-      boost_openmethod-dl_test_registry
+      <library>/boost/dll//boost_dll
+      <library>boost_openmethod-dl_test_registry
     ;
 
 # lib_overrider: adds the Dog overrider; dynamically loaded at runtime.
@@ -66,8 +66,8 @@ lib boost_openmethod-dl_test_overrider
     : overrider.cpp
     : <link>shared
       $(VISIBILITY)
-      /boost/dll//boost_dll
-      boost_openmethod-dl_test_method
+      <library>/boost/dll//boost_dll
+      <library>boost_openmethod-dl_test_method
     ;
 
 # Test executable:
@@ -77,11 +77,10 @@ lib boost_openmethod-dl_test_overrider
 # At runtime the test locates shared libs via dll::program_location().parent_path().
 run main.cpp
     boost_openmethod-dl_test_registry
-    ../unit_test_framework
+    /boost/test//boost_unit_test_framework/<warnings>off
     /boost/dll//boost_dll
     : # args
-    : boost_openmethod-dl_test_method      # input-files: built, not linked
-      boost_openmethod-dl_test_overrider
+    :
     : <link>shared
       $(RDYNAMIC)
       $(VISIBILITY)

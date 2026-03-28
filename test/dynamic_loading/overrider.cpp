@@ -17,7 +17,7 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Dog>), const char*) {
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
-BOOST_DLL_AUTO_ALIAS(get_ids)
-BOOST_DLL_AUTO_ALIAS(get_fn)
-BOOST_DLL_AUTO_ALIAS(make_dog);
-BOOST_DLL_AUTO_ALIAS(call_speak);
+BOOST_DLL_ALIAS(get_ids, overrider_get_ids)
+BOOST_DLL_ALIAS(get_fn, overrider_get_fn)
+BOOST_DLL_ALIAS(make_dog, overrider_make_dog);
+BOOST_DLL_ALIAS(call_speak, overrider_call_speak);

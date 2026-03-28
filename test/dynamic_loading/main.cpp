@@ -56,21 +56,22 @@ bool same_ids(const void** ids1, const void** ids2) {
 
 BOOST_AUTO_TEST_CASE(test_shared_state) {
     namespace dll = boost::dll;
-    auto lib_dir = dll::program_location().parent_path();
 
     // Load all three shared libraries via Boost.DLL.
     // Use rtld_global for registry and method so their symbols (fn, policy
     // statics) are visible globally and win over any locally-instantiated
     // copies when the overrider library is subsequently loaded.
+
     dll::shared_library method_lib(
-        lib_dir / "boost_openmethod-dl_test_method",
+        "boost_openmethod-dl_test_method",
         dll::load_mode::rtld_global | dll::load_mode::append_decorations);
-    auto& method_get_ids = method_lib.get_alias<policy_ids_fn>("get_ids");
-    auto& method_speak =
-        method_lib.get_alias<const char*(virtual_ptr<Animal>)>("call_speak");
+    auto& method_get_ids =
+        method_lib.get_alias<policy_ids_fn>("method_get_ids");
+    auto& method_speak = method_lib.get_alias<const char*(virtual_ptr<Animal>)>(
+        "method_call_speak");
     auto& method_make_dog =
-        method_lib.get_alias<unique_virtual_ptr<Animal>()>("make_dog");
-    auto& method_get_fn = method_lib.get_alias<method_fn>("get_fn");
+        method_lib.get_alias<unique_virtual_ptr<Animal>()>("method_make_dog");
+    auto& method_get_fn = method_lib.get_alias<method_fn>("method_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), method_get_ids()));
 
@@ -86,14 +87,18 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST(method_speak(method_dog) == "?");
 
     dll::shared_library overrider_lib(
-        lib_dir / "boost_openmethod-dl_test_overrider",
+        "boost_openmethod-dl_test_overrider",
         dll::load_mode::rtld_global | dll::load_mode::append_decorations);
-    auto& overrider_get_ids = overrider_lib.get_alias<policy_ids_fn>("get_ids");
+    auto& overrider_get_ids =
+        overrider_lib.get_alias<policy_ids_fn>("overrider_get_ids");
     auto& overrider_speak =
-        overrider_lib.get_alias<const char*(virtual_ptr<Animal>)>("call_speak");
+        overrider_lib.get_alias<const char*(virtual_ptr<Animal>)>(
+            "overrider_call_speak");
     auto& overrider_make_dog =
-        overrider_lib.get_alias<unique_virtual_ptr<Animal>()>("make_dog");
-    auto& overrider_get_fn = overrider_lib.get_alias<method_fn>("get_fn");
+        overrider_lib.get_alias<unique_virtual_ptr<Animal>()>(
+            "overrider_make_dog");
+    auto& overrider_get_fn =
+        overrider_lib.get_alias<method_fn>("overrider_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), overrider_get_ids()));
 
