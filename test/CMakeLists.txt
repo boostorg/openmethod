@@ -61,12 +61,24 @@ foreach(test_cpp ${test_cpp_files})
     add_executable(${test_target} EXCLUDE_FROM_ALL ${test_cpp})
     target_link_libraries(${test_target} PRIVATE Boost::openmethod Boost::unit_test_framework)
     add_test(NAME ${test_target} COMMAND ${test_target})
+    if (WIN32)
+        set_property(
+            TEST ${test_target}
+            PROPERTY ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:$<TARGET_FILE_DIR:Boost::unit_test_framework>")
+    endif()
     add_dependencies(tests ${test_target})
 endforeach()
 
 add_executable(boost_openmethod-test_mix_release_debug EXCLUDE_FROM_ALL mix_release_debug/main.cpp mix_release_debug/lib.cpp)
 target_link_libraries(boost_openmethod-test_mix_release_debug PRIVATE Boost::openmethod Boost::unit_test_framework)
 add_test(NAME boost_openmethod-test_mix_release_debug COMMAND boost_openmethod-test_mix_release_debug)
+if (WIN32)
+    set_property(
+        TEST boost_openmethod-test_mix_release_debug
+        PROPERTY ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:$<TARGET_FILE_DIR:Boost::unit_test_framework>")
+endif()
 add_dependencies(tests boost_openmethod-test_mix_release_debug)
 
 function(openmethod_compile_fail_test testname fail_regex)

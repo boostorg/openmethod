@@ -76,3 +76,10 @@ endif()
 add_test(
     NAME boost_openmethod-test_dynamic_loading
     COMMAND boost_openmethod-test_dynamic_loading)
+
+if (WIN32)
+    set_property(
+        TEST boost_openmethod-test_dynamic_loading
+        PROPERTY ENVIRONMENT_MODIFICATION
+            "PATH=path_list_prepend:$<TARGET_FILE_DIR:Boost::unit_test_framework>")
+endif()
