@@ -3,6 +3,11 @@
 # See accompanying file LICENSE_1_0.txt
 # or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+if (NOT BUILD_SHARED_LIBS)
+    message(STATUS "Skipping dynamic_loading test: requires BUILD_SHARED_LIBS=ON")
+    return()
+endif()
+
 # lib_registry: exports the default registry's static policy state
 add_library(boost_openmethod-dl_test_registry SHARED registry.cpp)
 target_link_libraries(
@@ -61,6 +66,10 @@ foreach(
             CXX_VISIBILITY_PRESET default
             VISIBILITY_INLINES_HIDDEN OFF)
 endforeach()
+
+if (TARGET tests)
+    add_dependencies(tests boost_openmethod-test_dynamic_loading)
+endif()
 
 add_test(
     NAME boost_openmethod-test_dynamic_loading
