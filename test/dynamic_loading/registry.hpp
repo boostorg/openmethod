@@ -10,10 +10,8 @@
 
 #if defined(_WIN32)
 #if defined(EXPORT_REGISTRY)
-#pragma message(INCLUDED_FROM ": exporting registry")
 #define REGISTRY_DECLSPEC boost::openmethod::dllexport
 #else
-#pragma message(INCLUDED_FROM ": importing registry")
 #define REGISTRY_DECLSPEC boost::openmethod::dllimport
 #endif
 
