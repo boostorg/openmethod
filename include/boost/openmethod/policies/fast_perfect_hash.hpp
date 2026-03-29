@@ -10,6 +10,7 @@
 
 #include <limits>
 #include <random>
+#include <tuple>
 #include <variant>
 #ifdef _MSC_VER
 #pragma warning(push)
