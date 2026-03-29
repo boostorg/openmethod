@@ -8,7 +8,6 @@
 #endif
 
 #define EXPORT_REGISTRY
-#define INCLUDED_FROM "lib_registry.cpp"
 
 #include "registry.hpp"
 #include "classes.hpp"

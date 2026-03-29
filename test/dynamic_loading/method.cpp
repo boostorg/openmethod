@@ -8,7 +8,6 @@
 #endif
 
 #define EXPORT_METHOD
-#define INCLUDED_FROM "lib_method.cpp"
 
 #include "registry.hpp"
 #include "method.hpp"

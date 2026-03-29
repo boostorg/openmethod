@@ -7,8 +7,6 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
-#define INCLUDED_FROM "lib_overrider.cpp"
-
 #include "method.hpp"
 #include <boost/dll/alias.hpp>
 
