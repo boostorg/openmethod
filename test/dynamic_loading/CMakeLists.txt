@@ -65,6 +65,3 @@ endforeach()
 add_test(
     NAME boost_openmethod-test_dynamic_loading
     COMMAND boost_openmethod-test_dynamic_loading)
-set_tests_properties(
-    boost_openmethod-test_dynamic_loading
-    PROPERTIES FIXTURES_REQUIRED boost_openmethod-test_dynamic_loading-fixture)
