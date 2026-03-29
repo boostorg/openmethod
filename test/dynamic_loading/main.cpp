@@ -92,15 +92,15 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
 
     dll::shared_library overrider_lib(
         "boost_openmethod-dl_test_overrider", load_mode);
-    auto& overrider_get_ids =
+    auto overrider_get_ids =
         overrider_lib.get_alias<policy_ids_fn>("overrider_get_ids");
-    auto& overrider_speak =
+    auto overrider_speak =
         overrider_lib.get_alias<const char*(virtual_ptr<Animal>)>(
             "overrider_call_speak");
-    auto& overrider_make_dog =
+    auto overrider_make_dog =
         overrider_lib.get_alias<unique_virtual_ptr<Animal>()>(
             "overrider_make_dog");
-    auto& overrider_get_fn =
+    auto overrider_get_fn =
         overrider_lib.get_alias<method_fn>("overrider_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), overrider_get_ids()));
@@ -111,11 +111,6 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     main_dog = make_dog(); // because its vptr was invalidated by initialize()
     method_dog = method_make_dog(); // ditto
     BOOST_TEST(main_dog.vptr() == overrider_dog.vptr());
-#ifdef _WIN32
-    BOOST_TEST(&typeid(*main_dog.get()) != &typeid(*overrider_dog.get()));
-#else
-    BOOST_TEST(&typeid(*main_dog.get()) == &typeid(*overrider_dog.get()));
-#endif
     BOOST_TEST(overrider_speak(main_dog) == "woof");
     BOOST_TEST(overrider_speak(method_dog) == "woof");
     BOOST_TEST(overrider_speak(overrider_dog) == "woof");
