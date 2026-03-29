@@ -53,6 +53,16 @@ if (BOOST_OPENMETHOD_WARNINGS_AS_ERRORS)
     endif()
 endif()
 
+function(boost_openmethod_add_test name)
+    add_test(NAME ${name} COMMAND ${name})
+    if (WIN32)
+        set_property(
+            TEST ${name}
+            PROPERTY ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:$<TARGET_FILE_DIR:Boost::unit_test_framework>")
+    endif()
+endfunction()
+
 file(GLOB test_cpp_files "test_*.cpp")
 
 foreach(test_cpp ${test_cpp_files})
@@ -60,25 +70,13 @@ foreach(test_cpp ${test_cpp_files})
     set(test_target "boost_openmethod-${test}")
     add_executable(${test_target} EXCLUDE_FROM_ALL ${test_cpp})
     target_link_libraries(${test_target} PRIVATE Boost::openmethod Boost::unit_test_framework)
-    add_test(NAME ${test_target} COMMAND ${test_target})
-    if (WIN32)
-        set_property(
-            TEST ${test_target}
-            PROPERTY ENVIRONMENT_MODIFICATION
-                "PATH=path_list_prepend:$<TARGET_FILE_DIR:Boost::unit_test_framework>")
-    endif()
+    boost_openmethod_add_test(${test_target})
     add_dependencies(tests ${test_target})
 endforeach()
 
 add_executable(boost_openmethod-test_mix_release_debug EXCLUDE_FROM_ALL mix_release_debug/main.cpp mix_release_debug/lib.cpp)
 target_link_libraries(boost_openmethod-test_mix_release_debug PRIVATE Boost::openmethod Boost::unit_test_framework)
-add_test(NAME boost_openmethod-test_mix_release_debug COMMAND boost_openmethod-test_mix_release_debug)
-if (WIN32)
-    set_property(
-        TEST boost_openmethod-test_mix_release_debug
-        PROPERTY ENVIRONMENT_MODIFICATION
-            "PATH=path_list_prepend:$<TARGET_FILE_DIR:Boost::unit_test_framework>")
-endif()
+boost_openmethod_add_test(boost_openmethod-test_mix_release_debug)
 add_dependencies(tests boost_openmethod-test_mix_release_debug)
 
 function(openmethod_compile_fail_test testname fail_regex)
