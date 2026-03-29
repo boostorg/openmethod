@@ -20,8 +20,6 @@
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
-constexpr auto n_policies = mp11::mp_size<default_registry::policy_list>::value;
-
 using policy_ids_fn = const void**();
 using method_fn = const void*();
 
