@@ -61,10 +61,13 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     // Use rtld_global for registry and method so their symbols (fn, policy
     // statics) are visible globally and win over any locally-instantiated
     // copies when the overrider library is subsequently loaded.
-    //if (!getenv("FOOBAR")) return;
+
+    constexpr auto load_mode = dll::load_mode::rtld_global |
+        dll::load_mode::append_decorations |
+        dll::load_mode::search_system_folders;
+
     dll::shared_library method_lib(
-        "boost_openmethod-dl_test_method",
-        dll::load_mode::rtld_global | dll::load_mode::append_decorations);
+        "boost_openmethod-dl_test_method", load_mode);
     auto& method_get_ids =
         method_lib.get_alias<policy_ids_fn>("method_get_ids");
     auto& method_speak = method_lib.get_alias<const char*(virtual_ptr<Animal>)>(
@@ -88,8 +91,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST(method_speak(method_dog) == "?");
 
     dll::shared_library overrider_lib(
-        "boost_openmethod-dl_test_overrider",
-        dll::load_mode::rtld_global | dll::load_mode::append_decorations);
+        "boost_openmethod-dl_test_overrider", load_mode);
     auto& overrider_get_ids =
         overrider_lib.get_alias<policy_ids_fn>("overrider_get_ids");
     auto& overrider_speak =
@@ -111,6 +113,8 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST(main_dog.vptr() == overrider_dog.vptr());
 #ifdef _WIN32
     BOOST_TEST(&typeid(*main_dog.get()) != &typeid(*overrider_dog.get()));
+#else
+    BOOST_TEST(&typeid(*main_dog.get()) == &typeid(*overrider_dog.get()));
 #endif
     BOOST_TEST(overrider_speak(main_dog) == "woof");
     BOOST_TEST(overrider_speak(method_dog) == "woof");
