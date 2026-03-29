@@ -105,5 +105,7 @@ run main.cpp
       <target-os>linux:<linkflags>"-ldl"
       <target-os>freebsd:<linkflags>"-ldl"
       <target-os>android:<linkflags>"-ldl"
+      <dependency>boost_openmethod-dl_test_method
+      <dependency>boost_openmethod-dl_test_overrider
     : dynamic_loading
     ;
