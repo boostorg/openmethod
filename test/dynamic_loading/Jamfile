@@ -100,6 +100,7 @@ lib boost_openmethod-dl_test_overrider
       $(VISIBILITY)
       <library>/boost/dll//boost_dll
       <library>boost_openmethod-dl_test_method
+      <target-os>windows:<library>boost_openmethod-dl_test_registry
     ;
 
 # Plain-name aliases: after building each shared lib, create a symlink/copy
