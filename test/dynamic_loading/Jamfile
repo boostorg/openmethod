@@ -22,6 +22,40 @@
 #   ENABLE_EXPORTS = ON              →  <linkflags>-rdynamic  (non-Windows)
 
 import testing ;
+import os ;
+
+local os-name = [ os.name ] ;
+
+# After building each test shared library, create a plain-name alias so that
+# Boost.DLL's append_decorations load mode can find it at runtime.
+#
+# On Linux (and other ELF platforms), boostcpp.tag appends .X.Y.Z to shared
+# lib filenames; dlopen with append_decorations looks for the unversioned .so
+# name, so we create a relative symlink.
+# On macOS (Darwin), no version suffix is appended and the file is already
+# named lib<foo>.dylib — no alias needed.
+# On Windows, the default boostcpp tag adds toolset/variant decorations to the
+# DLL name; we copy to the plain <foo>.dll name.
+if $(os-name) = NT
+{
+    # Strip everything from the first '-' or '.' after the base to get plain
+    # name, then copy the DLL alongside the decorated one.
+    actions plain-lib-alias
+    {
+        copy /Y "$(>[1])" "$(>[1]:D)\$(<:D=)"
+    }
+}
+else if $(os-name) != MACOSX
+{
+    # Create a plain .so symlink in the same directory as the versioned lib.
+    # $(>[1]:D) = directory of versioned lib
+    # $(>[1]:D=) = filename of versioned lib (e.g. libfoo.so.1.91.0)
+    # $(<:D=)    = plain filename (e.g. libfoo.so)
+    actions plain-lib-alias
+    {
+        ln -sf "$(>[1]:D=)" "$(>[1]:D)/$(<:D=)"
+    }
+}
 
 # -rdynamic: export exe symbols to dynamically loaded libs so that
 # dlopen'd overrider can resolve symbols from the already-loaded method lib.
@@ -68,6 +102,35 @@ lib boost_openmethod-dl_test_overrider
       <library>boost_openmethod-dl_test_method
     ;
 
+# Plain-name aliases: after building each shared lib, create a symlink/copy
+# with the undecorated name so Boost.DLL's append_decorations can find it.
+local plain-aliases ;
+for local lib in
+    boost_openmethod-dl_test_registry
+    boost_openmethod-dl_test_method
+    boost_openmethod-dl_test_overrider
+{
+    local plain-name ;
+    if $(os-name) = NT
+    {
+        plain-name = $(lib).dll ;
+    }
+    else if $(os-name) != MACOSX
+    {
+        plain-name = lib$(lib).so ;
+    }
+    if $(plain-name)
+    {
+        make $(plain-name)
+            : $(lib)
+            : @plain-lib-alias
+            : <link>shared
+              <local-visibility>global
+            ;
+        plain-aliases += $(plain-name) ;
+    }
+}
+
 # Test executable:
 #   sources (linked)   : main.cpp, lib_registry, unit_test_framework, boost_dll
 #   input-files (built but not linked, placed in the same bin/ dir):
@@ -87,5 +150,6 @@ run main.cpp
       <target-os>android:<linkflags>"-ldl"
       <dependency>boost_openmethod-dl_test_method
       <dependency>boost_openmethod-dl_test_overrider
+      <dependency>$(plain-aliases)
     : dynamic_loading
     ;

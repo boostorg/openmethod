@@ -11,16 +11,6 @@ import-search /boost/config/checks ;
 import testing ;
 import config : requires ;
 
-# Strip version/toolset decorations from shared lib names so dlopen() can
-# find them by their base name at runtime (used by the dynamic_loading test).
-rule tag ( name : type ? : property-set )
-{
-    if $(type) in SHARED_LIB STATIC_LIB IMPORT_LIB
-    {
-        return $(name) ;
-    }
-}
-
 project
   : requirements
 
@@ -36,10 +26,6 @@ project
     <toolset>clang:<warnings-as-errors>on
     <toolset>gcc:<warnings-as-errors>on
     <toolset>msvc:<warnings-as-errors>on
-
-    -<tag>@%boostcpp.tag
-    -<tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).tag
-    <tag>@$(__name__).tag
   ;
 
 alias unit_test_framework
