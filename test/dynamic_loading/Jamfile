@@ -23,26 +23,6 @@
 
 import testing ;
 
-# Strip version/toolset decorations from shared lib names so dlopen() can
-# find them by their base name at runtime.
-rule tag ( name : type ? : property-set )
-{
-    if $(type) in SHARED_LIB STATIC_LIB IMPORT_LIB
-    {
-        return $(name) ;
-    }
-}
-
-# Remove the Boost jamroot <tag> (which adds version/toolset suffixes) and
-# replace it with our own no-op tag so shared lib names are predictable for
-# dlopen().
-project
-    : requirements
-      -<tag>@%boostcpp.tag
-      -<tag>@$(BOOST_JAMROOT_MODULE)%$(BOOST_JAMROOT_MODULE).tag
-      <tag>@$(__name__).tag
-    ;
-
 # -rdynamic: export exe symbols to dynamically loaded libs so that
 # dlopen'd overrider can resolve symbols from the already-loaded method lib.
 local RDYNAMIC =
