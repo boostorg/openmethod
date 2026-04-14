@@ -36,6 +36,13 @@ local os-name = [ os.name ] ;
 # named lib<foo>.dylib — no alias needed.
 # On Windows, the default boostcpp tag adds toolset/variant decorations to the
 # DLL name; we copy to the plain <foo>.dll name.
+#
+# NOTE: On Windows the test executable also links against the decorated import
+# library (e.g. boost_openmethod-dl_test_method-vc145-mt-gd-x64-1_91.lib),
+# which embeds the decorated DLL name in the import table.  To avoid loading
+# a second, independent copy of the DLL when boost::dll::shared_library opens
+# the plain-named copy, main.cpp uses dll::symbol_location_ptr(get_fn()) to
+# locate and load the already-in-memory decorated DLL directly.
 if $(os-name) = NT
 {
     # Strip everything from the first '-' or '.' after the base to get plain

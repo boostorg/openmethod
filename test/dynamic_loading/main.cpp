@@ -64,8 +64,18 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         dll::load_mode::append_decorations |
         dll::load_mode::search_system_folders;
 
+    // On Windows with b2, main.exe links against the decorated DLL
+    // (e.g. ...-vc145-mt-gd-x64-1_91.dll) via its import library, while
+    // Boost.DLL with append_decorations finds the plain-named copy — two
+    // distinct modules in the Windows loader.  Load via the address of fn
+    // (imported via dllimport from the decorated DLL) to get the same module.
+#ifdef _WIN32
+    dll::shared_library method_lib(
+        dll::symbol_location_ptr(get_fn()), load_mode);
+#else
     dll::shared_library method_lib(
         "boost_openmethod-dl_test_method", load_mode);
+#endif
     auto& method_get_ids =
         method_lib.get_alias<policy_ids_fn>("method_get_ids");
     auto& method_speak = method_lib.get_alias<const char*(virtual_ptr<Animal>)>(
