@@ -14,21 +14,28 @@
 
 #include <boost/openmethod/initialize.hpp>
 
-#include <boost/dll/alias.hpp>
-
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
 #ifdef _WIN32
+#include <boost/config.hpp>
 static_assert(std::is_same_v<default_registry::declspec, dllexport>);
+#else
+#include <boost/dll/alias.hpp>
 #endif
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
-BOOST_DLL_ALIAS(get_ids, registry_get_ids);
+#ifdef _WIN32
+extern "C" {
+    BOOST_SYMBOL_EXPORT const void* registry_get_ids = (const void*)&get_ids;
+    BOOST_SYMBOL_EXPORT const void* registry_make_dog = (const void*)&make_dog;
+}
+#else
+BOOST_DLL_ALIAS(get_ids, registry_get_ids)
+BOOST_DLL_ALIAS(make_dog, registry_make_dog)
+#endif
 
 void registry_initialize() {
     boost::openmethod::initialize(trace::from_env());
 }
-
-BOOST_DLL_ALIAS(make_dog, registry_make_dog);
