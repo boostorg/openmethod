@@ -32,9 +32,11 @@ struct stderr_output : output {
         //! A @ref LightweightOuputStream.
         // static detail::ostderr os; // now inherited from static_os
 
+        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
         static auto id() -> const void* {
             return &fn::os;
         }
+        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
     };
 };
 

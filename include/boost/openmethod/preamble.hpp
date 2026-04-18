@@ -963,6 +963,21 @@ namespace detail {
     template<class Registry, class Type, class Guide, typename Enable>         \
     Type BOOST_PP_CAT(static_, ID)<Registry, Type, Guide, Enable>::ID;
 
+// Clang warns at every usage site of a dllimport variable template because the
+// definition is deliberately absent (it lives in the exporting DLL). Suppress
+// this false positive using _Pragma inside the dllimport struct so the pragma
+// is emitted in whatever file expands BOOST_OPENMETHOD_DETAIL_MAKE_STATICS.
+#if defined(__clang__)
+#define BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR                  \
+    _Pragma("clang diagnostic push")                                           \
+    _Pragma("clang diagnostic ignored \"-Wundefined-var-template\"")
+#define BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR                   \
+    _Pragma("clang diagnostic pop")
+#else
+#define BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
+#define BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
+#endif
+
 #if defined(_WIN32)
 #define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(ID, ...)                          \
     BOOST_OPENMETHOD_DETAIL_MAKE_STATICS_COMMON(ID, __VA_ARGS__)               \
@@ -985,7 +1000,9 @@ namespace detail {
         Registry, Type, Guide,                                                 \
         std::enable_if_t<std::is_same_v<get_declspec<Guide>, dllimport>>> {    \
         using declspec = dllimport;                                            \
+        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR                  \
         static BOOST_SYMBOL_IMPORT Type ID;                                    \
+        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR                   \
     }
 #else
 #define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(ID, ...)                          \
@@ -1114,9 +1131,11 @@ class registry : public detail::registry_base {
     using registry_type = registry;
     using declspec = typename static_::declspec;
 
+    BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
     static const void* id() {
         return static_cast<const void*>(&static_::st.classes);
     }
+    BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
 
     template<class... Options>
     struct compiler;

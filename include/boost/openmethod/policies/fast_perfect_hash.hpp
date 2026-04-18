@@ -170,9 +170,11 @@ struct fast_perfect_hash : type_hash {
             }
         }
 
+        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
         static auto id() -> const void* {
             return &static_::hash_fn;
         }
+        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
     };
 };
 

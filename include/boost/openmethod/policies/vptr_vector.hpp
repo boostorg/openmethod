@@ -190,6 +190,7 @@ struct vptr_vector : vptr {
             }
         }
 
+        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
         static auto id() -> const void* {
             if constexpr (Registry::has_indirect_vptr) {
                 return &static_::vptr_vector_indirect_vptrs;
@@ -197,6 +198,7 @@ struct vptr_vector : vptr {
                 return &static_::vptr_vector_vptrs;
             }
         }
+        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
     };
 };
 

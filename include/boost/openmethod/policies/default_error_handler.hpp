@@ -115,9 +115,11 @@ struct default_error_handler : error_handler {
             return prev ? prev : default_handler;
         }
 
+        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
         static auto id() -> const void* {
             return &static_::handler;
         }
+        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
 
         //! The default error handler function.
         //!

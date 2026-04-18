@@ -123,9 +123,11 @@ class vptr_map : public vptr {
             static_::vptrs.clear();
         }
 
+        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
         static auto id() -> const void* {
             return &static_::vptrs;
         }
+        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
     };
 };
 
