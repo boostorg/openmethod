@@ -22,10 +22,12 @@ BOOST_OPENMETHOD(
     speak, (boost::openmethod::virtual_ptr<Animal>), const char*,
     METHOD_DECLSPEC);
 
+BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
 inline auto get_fn() {
     return static_cast<const void*>(&BOOST_OPENMETHOD_TYPE(
         speak, (boost::openmethod::virtual_ptr<Animal>), const char*)::fn);
 }
+BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
 
 inline auto call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
     return speak(animal);

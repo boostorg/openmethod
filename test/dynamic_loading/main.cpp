@@ -93,7 +93,11 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     auto method_dog = method_make_dog();
     BOOST_TEST(main_dog.vptr() == method_dog.vptr());
 #ifdef _WIN32
-    BOOST_TEST(&typeid(*main_dog.get()) != &typeid(*method_dog.get()));
+    {
+        Animal* p1 = main_dog.get();
+        Animal* p2 = method_dog.get();
+        BOOST_TEST(&typeid(*p1) != &typeid(*p2));
+    }
 #endif
     BOOST_TEST(method_speak(main_dog) == "?");
     BOOST_TEST(method_speak(method_dog) == "?");
