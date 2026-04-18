@@ -8,7 +8,12 @@
 #endif
 
 #include "method.hpp"
+
+#ifdef _WIN32
+#include <boost/config.hpp>
+#else
 #include <boost/dll/alias.hpp>
+#endif
 
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
@@ -19,7 +24,16 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Dog>), const char*) {
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
+#ifdef _WIN32
+extern "C" {
+    BOOST_SYMBOL_EXPORT const void* overrider_get_ids    = (const void*)&get_ids;
+    BOOST_SYMBOL_EXPORT const void* overrider_get_fn     = (const void*)&get_fn;
+    BOOST_SYMBOL_EXPORT const void* overrider_make_dog   = (const void*)&make_dog;
+    BOOST_SYMBOL_EXPORT const void* overrider_call_speak = (const void*)&call_speak;
+}
+#else
 BOOST_DLL_ALIAS(get_ids, overrider_get_ids)
 BOOST_DLL_ALIAS(get_fn, overrider_get_fn)
-BOOST_DLL_ALIAS(make_dog, overrider_make_dog);
-BOOST_DLL_ALIAS(call_speak, overrider_call_speak);
+BOOST_DLL_ALIAS(make_dog, overrider_make_dog)
+BOOST_DLL_ALIAS(call_speak, overrider_call_speak)
+#endif
