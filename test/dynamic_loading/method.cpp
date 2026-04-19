@@ -35,13 +35,8 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
     return "?";
 }
 
-#if defined(_MSC_VER)
-#pragma warning(disable : 4190) // C-linkage function returns UDT
-#elif defined(__clang__)
-#pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
-#endif
-
 extern "C" {
+
 BOOST_SYMBOL_EXPORT const void* method_get_ids() {
     return get_ids();
 }
@@ -59,4 +54,5 @@ BOOST_SYMBOL_EXPORT const char*
 method_call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
     return speak(animal);
 }
+
 }
