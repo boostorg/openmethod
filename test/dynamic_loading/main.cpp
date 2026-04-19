@@ -79,14 +79,16 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     auto search_dir = method_path.parent_path();
     dll::shared_library method_lib(method_path, load_mode);
     auto& method_get_ids =
-        method_lib.get_alias<policy_ids_fn>("method_get_ids");
-    auto& method_speak = method_lib.get_alias<const char*(virtual_ptr<Animal>)>(
+        method_lib.get<policy_ids_fn>("method_get_ids");
+    auto& method_speak = method_lib.get<const char*(virtual_ptr<Animal>)>(
         "method_call_speak");
     auto& method_make_dog =
-        method_lib.get_alias<unique_virtual_ptr<Animal>()>("method_make_dog");
-    auto& method_get_fn = method_lib.get_alias<method_fn>("method_get_fn");
+        method_lib.get<unique_virtual_ptr<Animal>()>("method_make_dog");
+    auto& method_get_fn = method_lib.get<method_fn>("method_get_fn");
 
-    BOOST_TEST(same_ids(get_ids(), method_get_ids()));
+    auto p = get_ids();
+    auto q = method_get_ids();
+    BOOST_TEST(same_ids(p, q));
     BOOST_TEST(get_fn() == method_get_fn());
 
     initialize();
@@ -106,15 +108,15 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
 
     dll::shared_library overrider_lib(find_lib(search_dir, "overrider"), load_mode);
     auto overrider_get_ids =
-        overrider_lib.get_alias<policy_ids_fn>("overrider_get_ids");
+        overrider_lib.get<policy_ids_fn>("overrider_get_ids");
     auto overrider_speak =
-        overrider_lib.get_alias<const char*(virtual_ptr<Animal>)>(
+        overrider_lib.get<const char*(virtual_ptr<Animal>)>(
             "overrider_call_speak");
     auto overrider_make_dog =
-        overrider_lib.get_alias<unique_virtual_ptr<Animal>()>(
+        overrider_lib.get<unique_virtual_ptr<Animal>()>(
             "overrider_make_dog");
     auto overrider_get_fn =
-        overrider_lib.get_alias<method_fn>("overrider_get_fn");
+        overrider_lib.get<method_fn>("overrider_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), overrider_get_ids()));
     BOOST_TEST(get_fn() == overrider_get_fn());
