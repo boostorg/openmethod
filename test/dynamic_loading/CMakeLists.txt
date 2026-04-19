@@ -3,9 +3,8 @@
 # See accompanying file LICENSE_1_0.txt
 # or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-if (NOT BUILD_SHARED_LIBS)
-    message(STATUS "Skipping dynamic_loading test: requires BUILD_SHARED_LIBS=ON")
-    return()
+if (BUILD_SHARED_LIBS)
+    message(STATUS "Building shared library tests")
 endif()
 
 # lib_registry: exports the default registry's static policy state
