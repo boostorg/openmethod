@@ -14,8 +14,10 @@
 #include <boost/openmethod/initialize.hpp>
 #include <boost/dll/shared_library.hpp>
 #include <boost/dll/runtime_symbol_info.hpp>
+#include <boost/filesystem.hpp>
 
 #include <iomanip>
+#include <stdexcept>
 
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
@@ -64,14 +66,25 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         dll::load_mode::append_decorations |
         dll::load_mode::search_system_folders;
 
-    // On Windows with b2, main.exe links against the decorated DLL
-    // (e.g. ...-vc145-mt-gd-x64-1_91.dll) via its import library, while
-    // Boost.DLL with append_decorations finds the plain-named copy — two
-    // distinct modules in the Windows loader.  Load via the address of fn
-    // (imported via dllimport from the decorated DLL) to get the same module.
 #ifdef _WIN32
-    dll::shared_library method_lib(
-        dll::symbol_location_ptr(get_fn()), load_mode);
+    // On Windows, DLL names are decorated (e.g. -vc145-mt-gd-x64-1_91.dll).
+    // Load the method DLL via its already-imported symbol to get exactly the
+    // same module handle (avoid loading the plain-named copy as a second
+    // module).  Scan the same directory for the overrider by stem fragment.
+    auto method_path = dll::symbol_location_ptr(get_fn());
+    namespace bfs = boost::filesystem;
+    auto find_dll = [&](const char* stem_fragment) {
+        for (auto& entry : bfs::directory_iterator(method_path.parent_path())) {
+            if (entry.path().extension() == ".dll" &&
+                entry.path().stem().string().find(stem_fragment) !=
+                    std::string::npos) {
+                return entry.path();
+            }
+        }
+        throw std::runtime_error(
+            std::string("DLL not found: ") + stem_fragment);
+    };
+    dll::shared_library method_lib(method_path, load_mode);
 #else
     dll::shared_library method_lib(
         "boost_openmethod-dl_test_method", load_mode);
@@ -102,8 +115,12 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST(method_speak(main_dog) == "?");
     BOOST_TEST(method_speak(method_dog) == "?");
 
+#ifdef _WIN32
+    dll::shared_library overrider_lib(find_dll("overrider"), load_mode);
+#else
     dll::shared_library overrider_lib(
         "boost_openmethod-dl_test_overrider", load_mode);
+#endif
     auto overrider_get_ids =
         overrider_lib.get_alias<policy_ids_fn>("overrider_get_ids");
     auto overrider_speak =
