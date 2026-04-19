@@ -35,16 +35,27 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
     return "?";
 }
 
-#ifdef _WIN32
-extern "C" {
-    BOOST_SYMBOL_EXPORT const void* method_get_ids    = (const void*)&get_ids;
-    BOOST_SYMBOL_EXPORT const void* method_get_fn     = (const void*)&get_fn;
-    BOOST_SYMBOL_EXPORT const void* method_make_dog   = (const void*)&make_dog;
-    BOOST_SYMBOL_EXPORT const void* method_call_speak = (const void*)&call_speak;
-}
-#else
-BOOST_DLL_ALIAS(get_ids, method_get_ids)
-BOOST_DLL_ALIAS(get_fn, method_get_fn)
-BOOST_DLL_ALIAS(make_dog, method_make_dog)
-BOOST_DLL_ALIAS(call_speak, method_call_speak)
+#if defined(_MSC_VER)
+#pragma warning(disable : 4190) // C-linkage function returns UDT
+#elif defined(__clang__)
+#pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
 #endif
+
+extern "C" {
+BOOST_SYMBOL_EXPORT const void* method_get_ids() {
+    return get_ids();
+}
+
+BOOST_SYMBOL_EXPORT const void* method_get_fn() {
+    return get_fn();
+}
+
+BOOST_SYMBOL_EXPORT unique_virtual_ptr<Animal> method_make_dog() {
+    return make_dog();
+}
+
+BOOST_SYMBOL_EXPORT const char*
+method_call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
+    return speak(animal);
+}
+}
