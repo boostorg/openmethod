@@ -5,6 +5,8 @@
 
 if (BUILD_SHARED_LIBS)
     message(STATUS "Building shared library tests")
+else()
+    return()
 endif()
 
 # lib_registry: exports the default registry's static policy state
