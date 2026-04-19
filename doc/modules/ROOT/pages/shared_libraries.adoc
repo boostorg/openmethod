@@ -80,8 +80,8 @@ include::{shared}/dynamic_main.cpp[tag=unload]
 
 ## Windows
 
-On Windows, each module (executable or DLL) receives its own copy of global and
-static variables by default. Without special measures, the registry state,
+On Windows, by default, each module (executable or DLL) receives its own copy of
+global variables. Without special measures, the registry state,
 dispatch tables, and method function pointers are duplicated: when a DLL's
 static constructors register classes and overriders, they populate the DLL's own
 copy of the registry, invisible to the main program.

@@ -62,32 +62,42 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     // statics) are visible globally and win over any locally-instantiated
     // copies when the overrider library is subsequently loaded.
 
-    constexpr auto load_mode = dll::load_mode::rtld_global |
-        dll::load_mode::append_decorations |
-        dll::load_mode::search_system_folders;
+    constexpr auto load_mode = dll::load_mode::rtld_global;
+
+    namespace bfs = boost::filesystem;
+
+    // On Windows, load the method DLL via its already-imported symbol to get
+    // exactly the same module (avoid a second copy from the plain-named DLL).
+    // On POSIX/macOS, locate libraries by scanning the executable's directory.
+#ifdef _WIN32
+    auto method_path = dll::symbol_location_ptr(get_fn());
+    auto search_dir = method_path.parent_path();
+#else
+    auto search_dir = dll::program_location().parent_path();
+#endif
+
+    auto find_lib = [&](const char* name_fragment) {
+        for (auto& entry : bfs::directory_iterator(search_dir)) {
+            auto fname = entry.path().filename().string();
+            if (fname.find(name_fragment) == std::string::npos)
+                continue;
+#ifdef _WIN32
+            if (entry.path().extension() != ".dll")
+                continue;
+#else
+            auto ext = entry.path().extension().string();
+            if (fname.find(".so") == std::string::npos && ext != ".dylib")
+                continue;
+#endif
+            return entry.path();
+        }
+        throw std::runtime_error(std::string("lib not found: ") + name_fragment);
+    };
 
 #ifdef _WIN32
-    // On Windows, DLL names are decorated (e.g. -vc145-mt-gd-x64-1_91.dll).
-    // Load the method DLL via its already-imported symbol to get exactly the
-    // same module handle (avoid loading the plain-named copy as a second
-    // module).  Scan the same directory for the overrider by stem fragment.
-    auto method_path = dll::symbol_location_ptr(get_fn());
-    namespace bfs = boost::filesystem;
-    auto find_dll = [&](const char* stem_fragment) {
-        for (auto& entry : bfs::directory_iterator(method_path.parent_path())) {
-            if (entry.path().extension() == ".dll" &&
-                entry.path().stem().string().find(stem_fragment) !=
-                    std::string::npos) {
-                return entry.path();
-            }
-        }
-        throw std::runtime_error(
-            std::string("DLL not found: ") + stem_fragment);
-    };
     dll::shared_library method_lib(method_path, load_mode);
 #else
-    dll::shared_library method_lib(
-        "boost_openmethod-dl_test_method", load_mode);
+    dll::shared_library method_lib(find_lib("method"), load_mode);
 #endif
     auto& method_get_ids =
         method_lib.get_alias<policy_ids_fn>("method_get_ids");
@@ -115,12 +125,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST(method_speak(main_dog) == "?");
     BOOST_TEST(method_speak(method_dog) == "?");
 
-#ifdef _WIN32
-    dll::shared_library overrider_lib(find_dll("overrider"), load_mode);
-#else
-    dll::shared_library overrider_lib(
-        "boost_openmethod-dl_test_overrider", load_mode);
-#endif
+    dll::shared_library overrider_lib(find_lib("overrider"), load_mode);
     auto overrider_get_ids =
         overrider_lib.get_alias<policy_ids_fn>("overrider_get_ids");
     auto overrider_speak =
