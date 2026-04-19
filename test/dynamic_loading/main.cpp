@@ -83,18 +83,17 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     auto& method_speak = method_lib.get<const char*(virtual_ptr<Animal>)>(
         "method_call_speak");
     auto& method_make_dog =
-        method_lib.get<unique_virtual_ptr<Animal>()>("method_make_dog");
+        method_lib.get<void(unique_virtual_ptr<Animal>&)>("method_make_dog");
     auto& method_get_fn = method_lib.get<method_fn>("method_get_fn");
 
-    auto p = get_ids();
-    auto q = method_get_ids();
-    BOOST_TEST(same_ids(p, q));
+    BOOST_TEST(same_ids(get_ids(), method_get_ids()));
     BOOST_TEST(get_fn() == method_get_fn());
 
     initialize();
 
     auto main_dog = make_dog();
-    auto method_dog = method_make_dog();
+    unique_virtual_ptr<Animal> method_dog;
+    method_make_dog(method_dog);
     BOOST_TEST(main_dog.vptr() == method_dog.vptr());
 #ifdef _WIN32
     {
@@ -113,7 +112,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         overrider_lib.get<const char*(virtual_ptr<Animal>)>(
             "overrider_call_speak");
     auto overrider_make_dog =
-        overrider_lib.get<unique_virtual_ptr<Animal>()>(
+        overrider_lib.get<void(unique_virtual_ptr<Animal>&)>(
             "overrider_make_dog");
     auto overrider_get_fn =
         overrider_lib.get<method_fn>("overrider_get_fn");
@@ -122,11 +121,12 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST(get_fn() == overrider_get_fn());
 
     initialize();
-    auto overrider_dog = overrider_make_dog();
+    unique_virtual_ptr<Animal> overrider_dog;
+    overrider_make_dog(overrider_dog);
     main_dog = make_dog(); // because its vptr was invalidated by initialize()
-    method_dog = method_make_dog(); // ditto
+    method_make_dog(method_dog); // ditto
     BOOST_TEST(main_dog.vptr() == overrider_dog.vptr());
-    BOOST_TEST(overrider_speak(main_dog) == "woof");
-    BOOST_TEST(overrider_speak(method_dog) == "woof");
-    BOOST_TEST(overrider_speak(overrider_dog) == "woof");
+    BOOST_TEST(std::string(overrider_speak(main_dog)) == "woof");
+    BOOST_TEST(std::string(overrider_speak(method_dog)) == "woof");
+    BOOST_TEST(std::string(overrider_speak(overrider_dog)) == "woof");
 }

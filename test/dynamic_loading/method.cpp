@@ -50,8 +50,9 @@ BOOST_SYMBOL_EXPORT const void* method_get_fn() {
     return get_fn();
 }
 
-BOOST_SYMBOL_EXPORT unique_virtual_ptr<Animal> method_make_dog() {
-    return make_dog();
+BOOST_SYMBOL_EXPORT void
+method_make_dog(unique_virtual_ptr<Animal>& p) {
+    p = make_dog();
 }
 
 BOOST_SYMBOL_EXPORT const char*
