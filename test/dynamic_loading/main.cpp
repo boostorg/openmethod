@@ -29,7 +29,7 @@ BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
 boost::filesystem::path find_lib(
     const boost::filesystem::path& dir, const char* name_fragment) {
-    for (auto& entry : boost::filesystem::directory_iterator(dir)) {
+    for (auto entry : boost::filesystem::directory_iterator(dir)) {
         auto fname = entry.path().filename().string();
         if (fname.find(name_fragment) != std::string::npos) {
             return entry.path();
@@ -78,13 +78,13 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     auto method_path = dll::symbol_location_ptr(get_fn());
     auto search_dir = method_path.parent_path();
     dll::shared_library method_lib(method_path, load_mode);
-    auto& method_get_ids =
+    auto method_get_ids =
         method_lib.get<policy_ids_fn>("method_get_ids");
-    auto& method_speak = method_lib.get<const char*(virtual_ptr<Animal>)>(
+    auto method_speak = method_lib.get<const char*(virtual_ptr<Animal>)>(
         "method_call_speak");
-    auto& method_make_dog =
+    auto method_make_dog =
         method_lib.get<void(unique_virtual_ptr<Animal>&)>("method_make_dog");
-    auto& method_get_fn = method_lib.get<method_fn>("method_get_fn");
+    auto method_get_fn = method_lib.get<method_fn>("method_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), method_get_ids()));
     BOOST_TEST(get_fn() == method_get_fn());

@@ -24,13 +24,6 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Dog>), const char*) {
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
-
-#if defined(_MSC_VER)
-#pragma warning(disable : 4190) // C-linkage function returns UDT
-#elif defined(__clang__)
-#pragma clang diagnostic ignored "-Wreturn-type-c-linkage"
-#endif
-
 extern "C" {
 
 BOOST_SYMBOL_EXPORT const void* overrider_get_ids() {
