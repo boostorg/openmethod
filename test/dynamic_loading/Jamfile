@@ -25,6 +25,7 @@ import testing ;
 import os ;
 
 local os-name = [ os.name ] ;
+local visibility-env = [ os.environ B2_VISIBILITY ] ;
 
 # After building each test shared library, create a plain-name alias so that
 # Boost.DLL's append_decorations load mode can find it at runtime.
@@ -79,6 +80,9 @@ local RDYNAMIC =
 # registry state must be exported with DEFAULT visibility so the dynamic
 # linker deduplicates them across DSOs.  MSVC ignores this property.
 local VISIBILITY = <local-visibility>global ;
+
+if ( $(os-name) = NT ) || ( $(visibility-env) = global )
+{
 
 # lib_registry: owns and exports the default registry's static policy state.
 # registry.cpp defines EXPORT_REGISTRY and INCLUDED_FROM itself.
@@ -163,3 +167,5 @@ run main.cpp
       <dependency>$(plain-aliases)
     : dynamic_loading
     ;
+
+} # if NT || B2_VISIBILITY=global
