@@ -21,6 +21,7 @@ import os ;
 
 local os-name = [ os.name ] ;
 local visibility-env = [ os.environ B2_VISIBILITY ] ;
+local windir = [ os.environ WINDIR ] ;
 
 # -rdynamic: export exe symbols to dynamically loaded libs so that
 # dlopen'd overrider can resolve symbols from the already-loaded method lib.
@@ -38,7 +39,7 @@ local RDYNAMIC =
 # linker deduplicates them across DSOs.  MSVC ignores this property.
 local VISIBILITY = <local-visibility>global ;
 
-if ( $(os-name) = NT ) || ( $(visibility-env) = global )
+if $(windir) || ( $(visibility-env) = global )
 {
 
 # lib_registry: owns and exports the default registry's static policy state.
@@ -48,6 +49,7 @@ lib boost_openmethod-dl_test_registry
     : <link>shared
       $(VISIBILITY)
       <library>/boost/dll//boost_dll
+      <location-prefix>dynamic_loading.test
     ;
 
 # lib_method: exports the speak() open-method; imports registry from
@@ -58,6 +60,7 @@ lib boost_openmethod-dl_test_method
       $(VISIBILITY)
       <library>/boost/dll//boost_dll
       <library>boost_openmethod-dl_test_registry
+      <location-prefix>dynamic_loading.test
     ;
 
 # lib_overrider: adds the Dog overrider; dynamically loaded at runtime.
@@ -70,13 +73,15 @@ lib boost_openmethod-dl_test_overrider
       <library>boost_openmethod-dl_test_method
       <target-os>windows:<library>boost_openmethod-dl_test_registry
       <target-os>cygwin:<library>boost_openmethod-dl_test_registry
+      <location-prefix>dynamic_loading.test
     ;
 
 # Test executable:
 #   sources (linked)   : main.cpp, lib_registry, unit_test_framework, boost_dll
 #   runtime-loaded     : lib_method, lib_overrider
-# main.cpp locates shared libs by scanning dll::program_location().parent_path()
-# (POSIX) or dll::symbol_location_ptr(get_fn()).parent_path() (Windows).
+# All shared libraries are placed alongside the test executable via
+# <location-prefix>dynamic_loading.test, so main.cpp can find them by scanning
+# dll::program_location().parent_path() on all platforms.
 run main.cpp
     boost_openmethod-dl_test_registry
     /boost/test//boost_unit_test_framework/<warnings>off
@@ -97,4 +102,4 @@ run main.cpp
     : dynamic_loading
     ;
 
-} # if NT || B2_VISIBILITY=global
+} # if Windows (WINDIR set) || B2_VISIBILITY=global
