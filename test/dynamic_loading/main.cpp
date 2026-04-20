@@ -40,29 +40,6 @@ find_lib(const boost::filesystem::path& dir, const char* name_fragment) {
     throw std::runtime_error(std::string("lib not found: ") + name_fragment);
 }
 
-boost::filesystem::path find_lib_in_path(const char* name_fragment) {
-    const char* path_env = std::getenv("PATH");
-    if (!path_env) {
-        throw std::runtime_error("PATH not set");
-    }
-    std::istringstream ss(path_env);
-    std::string dir;
-    while (std::getline(ss, dir, ':')) {
-        if (dir.empty())
-            continue;
-        boost::filesystem::path p(dir);
-        boost::system::error_code ec;
-        if (!boost::filesystem::is_directory(p, ec))
-            continue;
-        try {
-            return find_lib(p, name_fragment);
-        } catch (...) {
-        }
-    }
-    throw std::runtime_error(
-        std::string("lib not found in PATH: ") + name_fragment);
-}
-
 bool same_ids(const void** ids1, const void** ids2) {
     using std::setw;
     BOOST_TEST_MESSAGE(
