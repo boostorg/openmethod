@@ -23,14 +23,7 @@
 #include <vector>
 
 #include <boost/assert.hpp>
-#if defined(__clang__)
-#    pragma clang diagnostic push
-#    pragma clang diagnostic ignored "-Wshift-count-overflow"
-#endif
 #include <boost/dynamic_bitset.hpp>
-#if defined(__clang__)
-#    pragma clang diagnostic pop
-#endif
 
 #ifdef _MSC_VER
 #pragma warning(push)
