@@ -100,12 +100,13 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
 
     constexpr auto load_mode = dll::load_mode::rtld_global;
 
-#ifdef _WIN32
-    auto method_path = dll::symbol_location_ptr(get_fn());
-#else
-    auto method_path = find_lib_in_path("test_method");
-#endif
-    auto search_dir = method_path.parent_path();
+// #ifdef _WIN32
+//     auto method_path = dll::symbol_location_ptr(get_fn);
+// #else
+//     auto method_path = find_lib_in_path("test_method");
+// #endif
+    auto search_dir = boost::dll::program_location().parent_path();
+    auto method_path = find_lib(search_dir, "test_method");
     dll::shared_library method_lib(method_path, load_mode);
     auto method_get_ids = method_lib.get<policy_ids_fn>("method_get_ids");
     auto method_speak =
