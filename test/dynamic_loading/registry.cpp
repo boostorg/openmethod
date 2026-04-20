@@ -17,7 +17,7 @@
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 #include <boost/config.hpp>
 static_assert(std::is_same_v<default_registry::declspec, dllexport>);
 #else

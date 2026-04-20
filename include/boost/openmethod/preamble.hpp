@@ -946,7 +946,7 @@ struct initialize_aux;
 struct declspec {};
 struct declspec_none : declspec {};
 
-#if defined(__MRDOCS__) || defined(_WIN32)
+#if defined(__MRDOCS__) || defined(_WIN32) || defined(__CYGWIN__)
 struct dllexport : declspec {};
 struct dllimport : declspec {};
 #endif
@@ -978,7 +978,7 @@ namespace detail {
 #define BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
 #endif
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__CYGWIN__)
 #define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(ID, ...)                          \
     BOOST_OPENMETHOD_DETAIL_MAKE_STATICS_COMMON(ID, __VA_ARGS__)               \
                                                                                \
