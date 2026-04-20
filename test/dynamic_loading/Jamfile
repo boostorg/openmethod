@@ -69,6 +69,7 @@ lib boost_openmethod-dl_test_overrider
       <library>/boost/dll//boost_dll
       <library>boost_openmethod-dl_test_method
       <target-os>windows:<library>boost_openmethod-dl_test_registry
+      <target-os>cygwin:<library>boost_openmethod-dl_test_registry
     ;
 
 # Test executable:
@@ -90,6 +91,7 @@ run main.cpp
       <target-os>android:<linkflags>"-ldl"
       <target-os>windows:<library>boost_openmethod-dl_test_registry
       <target-os>windows:<library>boost_openmethod-dl_test_method
+      <target-os>cygwin:<library>boost_openmethod-dl_test_method
       <dependency>boost_openmethod-dl_test_method
       <dependency>boost_openmethod-dl_test_overrider
     : dynamic_loading

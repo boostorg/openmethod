@@ -9,7 +9,7 @@
 
 #include "method.hpp"
 
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
 #include <boost/config.hpp>
 #else
 #include <boost/dll/alias.hpp>

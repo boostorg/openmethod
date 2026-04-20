@@ -8,7 +8,7 @@
 
 #include <string>
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(EXPORT_METHOD)
 #define METHOD_DECLSPEC boost::openmethod::dllexport
 #else

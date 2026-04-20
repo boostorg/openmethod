@@ -16,7 +16,9 @@
 #include <boost/dll/runtime_symbol_info.hpp>
 #include <boost/filesystem.hpp>
 
+#include <cstdlib>
 #include <iomanip>
+#include <sstream>
 #include <stdexcept>
 
 using namespace boost::openmethod;
@@ -27,8 +29,8 @@ using method_fn = const void*();
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
-boost::filesystem::path find_lib(
-    const boost::filesystem::path& dir, const char* name_fragment) {
+boost::filesystem::path
+find_lib(const boost::filesystem::path& dir, const char* name_fragment) {
     for (auto entry : boost::filesystem::directory_iterator(dir)) {
         auto fname = entry.path().filename().string();
         if (fname.find(name_fragment) != std::string::npos) {
@@ -36,6 +38,29 @@ boost::filesystem::path find_lib(
         }
     }
     throw std::runtime_error(std::string("lib not found: ") + name_fragment);
+}
+
+boost::filesystem::path find_lib_in_path(const char* name_fragment) {
+    const char* path_env = std::getenv("PATH");
+    if (!path_env) {
+        throw std::runtime_error("PATH not set");
+    }
+    std::istringstream ss(path_env);
+    std::string dir;
+    while (std::getline(ss, dir, ':')) {
+        if (dir.empty())
+            continue;
+        boost::filesystem::path p(dir);
+        boost::system::error_code ec;
+        if (!boost::filesystem::is_directory(p, ec))
+            continue;
+        try {
+            return find_lib(p, name_fragment);
+        } catch (...) {
+        }
+    }
+    throw std::runtime_error(
+        std::string("lib not found in PATH: ") + name_fragment);
 }
 
 bool same_ids(const void** ids1, const void** ids2) {
@@ -75,13 +100,16 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
 
     constexpr auto load_mode = dll::load_mode::rtld_global;
 
+#ifdef _WIN32
     auto method_path = dll::symbol_location_ptr(get_fn());
+#else
+    auto method_path = find_lib_in_path("test_method");
+#endif
     auto search_dir = method_path.parent_path();
     dll::shared_library method_lib(method_path, load_mode);
-    auto method_get_ids =
-        method_lib.get<policy_ids_fn>("method_get_ids");
-    auto method_speak = method_lib.get<const char*(virtual_ptr<Animal>)>(
-        "method_call_speak");
+    auto method_get_ids = method_lib.get<policy_ids_fn>("method_get_ids");
+    auto method_speak =
+        method_lib.get<const char*(virtual_ptr<Animal>)>("method_call_speak");
     auto method_make_dog =
         method_lib.get<void(unique_virtual_ptr<Animal>&)>("method_make_dog");
     auto method_get_fn = method_lib.get<method_fn>("method_get_fn");
@@ -95,7 +123,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     unique_virtual_ptr<Animal> method_dog;
     method_make_dog(method_dog);
     BOOST_TEST(main_dog.vptr() == method_dog.vptr());
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
     {
         Animal* p1 = main_dog.get();
         Animal* p2 = method_dog.get();
@@ -105,17 +133,16 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST(method_speak(main_dog) == "?");
     BOOST_TEST(method_speak(method_dog) == "?");
 
-    dll::shared_library overrider_lib(find_lib(search_dir, "overrider"), load_mode);
+    dll::shared_library overrider_lib(
+        find_lib(search_dir, "test_overrider"), load_mode);
     auto overrider_get_ids =
         overrider_lib.get<policy_ids_fn>("overrider_get_ids");
-    auto overrider_speak =
-        overrider_lib.get<const char*(virtual_ptr<Animal>)>(
-            "overrider_call_speak");
+    auto overrider_speak = overrider_lib.get<const char*(virtual_ptr<Animal>)>(
+        "overrider_call_speak");
     auto overrider_make_dog =
         overrider_lib.get<void(unique_virtual_ptr<Animal>&)>(
             "overrider_make_dog");
-    auto overrider_get_fn =
-        overrider_lib.get<method_fn>("overrider_get_fn");
+    auto overrider_get_fn = overrider_lib.get<method_fn>("overrider_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), overrider_get_ids()));
     BOOST_TEST(get_fn() == overrider_get_fn());
