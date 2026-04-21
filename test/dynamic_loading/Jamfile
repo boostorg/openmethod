@@ -39,9 +39,6 @@ local RDYNAMIC =
 # linker deduplicates them across DSOs.  MSVC ignores this property.
 local VISIBILITY = <local-visibility>global ;
 
-if $(windir) || ( $(visibility-env) = global )
-{
-
 # lib_registry: owns and exports the default registry's static policy state.
 # registry.cpp defines EXPORT_REGISTRY and INCLUDED_FROM itself.
 lib boost_openmethod-dl_test_registry
@@ -101,5 +98,3 @@ run main.cpp
       <dependency>boost_openmethod-dl_test_overrider
     : dynamic_loading
     ;
-
-} # if Windows (WINDIR set) || B2_VISIBILITY=global
