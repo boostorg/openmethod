@@ -88,6 +88,7 @@ run main.cpp
     : <link>shared
       $(RDYNAMIC)
       $(VISIBILITY)
+      <library>/boost/filesystem//boost_filesystem
       <target-os>linux:<linkflags>"-ldl"
       <target-os>freebsd:<linkflags>"-ldl"
       <target-os>android:<linkflags>"-ldl"
