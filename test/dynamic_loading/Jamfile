@@ -45,7 +45,7 @@ lib boost_openmethod-dl_test_registry
     : registry.cpp
     : <link>shared
       $(VISIBILITY)
-      <library>/boost/dll//boost_dll
+      <library>/boost/dll//boost_dll/<warnings>off
       <location-prefix>dynamic_loading.test
     ;
 
@@ -55,7 +55,7 @@ lib boost_openmethod-dl_test_method
     : method.cpp
     : <link>shared
       $(VISIBILITY)
-      <library>/boost/dll//boost_dll
+      <library>/boost/dll//boost_dll/<warnings>off
       <library>boost_openmethod-dl_test_registry
       <location-prefix>dynamic_loading.test
     ;
@@ -66,7 +66,7 @@ lib boost_openmethod-dl_test_overrider
     : overrider.cpp
     : <link>shared
       $(VISIBILITY)
-      <library>/boost/dll//boost_dll
+      <library>/boost/dll//boost_dll/<warnings>off
       <library>boost_openmethod-dl_test_method
       <target-os>windows:<library>boost_openmethod-dl_test_registry
       <target-os>cygwin:<library>boost_openmethod-dl_test_registry
@@ -82,13 +82,13 @@ lib boost_openmethod-dl_test_overrider
 run main.cpp
     boost_openmethod-dl_test_registry
     /boost/test//boost_unit_test_framework/<warnings>off
-    /boost/dll//boost_dll
+    /boost/dll//boost_dll/<warnings>off
     :
     :
     : <link>shared
       $(RDYNAMIC)
       $(VISIBILITY)
-      <library>/boost/filesystem//boost_filesystem
+      <library>/boost/filesystem//boost_filesystem/<warnings>off
       <target-os>linux:<linkflags>"-ldl"
       <target-os>freebsd:<linkflags>"-ldl"
       <target-os>android:<linkflags>"-ldl"
