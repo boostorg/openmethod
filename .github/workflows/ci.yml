@@ -43,7 +43,7 @@ jobs:
     uses: boostorg/boost-ci/.github/workflows/reusable.yml@master
     with:
       exclude_cxxstd: '98,03,0x,11,14'
-      exclude_compiler: gcc-4.9,gcc-5,gcc-6,gcc-7,clang-3.9,clang-4.0,clang-5.0,clang-6.0,clang-7,clang-16
+      exclude_compiler: gcc-4.9,gcc-5,gcc-6,gcc-7,gcc-8,gcc-9,clang-3.9,clang-4.0,clang-5.0,clang-6.0,clang-7,clang-16
       # exclude clang-16 because it seems to use the c++14 standard library on ubuntu-24.04:
       # include/c++/14/bits/stl_pair.h:410:35: error: no matching function for call to 'get'
       # maybe similar to this: https://github.com/actions/runner-images/issues/9679
