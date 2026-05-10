@@ -1091,6 +1091,11 @@ struct declspec<void> : declspec_policy {
 //! @li `Policy` must contain a `fn<Registry>` metafunction.
 //!
 //! @see @ref policies
+namespace detail {
+template<typename Id, typename Fn, class Registry>
+class method_base;
+} // namespace detail
+
 template<class... Policy>
 class registry : public detail::registry_base {
 
@@ -1122,6 +1127,8 @@ class registry : public detail::registry_base {
     friend struct detail::use_class_aux;
     template<typename Name, typename ReturnType, class Registry>
     friend class method;
+    template<typename Id, typename Fn, class Registry>
+    friend class detail::method_base;
 
     using static_ = detail::static_st<
         registry, detail::registry_state<registry<Policy...>>, declspec_guide>;
