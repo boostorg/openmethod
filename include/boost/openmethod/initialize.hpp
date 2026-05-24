@@ -817,6 +817,13 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
     using namespace policies;
     using namespace detail;
 
+    // Resolve deferred type ids first so consolidation keys are correct
+    if constexpr (has_deferred_static_rtti) {
+        for (auto& meth_info : registry::static_::st.methods) {
+            static_cast<deferred_method_info&>(meth_info).resolve_type_ids();
+        }
+    }
+
     // Consolidate method copies from different modules (DLL boundaries)
     std::map<decltype(rtti::type_index(std::declval<type_id>())), std::vector<method_info*>> method_copies;
     std::vector<method_info*> canonical_methods;
@@ -837,10 +844,6 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
     auto meth_iter = methods.begin();
 
     for (auto meth_info : canonical_methods) {
-        if constexpr (has_deferred_static_rtti) {
-            static_cast<deferred_method_info&>(*meth_info).resolve_type_ids();
-        }
-
         ++tr << type_name(meth_info->method_type_id) << " "
              << range{meth_info->vp_begin, meth_info->vp_end} << "\n";
 

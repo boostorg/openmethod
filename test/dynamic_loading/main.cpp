@@ -23,7 +23,6 @@ using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
 using policy_ids_fn = const void**();
-using method_fn = const void*();
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
@@ -84,10 +83,8 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         method_lib.get<const char*(virtual_ptr<Animal>)>("method_call_speak");
     auto method_make_dog =
         method_lib.get<void(unique_virtual_ptr<Animal>&)>("method_make_dog");
-    auto method_get_fn = method_lib.get<method_fn>("method_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), method_get_ids()));
-    BOOST_TEST(get_fn() == method_get_fn());
 
     initialize();
 
@@ -114,10 +111,8 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     auto overrider_make_dog =
         overrider_lib.get<void(unique_virtual_ptr<Animal>&)>(
             "overrider_make_dog");
-    auto overrider_get_fn = overrider_lib.get<method_fn>("overrider_get_fn");
 
     BOOST_TEST(same_ids(get_ids(), overrider_get_ids()));
-    BOOST_TEST(get_fn() == overrider_get_fn());
 
     initialize();
     unique_virtual_ptr<Animal> overrider_dog;

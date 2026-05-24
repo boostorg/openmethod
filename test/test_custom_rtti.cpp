@@ -14,6 +14,22 @@
 
 using namespace boost::openmethod;
 
+namespace {
+inline int next_non_polymorphic_id() {
+    static int counter = 0;
+    return --counter;
+}
+
+template<typename T>
+inline int non_polymorphic_static_type() {
+    static int value = next_non_polymorphic_id();
+    return value;
+}
+
+template<typename T>
+inline char non_polymorphic_static_type_storage = '\0';
+} // anonymous namespace
+
 namespace type_hash {
 
 struct Animal {
@@ -51,7 +67,8 @@ struct custom_rtti : policies::rtti {
             if constexpr (is_polymorphic<T>) {
                 return T::static_type;
             } else {
-                return nullptr;
+                return static_cast<const char*>(
+                    &non_polymorphic_static_type_storage<T>);
             }
         }
 
@@ -60,7 +77,8 @@ struct custom_rtti : policies::rtti {
             if constexpr (is_polymorphic<T>) {
                 return obj.type;
             } else {
-                return nullptr;
+                return static_cast<const char*>(
+                    &non_polymorphic_static_type_storage<T>);
             }
         }
 
@@ -72,8 +90,7 @@ struct custom_rtti : policies::rtti {
         }
 
         static auto type_index(type_id type) {
-            return std::string_view(
-                (type == nullptr ? "?" : reinterpret_cast<const char*>(type)));
+            return type;
         }
     };
 };
@@ -115,25 +132,25 @@ namespace no_projection {
 struct Animal {
     const char* name;
 
-    Animal(const char* name, std::size_t type) : name(name), type(type) {
+    Animal(const char* name, int type) : name(name), type(type) {
     }
 
-    static constexpr std::size_t static_type = 0;
-    std::size_t type;
+    static constexpr int static_type = 1;
+    int type;
 };
 
 struct Dog : Animal {
-    Dog(const char* name, std::size_t type = static_type) : Animal(name, type) {
+    Dog(const char* name, int type = static_type) : Animal(name, type) {
     }
 
-    static constexpr std::size_t static_type = 1;
+    static constexpr int static_type = 2;
 };
 
 struct Cat : Animal {
-    Cat(const char* name, std::size_t type = static_type) : Animal(name, type) {
+    Cat(const char* name, int type = static_type) : Animal(name, type) {
     }
 
-    static constexpr std::size_t static_type = 2;
+    static constexpr int static_type = 3;
 };
 
 struct custom_rtti : policies::rtti {
@@ -142,14 +159,12 @@ struct custom_rtti : policies::rtti {
         template<class T>
         static constexpr bool is_polymorphic = std::is_base_of_v<Animal, T>;
 
-        inline static auto invalid_type_id = type_id(0xFFFFFF);
-
         template<typename T>
         static auto static_type() {
             if constexpr (is_polymorphic<T>) {
                 return type_id(T::static_type);
             } else {
-                return invalid_type_id;
+                return type_id(non_polymorphic_static_type<T>());
             }
         }
 
@@ -158,14 +173,16 @@ struct custom_rtti : policies::rtti {
             if constexpr (is_polymorphic<T>) {
                 return type_id(obj.type);
             } else {
-                return invalid_type_id;
+                return type_id(non_polymorphic_static_type<T>());
             }
         }
 
         template<class Stream>
         static void type_name(type_id type, Stream& stream) {
             static const char* name[] = {"Animal", "Dog", "Cat"};
-            stream << (type == invalid_type_id ? "?" : name[std::size_t(type)]);
+            auto idx = static_cast<std::intptr_t>(
+                reinterpret_cast<std::intptr_t>(type));
+            stream << (idx >= 1 && idx <= 3 ? name[idx - 1] : "?");
         }
 
         static auto type_index(type_id type) {
@@ -201,9 +218,9 @@ void call_poke(Animal& a, std::ostream& os) {
 // TAILCALL
 
 BOOST_AUTO_TEST_CASE(custom_rtti_simple) {
-    BOOST_TEST(Animal::static_type == 0u);
-    BOOST_TEST(Dog::static_type == 1u);
-    BOOST_TEST(Cat::static_type == 2u);
+    BOOST_TEST(Animal::static_type == 1);
+    BOOST_TEST(Dog::static_type == 2);
+    BOOST_TEST(Cat::static_type == 3);
     initialize<test_registry>();
 
     Animal &&a = Dog("Snoopy"), &&b = Cat("Sylvester");
@@ -250,15 +267,15 @@ namespace virtual_base {
 struct Animal {
     const char* name;
 
-    Animal(const char* name, std::size_t type) : name(name), type(type) {
+    Animal(const char* name, int type) : name(name), type(type) {
     }
 
-    virtual auto cast_aux(std::size_t to_type) -> void* {
+    virtual auto cast_aux(int to_type) -> void* {
         return to_type == static_type ? this : nullptr;
     }
 
-    static constexpr std::size_t static_type = 0;
-    std::size_t type;
+    static constexpr int static_type = 1;
+    int type;
 };
 
 template<typename Derived, typename Base>
@@ -270,25 +287,25 @@ auto custom_dynamic_cast(Base& obj) -> Derived {
 }
 
 struct Dog : virtual Animal {
-    Dog(const char* name, std::size_t type = static_type) : Animal(name, type) {
+    Dog(const char* name, int type = static_type) : Animal(name, type) {
     }
 
-    auto cast_aux(std::size_t to_type) -> void* override {
+    auto cast_aux(int to_type) -> void* override {
         return to_type == static_type ? this : Animal::cast_aux(to_type);
     }
 
-    static constexpr std::size_t static_type = 1;
+    static constexpr int static_type = 2;
 };
 
 struct Cat : virtual Animal {
-    Cat(const char* name, std::size_t type = static_type) : Animal(name, type) {
+    Cat(const char* name, int type = static_type) : Animal(name, type) {
     }
 
-    auto cast_aux(std::size_t to_type) -> void* override {
+    auto cast_aux(int to_type) -> void* override {
         return to_type == static_type ? this : Animal::cast_aux(to_type);
     }
 
-    static constexpr std::size_t static_type = 2;
+    static constexpr int static_type = 3;
 };
 
 struct custom_rtti : policies::rtti {
@@ -302,7 +319,7 @@ struct custom_rtti : policies::rtti {
             if constexpr (is_polymorphic<T>) {
                 return type_id(T::static_type);
             } else {
-                return type_id(0xFFFF);
+                return type_id(non_polymorphic_static_type<T>());
             }
         }
 
@@ -311,14 +328,15 @@ struct custom_rtti : policies::rtti {
             if constexpr (is_polymorphic<T>) {
                 return type_id(obj.type);
             } else {
-                return type_id(0xFFFF);
+                return type_id(non_polymorphic_static_type<T>());
             }
         }
 
         template<class Stream>
         static void type_name(type_id type, Stream& stream) {
             static const char* name[] = {"Animal", "Dog", "Cat"};
-            stream << (type == type_id(0xFFFF) ? "?" : name[std::size_t(type)]);
+            auto idx = reinterpret_cast<std::intptr_t>(type);
+            stream << (idx >= 1 && idx <= 3 ? name[idx - 1] : "?");
         }
 
         static auto type_index(type_id type) {
@@ -359,9 +377,9 @@ void call_poke(Animal& a, std::ostream& os) {
 // TAILCALL
 
 BOOST_AUTO_TEST_CASE(virtual_base) {
-    BOOST_TEST(Animal::static_type == 0u);
-    BOOST_TEST(Dog::static_type == 1u);
-    BOOST_TEST(Cat::static_type == 2u);
+    BOOST_TEST(Animal::static_type == 1);
+    BOOST_TEST(Dog::static_type == 2);
+    BOOST_TEST(Cat::static_type == 3);
     initialize<test_registry>();
 
     Animal &&a = Dog("Snoopy"), &&b = Cat("Sylvester");
@@ -408,34 +426,34 @@ namespace deferred_type_id {
 struct Animal {
     const char* name;
 
-    Animal(const char* name, std::size_t type) : name(name), type(type) {
+    Animal(const char* name, int type) : name(name), type(type) {
     }
 
-    static std::size_t last_type_id;
-    static std::size_t static_type;
-    std::size_t type;
+    static int last_type_id;
+    static int static_type;
+    int type;
 };
 
-std::size_t Animal::last_type_id;
-std::size_t Animal::static_type = ++Animal::last_type_id;
+int Animal::last_type_id;
+int Animal::static_type = ++Animal::last_type_id;
 
 struct Dog : Animal {
-    Dog(const char* name, std::size_t type = static_type) : Animal(name, type) {
+    Dog(const char* name, int type = static_type) : Animal(name, type) {
     }
 
-    static std::size_t static_type;
+    static int static_type;
 };
 
-std::size_t Dog::static_type = ++Animal::last_type_id;
+int Dog::static_type = ++Animal::last_type_id;
 
 struct Cat : Animal {
-    Cat(const char* name, std::size_t type = static_type) : Animal(name, type) {
+    Cat(const char* name, int type = static_type) : Animal(name, type) {
     }
 
-    static std::size_t static_type;
+    static int static_type;
 };
 
-std::size_t Cat::static_type = ++Animal::last_type_id;
+int Cat::static_type = ++Animal::last_type_id;
 
 struct custom_rtti : policies::deferred_static_rtti {
     template<class Registry>
@@ -448,7 +466,7 @@ struct custom_rtti : policies::deferred_static_rtti {
             if constexpr (is_polymorphic<T>) {
                 return type_id(T::static_type);
             } else {
-                return type_id(0);
+                return type_id(non_polymorphic_static_type<T>());
             }
         }
 
@@ -457,14 +475,15 @@ struct custom_rtti : policies::deferred_static_rtti {
             if constexpr (is_polymorphic<T>) {
                 return type_id(obj.type);
             } else {
-                return type_id(0);
+                return type_id(non_polymorphic_static_type<T>());
             }
         }
 
         template<class Stream>
         static void type_name(type_id type, Stream& stream) {
             static const char* name[] = {"?", "Animal", "Dog", "Cat"};
-            stream << name[std::size_t(type)];
+            auto idx = reinterpret_cast<std::intptr_t>(type);
+            stream << (idx >= 1 && idx <= 3 ? name[idx] : "?");
         }
 
         static auto type_index(type_id type) {
