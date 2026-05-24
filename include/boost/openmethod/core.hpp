@@ -1931,8 +1931,6 @@ auto boost_openmethod_declspec(...) -> void;
 
 namespace detail {
 
-BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(fn);
-
 template<typename P, typename Q, class Registry>
 struct select_overrider_virtual_type_aux {
     using type = void;
@@ -2164,13 +2162,9 @@ class method;
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
 class method<Id, ReturnType(Parameters...), Registry>
-    : public detail::method_base<Registry>,
-      public detail::static_fn<
-          Registry, method<Id, ReturnType(Parameters...), Registry>> {
+    : public detail::method_base<Registry> {
     template<auto Function, typename FunctionType>
     struct override_aux;
-
-    friend struct detail::static_fn<Registry, method>;
 
     // Aliases used in implementation only. Everything extracted from template
     // arguments is capitalized like the arguments themselves.
@@ -2190,9 +2184,7 @@ class method<Id, ReturnType(Parameters...), Registry>
     //!
     //! The only instance of `method`. Its `operator()` is used to call
     //! the method.
-    //static method fn;
-    // `fn` cannot be `inline static` becaused of MSVC (19.43) bug causing
-    // a "no appropriate default constructor available".
+    static method fn;
 
     //! Call the method
     //!
@@ -2383,10 +2375,10 @@ template<auto Fn>
 typename method<Id, ReturnType(Parameters...), Registry>::FunctionPointer
     method<Id, ReturnType(Parameters...), Registry>::next;
 
-// template<
-//     typename Id, typename... Parameters, typename ReturnType, class Registry>
-// method<Id, ReturnType(Parameters...), Registry>
-//     method<Id, ReturnType(Parameters...), Registry>::fn;
+template<
+    typename Id, typename... Parameters, typename ReturnType, class Registry>
+method<Id, ReturnType(Parameters...), Registry>
+    method<Id, ReturnType(Parameters...), Registry>::fn;
 
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>

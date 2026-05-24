@@ -817,31 +817,43 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
     using namespace policies;
     using namespace detail;
 
-    methods.resize(registry::static_::st.methods.size());
+    // Consolidate method copies from different modules (DLL boundaries)
+    std::map<decltype(rtti::type_index(std::declval<type_id>())), std::vector<method_info*>> method_copies;
+    std::vector<method_info*> canonical_methods;
+
+    for (auto& meth_info : registry::static_::st.methods) {
+        auto key = rtti::type_index(meth_info.method_type_id);
+        if (method_copies.find(key) == method_copies.end()) {
+            canonical_methods.push_back(&meth_info);
+        }
+        method_copies[key].push_back(&meth_info);
+    }
+
+    methods.resize(canonical_methods.size());
 
     ++tr << "Methods:\n";
     indent _(tr);
 
     auto meth_iter = methods.begin();
 
-    for (auto& meth_info : registry::static_::st.methods) {
+    for (auto meth_info : canonical_methods) {
         if constexpr (has_deferred_static_rtti) {
-            static_cast<deferred_method_info&>(meth_info).resolve_type_ids();
+            static_cast<deferred_method_info&>(*meth_info).resolve_type_ids();
         }
 
-        ++tr << type_name(meth_info.method_type_id) << " "
-             << range{meth_info.vp_begin, meth_info.vp_end} << "\n";
+        ++tr << type_name(meth_info->method_type_id) << " "
+             << range{meth_info->vp_begin, meth_info->vp_end} << "\n";
 
         indent _(tr);
 
-        meth_iter->info = &meth_info;
-        meth_iter->vp.reserve(meth_info.arity());
-        meth_iter->slots.resize(meth_info.arity());
+        meth_iter->info = meth_info;
+        meth_iter->vp.reserve(meth_info->arity());
+        meth_iter->slots.resize(meth_info->arity());
 
         {
             std::size_t param_index = 0;
 
-            for (auto ti : range{meth_info.vp_begin, meth_info.vp_end}) {
+            for (auto ti : range{meth_info->vp_begin, meth_info->vp_end}) {
                 auto class_ = class_map[rtti::type_index(ti)];
                 if (!class_) {
                     ++tr << "unknown class " << ti << "(" << type_name(ti)
@@ -860,10 +872,10 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
             }
         }
 
-        if (rtti::type_index(meth_info.return_type_id) !=
+        if (rtti::type_index(meth_info->return_type_id) !=
             rtti::type_index(rtti::template static_type<void>())) {
             auto covariant_return_iter =
-                class_map.find(rtti::type_index(meth_info.return_type_id));
+                class_map.find(rtti::type_index(meth_info->return_type_id));
 
             if (covariant_return_iter != class_map.end()) {
                 meth_iter->covariant_return_type =
@@ -871,10 +883,24 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
             }
         }
 
+        // Collect overriders from all copies of this method
+        std::unordered_set<const detail::overrider_info*> seen_specs;
+        std::vector<detail::overrider_info*> all_specs;
+
+        auto key = rtti::type_index(meth_info->method_type_id);
+        for (auto copy : method_copies[key]) {
+            for (auto& spec : copy->overriders) {
+                if (seen_specs.find(&spec) == seen_specs.end()) {
+                    all_specs.push_back(&spec);
+                    seen_specs.insert(&spec);
+                }
+            }
+        }
+
         // initialize the function pointer in the synthetic not_implemented
         // overrider
         const auto method_index = meth_iter - methods.begin();
-        auto spec_size = meth_info.overriders.size();
+        auto spec_size = all_specs.size();
         meth_iter->not_implemented.pf = meth_iter->info->not_implemented;
         meth_iter->not_implemented.method_index = method_index;
         meth_iter->not_implemented.spec_index = spec_size;
@@ -885,23 +911,23 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         meth_iter->overriders.resize(spec_size);
         auto spec_iter = meth_iter->overriders.begin();
 
-        for (auto& overrider_info : meth_info.overriders) {
+        for (auto overrider_info : all_specs) {
             if constexpr (has_deferred_static_rtti) {
-                static_cast<deferred_overrider_info&>(overrider_info)
+                static_cast<deferred_overrider_info&>(*overrider_info)
                     .resolve_type_ids();
             }
 
             spec_iter->method_index = method_index;
             spec_iter->spec_index = spec_iter - meth_iter->overriders.begin();
 
-            ++tr << type_name(overrider_info.type) << " (" << overrider_info.pf
+            ++tr << type_name(overrider_info->type) << " (" << overrider_info->pf
                  << ")\n";
-            spec_iter->info = &overrider_info;
-            spec_iter->vp.reserve(meth_info.arity());
+            spec_iter->info = overrider_info;
+            spec_iter->vp.reserve(meth_info->arity());
             std::size_t param_index = 0;
 
             for (auto type :
-                 range{overrider_info.vp_begin, overrider_info.vp_end}) {
+                 range{overrider_info->vp_begin, overrider_info->vp_end}) {
                 indent _(tr);
                 auto class_ = class_map[rtti::type_index(type)];
 
@@ -924,14 +950,14 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
 
             if (meth_iter->covariant_return_type) {
                 auto covariant_return_iter = class_map.find(
-                    rtti::type_index(overrider_info.return_type));
+                    rtti::type_index(overrider_info->return_type));
 
                 if (covariant_return_iter != class_map.end()) {
                     spec_iter->covariant_return_type =
                         covariant_return_iter->second;
                 } else {
                     missing_class error;
-                    error.type = overrider_info.return_type;
+                    error.type = overrider_info->return_type;
 
                     if constexpr (has_error_handler) {
                         error_handler::error(error);

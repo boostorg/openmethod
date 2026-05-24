@@ -1,0 +1,557 @@
+Static class info:
+    struct Wolf: (struct Animal, struct Carnivore, struct Wolf), type = 7ff6aebf8af8, &vptr = 7ff6aebf93c0
+    struct Carnivore: (struct Animal, struct Carnivore), type = 7ff6aebf8ad0, &vptr = 7ff6aebf9410
+    struct Cow: (struct Animal, struct Herbivore, struct Cow), type = 7ff6aebf89d8, &vptr = 7ff6aebf93e0
+    struct Herbivore: (struct Animal, struct Herbivore), type = 7ff6aebf89b0, &vptr = 7ff6aebf93f0
+    struct Animal: (struct Animal), type = 7ff6aebf8988, &vptr = 7ff6aebf9400
+    struct Wolf: (struct Carnivore, struct Wolf), type = 7ff6aebf8af8, &vptr = 7ff6aebf93c0
+    struct Carnivore: (struct Carnivore), type = 7ff6aebf8ad0, &vptr = 7ff6aebf9410
+    struct Cow: (struct Herbivore, struct Cow), type = 7ff6aebf89d8, &vptr = 7ff6aebf93e0
+    struct Herbivore: (struct Herbivore), type = 7ff6aebf89b0, &vptr = 7ff6aebf93f0
+Inheritance lattice:
+    struct Wolf
+        bases:      (struct Carnivore)
+        derived:    ()
+        covariant:  (struct Wolf)
+    struct Carnivore
+        bases:      (struct Animal)
+        derived:    (struct Wolf)
+        covariant:  (struct Carnivore, struct Wolf)
+    struct Cow
+        bases:      (struct Herbivore)
+        derived:    ()
+        covariant:  (struct Cow)
+    struct Herbivore
+        bases:      (struct Animal)
+        derived:    (struct Cow)
+        covariant:  (struct Herbivore, struct Cow)
+    struct Animal
+        bases:      ()
+        derived:    (struct Carnivore, struct Herbivore)
+        covariant:  (struct Animal, struct Carnivore, struct Wolf, struct Herbivore, struct Cow)
+Methods:
+    class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry> (struct Animal, struct Animal)
+        class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) (7ff6aeaa3242)
+Allocating slots...
+         in struct Animal for class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry> parameter 0: 0
+         in struct Animal for class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry> parameter 1: 1
+Allocating MI v-tables...
+Building dispatch table for class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    make groups for param #0, class struct Animal
+        overriders applicable to struct Animal
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Carnivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Wolf
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Herbivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Cow
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+    make groups for param #1, class struct Animal
+        overriders applicable to struct Animal
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Carnivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Wolf
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Herbivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Cow
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        stride for dim 1 = 1
+        groups for dim 0:
+            0 mask 1:
+                struct Animal
+                struct Carnivore
+                struct Wolf
+                struct Herbivore
+                struct Cow
+        groups for dim 1:
+            0 mask 1:
+                struct Animal
+                struct Carnivore
+                struct Wolf
+                struct Herbivore
+                struct Cow
+    building dispatch table
+        group 1/0 mask 1
+            struct Animal
+            struct Carnivore
+            struct Wolf
+            struct Herbivore
+            struct Cow
+            group 0/0 mask 1
+                struct Animal
+                struct Carnivore
+                struct Wolf
+                struct Herbivore
+                struct Cow
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            no 'next'
+        dispatch table rank: 1 x 1, concrete only: 1 x 1
+        1 dispatch table cells, 0 not implemented, 0 ambiguous
+Initializing multi-method dispatch tables at 1d71761c920
+  11  method #0 class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    spec #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+Setting 'next' pointers
+    method # class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) -> #1 not implemented
+Initializing v-tables at 1d71761c928
+   1 1d71761c928 vtbl for struct Wolf slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+   3 1d71761c938 vtbl for struct Carnivore slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+   5 1d71761c948 vtbl for struct Cow slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+   7 1d71761c958 vtbl for struct Herbivore slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+   9 1d71761c968 vtbl for struct Animal slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+  11 1d71761c978 end
+Finding hash factor for 5 types
+  trying with M = 3, 8 buckets
+  found 9319614692973156487 after 1 attempts; span = [0, 7]
+1 dispatch table cells, 0 not implemented, 0 ambiguous
+Finished
+Static class info:
+    struct Wolf: (struct Animal, struct Carnivore, struct Wolf), type = 7ff6aebf8af8, &vptr = 7ff6aebf93c0
+    struct Carnivore: (struct Animal, struct Carnivore), type = 7ff6aebf8ad0, &vptr = 7ff6aebf9410
+    struct Cow: (struct Animal, struct Herbivore, struct Cow), type = 7ff6aebf89d8, &vptr = 7ff6aebf93e0
+    struct Herbivore: (struct Animal, struct Herbivore), type = 7ff6aebf89b0, &vptr = 7ff6aebf93f0
+    struct Animal: (struct Animal), type = 7ff6aebf8988, &vptr = 7ff6aebf9400
+    struct Wolf: (struct Carnivore, struct Wolf), type = 7ff6aebf8af8, &vptr = 7ff6aebf93c0
+    struct Carnivore: (struct Carnivore), type = 7ff6aebf8ad0, &vptr = 7ff6aebf9410
+    struct Cow: (struct Herbivore, struct Cow), type = 7ff6aebf89d8, &vptr = 7ff6aebf93e0
+    struct Herbivore: (struct Herbivore), type = 7ff6aebf89b0, &vptr = 7ff6aebf93f0
+    struct Wolf: (struct Animal, struct Carnivore, struct Wolf), type = 7fff25cb55b0, &vptr = 7fff25cb5860
+    struct Carnivore: (struct Animal, struct Carnivore), type = 7fff25cb52c0, &vptr = 7fff25cb5820
+    struct Cow: (struct Animal, struct Herbivore, struct Cow), type = 7fff25cb5590, &vptr = 7fff25cb5830
+    struct Herbivore: (struct Animal, struct Herbivore), type = 7fff25cb5310, &vptr = 7fff25cb5810
+    struct Animal: (struct Animal), type = 7fff25cb52e8, &vptr = 7fff25cb5880
+    struct Carnivore: (struct Carnivore), type = 7fff25cb52c0, &vptr = 7fff25cb5820
+    struct Tiger: (struct Tiger, struct Carnivore), type = 7fff25cb5298, &vptr = 7fff25cb5870
+Inheritance lattice:
+    struct Wolf
+        bases:      (struct Carnivore)
+        derived:    ()
+        covariant:  (struct Wolf)
+    struct Carnivore
+        bases:      (struct Animal)
+        derived:    (struct Wolf, struct Tiger)
+        covariant:  (struct Carnivore, struct Wolf, struct Tiger)
+    struct Cow
+        bases:      (struct Herbivore)
+        derived:    ()
+        covariant:  (struct Cow)
+    struct Herbivore
+        bases:      (struct Animal)
+        derived:    (struct Cow)
+        covariant:  (struct Herbivore, struct Cow)
+    struct Animal
+        bases:      ()
+        derived:    (struct Carnivore, struct Herbivore)
+        covariant:  (struct Carnivore, struct Animal, struct Wolf, struct Tiger, struct Herbivore, struct Cow)
+    struct Tiger
+        bases:      (struct Carnivore)
+        derived:    ()
+        covariant:  (struct Tiger)
+Methods:
+    class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry> (struct Animal, struct Animal)
+        class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) (7ff6aeaa3242)
+        class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>) (7fff25ca1514)
+        class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>) (7fff25ca1384)
+Allocating slots...
+         in struct Animal for class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry> parameter 0: 0
+         in struct Animal for class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry> parameter 1: 1
+Allocating MI v-tables...
+Building dispatch table for class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    make groups for param #0, class struct Animal
+        overriders applicable to struct Carnivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 101
+        overriders applicable to struct Animal
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 001
+        overriders applicable to struct Wolf
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 101
+        overriders applicable to struct Tiger
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 101
+        overriders applicable to struct Herbivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 011
+        overriders applicable to struct Cow
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 011
+    make groups for param #1, class struct Animal
+        overriders applicable to struct Carnivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 011
+        overriders applicable to struct Animal
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 001
+        overriders applicable to struct Wolf
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 011
+        overriders applicable to struct Tiger
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 011
+        overriders applicable to struct Herbivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 101
+        overriders applicable to struct Cow
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>)
+            -> mask: 101
+        stride for dim 1 = 3
+        groups for dim 0:
+            0 mask 001:
+                struct Animal
+        groups for dim 0:
+            1 mask 011:
+                struct Herbivore
+                struct Cow
+        groups for dim 0:
+            2 mask 101:
+                struct Carnivore
+                struct Wolf
+                struct Tiger
+        groups for dim 1:
+            0 mask 001:
+                struct Animal
+        groups for dim 1:
+            1 mask 011:
+                struct Carnivore
+                struct Wolf
+                struct Tiger
+        groups for dim 1:
+            2 mask 101:
+                struct Herbivore
+                struct Cow
+    building dispatch table
+        group 1/0 mask 001
+            struct Animal
+            group 0/0 mask 001
+                struct Animal
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            no 'next'
+            group 0/1 mask 001
+                struct Herbivore
+                struct Cow
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            no 'next'
+            group 0/2 mask 001
+                struct Carnivore
+                struct Wolf
+                struct Tiger
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            no 'next'
+        group 1/1 mask 011
+            struct Carnivore
+            struct Wolf
+            struct Tiger
+            group 0/0 mask 001
+                struct Animal
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            no 'next'
+            group 0/1 mask 011
+                struct Herbivore
+                struct Cow
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+                #1 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>)
+            -> #1 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>) pf = 7fff25ca1514
+            for 'next', select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            group 0/2 mask 001
+                struct Carnivore
+                struct Wolf
+                struct Tiger
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            no 'next'
+        group 1/2 mask 101
+            struct Herbivore
+            struct Cow
+            group 0/0 mask 001
+                struct Animal
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            no 'next'
+            group 0/1 mask 001
+                struct Herbivore
+                struct Cow
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            no 'next'
+            group 0/2 mask 101
+                struct Carnivore
+                struct Wolf
+                struct Tiger
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+                #2 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>)
+            -> #2 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>) pf = 7fff25ca1384
+            for 'next', select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+        dispatch table rank: 3 x 3, concrete only: 3 x 3
+        9 dispatch table cells, 0 not implemented, 0 ambiguous
+Initializing multi-method dispatch tables at 1d717623e60
+  21  method #0 class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    spec #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+    spec #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+    spec #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+    spec #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+    spec #1 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>)
+    spec #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+    spec #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+    spec #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+    spec #2 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>)
+Setting 'next' pointers
+    method # class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) -> #3 not implemented
+    #1 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>) -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+    #2 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Carnivore,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Herbivore,struct boost::openmethod::default_registry,void>) -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+Initializing v-tables at 1d717623ea8
+   9 1d717623ea8 vtbl for struct Wolf slots 0-1
+    method #0 vp #0 group #2
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #1
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+  11 1d717623eb8 vtbl for struct Carnivore slots 0-1
+    method #0 vp #0 group #2
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #1
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+  13 1d717623ec8 vtbl for struct Cow slots 0-1
+    method #0 vp #0 group #1
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #2
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+  15 1d717623ed8 vtbl for struct Herbivore slots 0-1
+    method #0 vp #0 group #1
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #2
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+  17 1d717623ee8 vtbl for struct Animal slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+  19 1d717623ef8 vtbl for struct Tiger slots 0-1
+    method #0 vp #0 group #2
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #1
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+  21 1d717623f08 end
+Finding hash factor for 11 types
+  trying with M = 4, 16 buckets
+  found 8894990856567280979 after 11 attempts; span = [0, 15]
+9 dispatch table cells, 0 not implemented, 0 ambiguous
+Finished
+Static class info:
+    struct Wolf: (struct Animal, struct Carnivore, struct Wolf), type = 7ff6aebf8af8, &vptr = 7ff6aebf93c0
+    struct Carnivore: (struct Animal, struct Carnivore), type = 7ff6aebf8ad0, &vptr = 7ff6aebf9410
+    struct Cow: (struct Animal, struct Herbivore, struct Cow), type = 7ff6aebf89d8, &vptr = 7ff6aebf93e0
+    struct Herbivore: (struct Animal, struct Herbivore), type = 7ff6aebf89b0, &vptr = 7ff6aebf93f0
+    struct Animal: (struct Animal), type = 7ff6aebf8988, &vptr = 7ff6aebf9400
+    struct Wolf: (struct Carnivore, struct Wolf), type = 7ff6aebf8af8, &vptr = 7ff6aebf93c0
+    struct Carnivore: (struct Carnivore), type = 7ff6aebf8ad0, &vptr = 7ff6aebf9410
+    struct Cow: (struct Herbivore, struct Cow), type = 7ff6aebf89d8, &vptr = 7ff6aebf93e0
+    struct Herbivore: (struct Herbivore), type = 7ff6aebf89b0, &vptr = 7ff6aebf93f0
+Inheritance lattice:
+    struct Wolf
+        bases:      (struct Carnivore)
+        derived:    ()
+        covariant:  (struct Wolf)
+    struct Carnivore
+        bases:      (struct Animal)
+        derived:    (struct Wolf)
+        covariant:  (struct Carnivore, struct Wolf)
+    struct Cow
+        bases:      (struct Herbivore)
+        derived:    ()
+        covariant:  (struct Cow)
+    struct Herbivore
+        bases:      (struct Animal)
+        derived:    (struct Cow)
+        covariant:  (struct Herbivore, struct Cow)
+    struct Animal
+        bases:      ()
+        derived:    (struct Carnivore, struct Herbivore)
+        covariant:  (struct Wolf, struct Animal, struct Herbivore, struct Carnivore, struct Cow)
+Methods:
+    class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry> (struct Animal, struct Animal)
+        class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) (7ff6aeaa3242)
+Allocating slots...
+         in struct Animal for class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry> parameter 0: 0
+         in struct Animal for class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry> parameter 1: 1
+Allocating MI v-tables...
+Building dispatch table for class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    make groups for param #0, class struct Animal
+        overriders applicable to struct Wolf
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Animal
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Herbivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Carnivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Cow
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+    make groups for param #1, class struct Animal
+        overriders applicable to struct Wolf
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Animal
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Herbivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Carnivore
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        overriders applicable to struct Cow
+            class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> mask: 1
+        stride for dim 1 = 1
+        groups for dim 0:
+            0 mask 1:
+                struct Wolf
+                struct Animal
+                struct Herbivore
+                struct Carnivore
+                struct Cow
+        groups for dim 1:
+            0 mask 1:
+                struct Wolf
+                struct Animal
+                struct Herbivore
+                struct Carnivore
+                struct Cow
+    building dispatch table
+        group 1/0 mask 1
+            struct Wolf
+            struct Animal
+            struct Herbivore
+            struct Carnivore
+            struct Cow
+            group 0/0 mask 1
+                struct Wolf
+                struct Animal
+                struct Herbivore
+                struct Carnivore
+                struct Cow
+            select best of:
+                #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+            -> #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) pf = 7ff6aeaa3242
+            no 'next'
+        dispatch table rank: 1 x 1, concrete only: 1 x 1
+        1 dispatch table cells, 0 not implemented, 0 ambiguous
+Initializing multi-method dispatch tables at 1d71761c7d0
+  11  method #0 class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    spec #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>)
+Setting 'next' pointers
+    method # class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    #0 class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > (__cdecl*)(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>) -> #1 not implemented
+Initializing v-tables at 1d71761c7d8
+   1 1d71761c7d8 vtbl for struct Wolf slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+   3 1d71761c7e8 vtbl for struct Carnivore slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+   5 1d71761c7f8 vtbl for struct Cow slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+   7 1d71761c808 vtbl for struct Herbivore slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+   9 1d71761c818 vtbl for struct Animal slots 0-1
+    method #0 vp #0 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+    method #0 vp #1 group #0
+        class boost::openmethod::method<struct meet_boost_openmethod,class std::basic_string<char,struct std::char_traits<char>,class std::allocator<char> > __cdecl(class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>,class boost::openmethod::virtual_ptr<struct Animal,struct boost::openmethod::default_registry,void>),struct boost::openmethod::default_registry>
+  11 1d71761c828 end
+Finding hash factor for 5 types
+  trying with M = 3, 8 buckets
+  found 9319614692973156487 after 1 attempts; span = [0, 7]
+1 dispatch table cells, 0 not implemented, 0 ambiguous
+Finished
+Before loading the shared library.
+cow meets wolf -> greet
+wolf meets cow -> greet
+
+After loading the shared library.
+cow meets wolf -> run
+wolf meets cow -> hunt
+cow meets tiger -> run
+
+After unloading the shared library.
+cow meets wolf -> greet
+wolf meets cow -> greet
