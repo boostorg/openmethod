@@ -35,6 +35,11 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
     return "?";
 }
 
+BOOST_OPENMETHOD_OVERRIDE(
+    meet, (virtual_ptr<Animal>, virtual_ptr<Animal>), const char*) {
+    return "ignore";
+}
+
 extern "C" {
 
 BOOST_SYMBOL_EXPORT const void* method_get_ids() {
@@ -49,6 +54,12 @@ method_make_dog(unique_virtual_ptr<Animal>& p) {
 BOOST_SYMBOL_EXPORT const char*
 method_call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
     return speak(animal);
+}
+
+BOOST_SYMBOL_EXPORT const char* method_call_meet(
+    boost::openmethod::virtual_ptr<Animal> a,
+    boost::openmethod::virtual_ptr<Animal> b) {
+    return meet(a, b);
 }
 
 }

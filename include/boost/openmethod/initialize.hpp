@@ -824,26 +824,30 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         }
     }
 
-    // Consolidate method copies from different modules (DLL boundaries)
+    // Group method copies across modules (DLL boundaries) by type_index.
+    // The "local" entry is the first one we encounter — the method_info that
+    // lives in the module performing initialize(). It owns the compiler's
+    // working state for that method; the others get their slots_strides
+    // copied from it later.
     std::map<decltype(rtti::type_index(std::declval<type_id>())), std::vector<method_info*>> method_copies;
-    std::vector<method_info*> canonical_methods;
+    std::vector<method_info*> local_methods;
 
     for (auto& meth_info : registry::static_::st.methods) {
         auto key = rtti::type_index(meth_info.method_type_id);
         if (method_copies.find(key) == method_copies.end()) {
-            canonical_methods.push_back(&meth_info);
+            local_methods.push_back(&meth_info);
         }
         method_copies[key].push_back(&meth_info);
     }
 
-    methods.resize(canonical_methods.size());
+    methods.resize(local_methods.size());
 
     ++tr << "Methods:\n";
     indent _(tr);
 
     auto meth_iter = methods.begin();
 
-    for (auto meth_info : canonical_methods) {
+    for (auto meth_info : local_methods) {
         ++tr << type_name(meth_info->method_type_id) << " "
              << range{meth_info->vp_begin, meth_info->vp_end} << "\n";
 
@@ -1484,6 +1488,26 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
                 m.dispatch_table.begin(), m.dispatch_table.end(), gv_iter,
                 [](auto spec) { return spec->pf; });
         }
+    }
+
+    // Propagate slots_strides values from the local method_info to all
+    // other module copies of the same method. Each module's `fn` has its
+    // own slots_strides[] array; dispatch reads it directly, so every
+    // copy must hold the same values.
+    std::map<decltype(rtti::type_index(std::declval<type_id>())), method_info*>
+        local_by_key;
+    for (auto& m : methods) {
+        local_by_key[rtti::type_index(m.info->method_type_id)] = m.info;
+    }
+    for (auto& meth_info : registry::static_::st.methods) {
+        auto local = local_by_key[rtti::type_index(meth_info.method_type_id)];
+        if (&meth_info == local) {
+            continue;
+        }
+        auto count = 2 * meth_info.arity() - 1;
+        std::copy(
+            local->slots_strides_ptr, local->slots_strides_ptr + count,
+            meth_info.slots_strides_ptr);
     }
 
     ++tr << "Setting 'next' pointers\n";
