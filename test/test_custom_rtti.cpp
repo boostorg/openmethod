@@ -162,18 +162,20 @@ struct custom_rtti : policies::rtti {
         template<typename T>
         static auto static_type() {
             if constexpr (is_polymorphic<T>) {
-                return type_id(T::static_type);
+                return reinterpret_cast<type_id>(T::static_type);
             } else {
-                return type_id(non_polymorphic_static_type<T>());
+                return reinterpret_cast<type_id>(
+                    non_polymorphic_static_type<T>());
             }
         }
 
         template<typename T>
         static auto dynamic_type(const T& obj) {
             if constexpr (is_polymorphic<T>) {
-                return type_id(obj.type);
+                return reinterpret_cast<type_id>(obj.type);
             } else {
-                return type_id(non_polymorphic_static_type<T>());
+                return reinterpret_cast<type_id>(
+                    non_polymorphic_static_type<T>());
             }
         }
 
