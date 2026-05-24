@@ -1494,20 +1494,20 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
     // other module copies of the same method. Each module's `fn` has its
     // own slots_strides[] array; dispatch reads it directly, so every
     // copy must hold the same values.
-    std::map<decltype(rtti::type_index(std::declval<type_id>())), method_info*>
-        local_by_key;
     for (auto& m : methods) {
-        local_by_key[rtti::type_index(m.info->method_type_id)] = m.info;
-    }
-    for (auto& meth_info : registry::static_::st.methods) {
-        auto local = local_by_key[rtti::type_index(meth_info.method_type_id)];
-        if (&meth_info == local) {
-            continue;
+        auto key = rtti::type_index(m.info->method_type_id);
+        auto count = 2 * m.info->arity() - 1;
+        for (auto& meth_info : registry::static_::st.methods) {
+            if (&meth_info == m.info) {
+                continue;
+            }
+            if (rtti::type_index(meth_info.method_type_id) == key) {
+                std::copy(
+                    m.info->slots_strides_ptr,
+                    m.info->slots_strides_ptr + count,
+                    meth_info.slots_strides_ptr);
+            }
         }
-        auto count = 2 * meth_info.arity() - 1;
-        std::copy(
-            local->slots_strides_ptr, local->slots_strides_ptr + count,
-            meth_info.slots_strides_ptr);
     }
 
     ++tr << "Setting 'next' pointers\n";
