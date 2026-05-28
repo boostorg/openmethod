@@ -18,25 +18,6 @@
 
 using namespace boost::openmethod;
 
-#ifdef _WIN32
-
-static_assert(!std::is_same_v<
-              BOOST_OPENMETHOD_TYPE(
-                  meet, (virtual_ptr<Animal>, virtual_ptr<Animal>),
-                  std::string)::declspec,
-              void>);
-
-static_assert(std::is_same_v<
-              BOOST_OPENMETHOD_TYPE(
-                  meet, (virtual_ptr<Animal>, virtual_ptr<Animal>),
-                  std::string)::declspec,
-              dllexport>);
-
-static_assert(!std::is_same_v<default_registry::declspec, void>);
-static_assert(std::is_same_v<default_registry::declspec, dllexport>);
-
-#endif
-
 // tag::before[]
 // dynamic_main.cpp
 

@@ -68,8 +68,8 @@ struct has_initialize_aux : std::false_type {};
 
 template<class T, class... Args>
 struct has_initialize_aux<
-    std::void_t<decltype(&T::template initialize<std::decay_t<Args>...>)>,
-    T, Args...> : std::true_type {};
+    std::void_t<decltype(&T::template initialize<std::decay_t<Args>...>)>, T,
+    Args...> : std::true_type {};
 
 template<class T, class... Args>
 constexpr bool has_initialize = has_initialize_aux<void, T, Args...>::value;
@@ -181,7 +181,12 @@ struct generic_compiler {
     static void accumulate(const method_report& partial, report& total);
 
     struct method {
-        detail::method_info* info;
+        std::size_t index;
+        // All method_info instances for this logical method, one per module
+        // that instantiated the method's `fn`. `info` is one of these. Used to
+        // propagate slots_strides to every copy after the dispatch table is
+        // built.
+        std::vector<detail::method_info*> infos;
         std::vector<class_*> vp;
         class_* covariant_return_type = nullptr;
         std::vector<overrider> overriders;
@@ -201,8 +206,10 @@ struct generic_compiler {
 
     const method* operator[](const detail::method_info& info) const {
         auto iter = std::find_if(
-            methods.begin(), methods.end(),
-            [&info](const method& m) { return m.info == &info; });
+            methods.begin(), methods.end(), [&info](const method& m) {
+                return std::find(m.infos.begin(), m.infos.end(), &info) !=
+                    m.infos.end();
+            });
 
         if (iter != methods.end()) {
             return &*iter;
@@ -289,7 +296,7 @@ struct generic_compiler {
         return const_class_iterator(classes.end(), classes.end());
     }
 
-    std::vector<method> methods;
+    std::deque<method> methods;
     std::size_t class_mark = 0;
     bool compilation_done = false;
 };
@@ -829,155 +836,162 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
     // lives in the module performing initialize(). It owns the compiler's
     // working state for that method; the others get their slots_strides
     // copied from it later.
-    std::map<decltype(rtti::type_index(std::declval<type_id>())), std::vector<method_info*>> method_copies;
-    std::vector<method_info*> local_methods;
+    std::map<type_index_type, method*> method_map;
 
-    for (auto& meth_info : registry::static_::st.methods) {
-        auto key = rtti::type_index(meth_info.method_type_id);
-        if (method_copies.find(key) == method_copies.end()) {
-            local_methods.push_back(&meth_info);
+    for (auto& info : registry::static_::st.methods) {
+        auto key = rtti::type_index(info.method_type_id);
+        method* method;
+
+        if (method_map.find(key) == method_map.end()) {
+            methods.emplace_back();
+            method = &methods.back();
+            method_map[key] = method;
+        } else {
+            method = method_map[key];
         }
-        method_copies[key].push_back(&meth_info);
+
+        method->infos.push_back(&info);
     }
 
-    methods.resize(local_methods.size());
+    std::size_t method_index = 0;
 
     ++tr << "Methods:\n";
     indent _(tr);
 
-    auto meth_iter = methods.begin();
+    for (auto& method : methods) {
+        method.index = method_index++;
+        auto first_info = method.infos[0];
+        BOOST_ASSERT(first_info);
+        method.vp.reserve(first_info->arity());
+        method.slots.resize(first_info->arity());
 
-    for (auto meth_info : local_methods) {
-        ++tr << type_name(meth_info->method_type_id) << " "
-             << range{meth_info->vp_begin, meth_info->vp_end} << "\n";
+        ++tr << type_name(first_info->method_type_id) << " "
+             << range{first_info->vp_begin, first_info->vp_end} << "\n";
+        std::size_t module_index = 0;
 
-        indent _(tr);
+        for (auto meth_info : method.infos) {
+            indent _(tr);
+            ++tr << "module " << module_index++ << "\n";
 
-        meth_iter->info = meth_info;
-        meth_iter->vp.reserve(meth_info->arity());
-        meth_iter->slots.resize(meth_info->arity());
+            {
+                std::size_t param_index = 0;
 
-        {
-            std::size_t param_index = 0;
+                for (auto ti : range{meth_info->vp_begin, meth_info->vp_end}) {
+                    auto class_ = class_map[rtti::type_index(ti)];
+                    if (!class_) {
+                        ++tr << "unknown class " << ti << "(" << type_name(ti)
+                             << ") for parameter #" << (param_index + 1)
+                             << "\n";
+                        missing_class error;
+                        error.type = ti;
 
-            for (auto ti : range{meth_info->vp_begin, meth_info->vp_end}) {
-                auto class_ = class_map[rtti::type_index(ti)];
-                if (!class_) {
-                    ++tr << "unknown class " << ti << "(" << type_name(ti)
-                         << ") for parameter #" << (param_index + 1) << "\n";
-                    missing_class error;
-                    error.type = ti;
+                        if constexpr (has_error_handler) {
+                            error_handler::error(error);
+                        }
 
-                    if constexpr (has_error_handler) {
-                        error_handler::error(error);
+                        abort();
                     }
 
-                    abort();
-                }
-
-                meth_iter->vp.push_back(class_);
-            }
-        }
-
-        if (rtti::type_index(meth_info->return_type_id) !=
-            rtti::type_index(rtti::template static_type<void>())) {
-            auto covariant_return_iter =
-                class_map.find(rtti::type_index(meth_info->return_type_id));
-
-            if (covariant_return_iter != class_map.end()) {
-                meth_iter->covariant_return_type =
-                    covariant_return_iter->second;
-            }
-        }
-
-        // Collect overriders from all copies of this method
-        std::unordered_set<const detail::overrider_info*> seen_specs;
-        std::vector<detail::overrider_info*> all_specs;
-
-        auto key = rtti::type_index(meth_info->method_type_id);
-        for (auto copy : method_copies[key]) {
-            for (auto& spec : copy->overriders) {
-                if (seen_specs.find(&spec) == seen_specs.end()) {
-                    all_specs.push_back(&spec);
-                    seen_specs.insert(&spec);
+                    method.vp.push_back(class_);
                 }
             }
-        }
 
-        // initialize the function pointer in the synthetic not_implemented
-        // overrider
-        const auto method_index = meth_iter - methods.begin();
-        auto spec_size = all_specs.size();
-        meth_iter->not_implemented.pf = meth_iter->info->not_implemented;
-        meth_iter->not_implemented.method_index = method_index;
-        meth_iter->not_implemented.spec_index = spec_size;
-        meth_iter->ambiguous.pf = meth_iter->info->ambiguous;
-        meth_iter->ambiguous.method_index = method_index;
-        meth_iter->ambiguous.spec_index = spec_size + 1;
-
-        meth_iter->overriders.resize(spec_size);
-        auto spec_iter = meth_iter->overriders.begin();
-
-        for (auto overrider_info : all_specs) {
-            if constexpr (has_deferred_static_rtti) {
-                static_cast<deferred_overrider_info&>(*overrider_info)
-                    .resolve_type_ids();
-            }
-
-            spec_iter->method_index = method_index;
-            spec_iter->spec_index = spec_iter - meth_iter->overriders.begin();
-
-            ++tr << type_name(overrider_info->type) << " (" << overrider_info->pf
-                 << ")\n";
-            spec_iter->info = overrider_info;
-            spec_iter->vp.reserve(meth_info->arity());
-            std::size_t param_index = 0;
-
-            for (auto type :
-                 range{overrider_info->vp_begin, overrider_info->vp_end}) {
-                indent _(tr);
-                auto class_ = class_map[rtti::type_index(type)];
-
-                if (!class_) {
-                    ++tr << "unknown class error for *virtual* parameter #"
-                         << (param_index + 1) << "\n";
-                    missing_class error;
-                    error.type = type;
-
-                    if constexpr (has_error_handler) {
-                        error_handler::error(error);
-                    }
-
-                    abort();
-                }
-
-                spec_iter->pf = spec_iter->info->pf;
-                spec_iter->vp.push_back(class_);
-            }
-
-            if (meth_iter->covariant_return_type) {
-                auto covariant_return_iter = class_map.find(
-                    rtti::type_index(overrider_info->return_type));
+            if (rtti::type_index(meth_info->return_type_id) !=
+                rtti::type_index(rtti::template static_type<void>())) {
+                auto covariant_return_iter =
+                    class_map.find(rtti::type_index(meth_info->return_type_id));
 
                 if (covariant_return_iter != class_map.end()) {
-                    spec_iter->covariant_return_type =
+                    method.covariant_return_type =
                         covariant_return_iter->second;
-                } else {
-                    missing_class error;
-                    error.type = overrider_info->return_type;
-
-                    if constexpr (has_error_handler) {
-                        error_handler::error(error);
-                    }
-
-                    abort();
                 }
             }
 
-            ++spec_iter;
-        }
+            // Collect overriders from all copies of this method
+            std::unordered_set<const detail::overrider_info*> seen_specs;
+            std::vector<detail::overrider_info*> all_specs;
 
-        ++meth_iter;
+            for (auto info : method.infos) {
+                for (auto& spec : info->overriders) {
+                    if (seen_specs.find(&spec) == seen_specs.end()) {
+                        all_specs.push_back(&spec);
+                        seen_specs.insert(&spec);
+                    }
+                }
+            }
+
+            // initialize the function pointer in the synthetic not_implemented
+            // overrider
+            auto spec_size = all_specs.size();
+            method.not_implemented.pf = first_info->not_implemented;
+            method.not_implemented.method_index = method.index;
+            method.not_implemented.spec_index = spec_size;
+            method.ambiguous.pf = first_info->ambiguous;
+            method.ambiguous.method_index = method.index;
+            method.ambiguous.spec_index = spec_size + 1;
+
+            method.overriders.resize(spec_size);
+            auto spec_iter = method.overriders.begin();
+
+            for (auto overrider_info : all_specs) {
+                if constexpr (has_deferred_static_rtti) {
+                    static_cast<deferred_overrider_info&>(*overrider_info)
+                        .resolve_type_ids();
+                }
+
+                spec_iter->method_index = method.index;
+                spec_iter->spec_index = spec_iter - method.overriders.begin();
+
+                ++tr << type_name(overrider_info->type) << " ("
+                     << overrider_info->pf << ")\n";
+                spec_iter->info = overrider_info;
+                spec_iter->vp.reserve(meth_info->arity());
+                std::size_t param_index = 0;
+
+                for (auto type :
+                     range{overrider_info->vp_begin, overrider_info->vp_end}) {
+                    indent _(tr);
+                    auto class_ = class_map[rtti::type_index(type)];
+
+                    if (!class_) {
+                        ++tr << "unknown class error for *virtual* parameter #"
+                             << (param_index + 1) << "\n";
+                        missing_class error;
+                        error.type = type;
+
+                        if constexpr (has_error_handler) {
+                            error_handler::error(error);
+                        }
+
+                        abort();
+                    }
+
+                    spec_iter->pf = spec_iter->info->pf;
+                    spec_iter->vp.push_back(class_);
+                }
+
+                if (method.covariant_return_type) {
+                    auto covariant_return_iter = class_map.find(
+                        rtti::type_index(overrider_info->return_type));
+
+                    if (covariant_return_iter != class_map.end()) {
+                        spec_iter->covariant_return_type =
+                            covariant_return_iter->second;
+                    } else {
+                        missing_class error;
+                        error.type = overrider_info->return_type;
+
+                        if constexpr (has_error_handler) {
+                            error_handler::error(error);
+                        }
+
+                        abort();
+                    }
+                }
+
+                ++spec_iter;
+            }
+        }
     }
 
     for (auto& method : methods) {
@@ -1064,7 +1078,7 @@ void registry<Policies...>::compiler<Options...>::assign_tree_slots(
 
     for (const auto& mp : cls.used_by_vp) {
         ++tr << " in " << cls << " for "
-             << type_name(mp.method->info->method_type_id) << " parameter "
+             << type_name(mp.method->infos[0]->method_type_id) << " parameter "
              << mp.param << ": " << next_slot << "\n";
         mp.method->slots[mp.param] = next_slot++;
     }
@@ -1092,8 +1106,8 @@ void registry<Policies...>::compiler<Options...>::assign_lattice_slots(
     if (!cls.used_by_vp.empty()) {
         for (const auto& mp : cls.used_by_vp) {
             ++tr << " in " << cls << " for "
-                 << type_name(mp.method->info->method_type_id) << " parameter "
-                 << mp.param << "\n";
+                 << type_name(mp.method->infos[0]->method_type_id)
+                 << " parameter " << mp.param << "\n";
 
             indent _(tr);
 
@@ -1161,8 +1175,9 @@ void registry<Policies...>::compiler<Options...>::build_dispatch_tables() {
     using namespace detail;
 
     for (auto& m : methods) {
+        auto first_info = m.infos[0];
         ++tr << "Building dispatch table for "
-             << type_name(m.info->method_type_id) << "\n";
+             << type_name(first_info->method_type_id) << "\n";
         indent _(tr);
 
         auto dims = m.arity();
@@ -1234,7 +1249,7 @@ void registry<Policies...>::compiler<Options...>::build_dispatch_tables() {
                     indent _(tr);
                     ++tr << type_name(cls->ci[0]->type) << "\n";
                     auto& entry = cls->vtbl[m.slots[dim] - cls->first_slot];
-                    entry.method_index = &m - &methods[0];
+                    entry.method_index = m.index;
                     entry.vp_index = dim;
                     entry.group_index = group_num;
                 }
@@ -1462,18 +1477,20 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
     ++tr << "Initializing multi-method dispatch tables at " << gv_iter << "\n";
 
     for (auto& m : methods) {
-        if (m.info->arity() == 1) {
+        auto first_info = m.infos[0];
+
+        if (first_info->arity() == 1) {
             // Uni-methods just need an index in the method table.
-            m.info->slots_strides_ptr[0] = m.slots[0];
+            first_info->slots_strides_ptr[0] = m.slots[0];
         } else {
             auto strides_iter = std::copy(
-                m.slots.begin(), m.slots.end(), m.info->slots_strides_ptr);
+                m.slots.begin(), m.slots.end(), first_info->slots_strides_ptr);
             std::copy(m.strides.begin(), m.strides.end(), strides_iter);
 
             if constexpr (has_trace) {
                 ++tr << rflush(4, dispatch_data_size) << " " << " method #"
                      << m.dispatch_table[0]->method_index << " "
-                     << type_name(m.info->method_type_id) << "\n";
+                     << type_name(first_info->method_type_id) << "\n";
                 indent _(tr);
 
                 for (auto& entry : m.dispatch_table) {
@@ -1495,26 +1512,24 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
     // own slots_strides[] array; dispatch reads it directly, so every
     // copy must hold the same values.
     for (auto& m : methods) {
-        auto key = rtti::type_index(m.info->method_type_id);
-        auto count = 2 * m.info->arity() - 1;
-        for (auto& meth_info : registry::static_::st.methods) {
-            if (&meth_info == m.info) {
+        auto count = 2 * m.infos[0]->arity() - 1;
+        for (auto copy : m.infos) {
+            if (copy == m.infos[0]) {
                 continue;
             }
-            if (rtti::type_index(meth_info.method_type_id) == key) {
-                std::copy(
-                    m.info->slots_strides_ptr,
-                    m.info->slots_strides_ptr + count,
-                    meth_info.slots_strides_ptr);
-            }
+            std::copy(
+                m.infos[0]->slots_strides_ptr,
+                m.infos[0]->slots_strides_ptr + count, copy->slots_strides_ptr);
         }
     }
 
     ++tr << "Setting 'next' pointers\n";
 
     for (auto& m : methods) {
+        auto first_info = m.infos[0];
         indent _(tr);
-        ++tr << "method #" << " " << type_name(m.info->method_type_id) << "\n";
+        ++tr << "method #" << " " << type_name(first_info->method_type_id)
+             << "\n";
 
         for (auto& overrider : m.overriders) {
             if (overrider.next) {
@@ -1553,7 +1568,7 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
                 auto spec = method.dispatch_table[entry.group_index];
                 tr << "spec #" << spec->spec_index << "\n";
                 indent _(tr);
-                ++tr << type_name(method.info->method_type_id) << "\n";
+                ++tr << type_name(method.infos[0]->method_type_id) << "\n";
                 ++tr << spec_name(method, spec);
                 BOOST_ASSERT(gv_iter + 1 <= gv_last);
                 *gv_iter++ = spec->pf;
@@ -1561,7 +1576,7 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
                 tr << "vp #" << entry.vp_index << " group #"
                    << entry.group_index << "\n";
                 indent _2(tr);
-                ++tr << type_name(method.info->method_type_id);
+                ++tr << type_name(method.infos[0]->method_type_id);
                 BOOST_ASSERT(gv_iter + 1 <= gv_last);
 
                 if (entry.vp_index == 0) {
@@ -1632,10 +1647,9 @@ void registry<Policies...>::compiler<Options...>::select_dominant_overriders(
                         if (candidates[i]->covariant_return_type->is_base_of(
                                 candidates[j]->covariant_return_type)) {
                             candidates[i] = nullptr;
-                        } else if (candidates[j]
-                                       ->covariant_return_type->is_base_of(
-                                           candidates[i]
-                                               ->covariant_return_type)) {
+                        } else if (
+                            candidates[j]->covariant_return_type->is_base_of(
+                                candidates[i]->covariant_return_type)) {
                             candidates[j] = nullptr;
                         }
                     }
