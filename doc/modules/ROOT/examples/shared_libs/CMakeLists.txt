@@ -32,7 +32,14 @@ add_library(boost_openmethod-shared SHARED extensions.cpp)
 target_link_libraries(boost_openmethod-shared PRIVATE Boost::openmethod boost_openmethod-dynamic)
 set_target_properties(boost_openmethod-shared PROPERTIES ENABLE_EXPORTS ON)
 
-add_test(NAME boost_openmethod-dynamic_shared COMMAND boost_openmethod-dynamic)
+# Run from the directory holding the freshly-built exe and its co-located DLL
+# (CMAKE_RUNTIME_OUTPUT_DIRECTORY). dynamic_main.cpp loads the DLL by relative
+# name, which boost::dll resolves against the working directory; without this
+# the test would pick up a stale copy from the source/binary tree.
+add_test(
+    NAME boost_openmethod-dynamic_shared
+    COMMAND boost_openmethod-dynamic
+    WORKING_DIRECTORY $<TARGET_FILE_DIR:boost_openmethod-dynamic>)
 
 # NOTE: build the following target (or ALL) when working on this. Just building
 # boost_openmethod-dynamic will *not* build the DLL.
