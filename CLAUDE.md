@@ -163,76 +163,72 @@ Tests require these C++17 features (checked by Boost.Build):
 
 ### Working with Shared Libraries / DLL Support
 
-**Overview**: The library supports shared library usage on Windows with proper dllexport/dllimport decoration.
+**Overview**: The library supports shared library usage on Windows (and Cygwin) with
+dllexport/dllimport decoration of the registry's state. On other platforms no decoration is
+needed — the state has ordinary external linkage and is shared by the dynamic linker.
 
-**Key Pattern - Decoratable Static Variables**:
-All policy static variables use `BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(name)` macro (in `preamble.hpp`) to enable DLL decoration. This generates three specializations of `static_<name>`:
-- Default (no attributes)
-- `BOOST_SYMBOL_EXPORT` when registry has dllexport attributes
-- `BOOST_SYMBOL_IMPORT` when registry has dllimport attributes
+**One shared state variable**: All of a registry's mutable state — the class/method/overrider
+lists *and* every stateful policy's `state` (held together in the `registry_state::policies`
+tuple) — lives in a single variable, `detail::static_st<Registry>::st` of type
+`detail::registry_state<Registry>`. A registry reaches it through `Registry::state()`. Sharing a
+registry across a DLL boundary therefore means sharing this one symbol.
 
-The attributes are selected via `get_attributes<Guide>` which uses ADL to call `boost_openmethod_declspec(Guide)`.
+**The `dllvar` policy**: DLL decoration is driven by a policy category, `policies::dllvar`, with
+two marker policies `policies::dllexport` and `policies::dllimport` (all defined only on
+Windows/Cygwin). `detail::static_st` is a SFINAE-specialized template keyed on `Registry`:
+- primary (no `dllvar` policy, or non-Windows) → undecorated `st`;
+- registry's `dllvar` policy derives from `policies::dllexport` → `BOOST_SYMBOL_EXPORT st` (defined here);
+- derives from `policies::dllimport` → `BOOST_SYMBOL_IMPORT st` (no definition — it lives in the owning module).
 
-**Affected Policies** (actual symbol names from `nm -D`):
-- `stderr_output::fn::os` - Output stream (via `static_os`)
-- `default_error_handler::fn::handler` - Error handler function (via `static_handler`)
-- `fast_perfect_hash::fn::hash_fn` - Hash factors struct (via `static_hash_fn`)
-- `vptr_map::fn::vptrs` - V-table pointer map (via `static_vptrs`)
-- `vptr_vector::fn::vptr_vector_vptrs` / `vptr_vector_indirect_vptrs` - V-table vectors
-- Registry state itself: `static_st<registry_state<Registry>>::st` - class/method/overrider lists
+All specializations resolve to `static_st<Registry, void>::st`, so the **mangled symbol name is
+identical** across translation units; only the export/import attribute differs.
 
-**`declspec` types** (in `preamble.hpp`):
-- `dllexport` — marks the owning library (exports static variables)
-- `dllimport` — marks client libraries (imports from the owning library)
-- `declspec_none` — no-op; use on non-Windows where dllexport/dllimport are unnecessary
-
-**Example Usage**:
+**Stable symbol across TUs (the key trick)**: to export from the owning module and import in
+clients while keeping ONE shared symbol, give the registry a `dllvar` policy whose *type name is
+stable* but whose *base class* varies per translation unit. `default_registry` does this with
+`default_registry_dllvar` (in `default_registry.hpp`):
 ```cpp
-// In header shared between library and client
-#if !defined(_MSC_VER)
-#define MY_API boost::openmethod::declspec_none
-#elif defined(MY_LIBRARY_EXPORTS)
-#define MY_API boost::openmethod::dllexport
-#else
-#define MY_API boost::openmethod::dllimport
+#if defined(_WIN32) || defined(__CYGWIN__)
+# if defined(BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY)
+struct default_registry_dllvar : policies::dllexport {};
+# elif defined(BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY)
+struct default_registry_dllvar : policies::dllimport {};
+# endif
 #endif
-
-namespace boost::openmethod {
-    MY_API boost_openmethod_declspec(default_registry_attributes);
-}
-
-BOOST_OPENMETHOD(my_method, (virtual_ptr<MyClass>), void, MY_API);
 ```
+The type name `default_registry_dllvar` is identical in every TU (so `default_registry`, and thus
+`static_st<default_registry>::st`, has one mangled name), but it derives from `dllexport` in the
+owning module and `dllimport` in clients. A base class is not part of a class's mangled name, so
+the symbol matches while SFINAE picks export vs import.
 
-**Critical: Exporting the Registry State**:
-`static_st<registry_state<...>>::st` (the list of registered classes/methods/overriders) is only
-instantiated and exported from a shared library when that library compiles code that actually
-registers classes or methods (i.e., `BOOST_OPENMETHOD_CLASSES` or `BOOST_OPENMETHOD` macros).
-If a library is meant to "own" the registry state, it must include a header that triggers these
-registrations — it is not enough to just declare `boost_openmethod_declspec`.
+**Usage**: define exactly one of the macros *before* including
+`<boost/openmethod/default_registry.hpp>` (or `<boost/openmethod.hpp>`):
+`BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY` in the module that owns the state,
+`BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY` in every client. With neither (or off-Windows),
+`default_registry` carries no `dllvar` policy and the state has ordinary linkage. A custom registry
+opts in the same way: `registry<..., my_dllvar>` where `my_dllvar : policies::dllexport` (owner) or
+`: policies::dllimport` (client), with a per-TU macro choosing the base.
+
+**Methods need no decoration**: method objects are *consolidated* across modules at `initialize()`
+time, not shared via a single symbol, so `BOOST_OPENMETHOD(...)` takes no declspec argument. There
+is no longer any per-method `boost_openmethod_declspec` ADL hook.
+
+**`policies::declspec_none`** remains as the "no decoration" tag (e.g. for non-Windows code paths).
 
 See `doc/modules/ROOT/examples/shared_libs/` and `test/dynamic_loading/` for complete examples.
 
-**Dynamic Loading Test** (`test/dynamic_loading/`):
-Verifies shared state across libraries. Each library exports a single `dl_XXX_get_policy_ids() -> const void**` (null-terminated array of policy state addresses) plus `dl_XXX_get_method_fn()` where applicable. The array is built at first call using:
-```cpp
-namespace mp11 = boost::mp11;  // alias, not 'using namespace' — avoids detail:: ambiguity
-// ...
-mp11::mp_for_each<default_registry::policy_list>([&](auto p) {
-    using P = decltype(p);
-    if constexpr (detail::has_id<default_registry::policy<P>>) {
-        ids[i++] = default_registry::policy<P>::id();
-    }
-});
-```
-Files:
-- `registry.hpp` — sets up `REGISTRY_API` macro and `boost_openmethod_declspec` declaration
-- `method.hpp` — sets up `METHOD_API` macro and declares the `speak` method
-- `classes.hpp` — class definitions + `BOOST_OPENMETHOD_CLASSES` (included by lib_registry with dllexport to force `st` export)
-- `lib_registry.cpp` — compiled with `REGISTRY_API=dllexport`, exports all registry statics
-- `lib_method.cpp` — compiled with `METHOD_API=dllexport`, imports registry from lib_registry
-- `lib_overrider.cpp` — dynamically loaded at runtime, adds a Dog overrider
-- `main.cpp` — loads lib_overrider, compares all `id()` arrays element-by-element, calls `initialize()`, tests dispatch
+**Dynamic Loading Test** (`test/dynamic_loading/`): verifies that the registry state is a single
+shared symbol across modules. `get_ids()` (in `registry.hpp`) returns the registry-state address
+(`default_registry::id()`) followed by any stateful-policy `id()`s; `main.cpp`'s `same_ids()`
+asserts these addresses are identical across modules. (Policy state now lives inside
+`registry_state`, so in practice the registry-state address is the one shared symbol.) Files:
+- `registry.hpp` — maps `EXPORT_REGISTRY` → `BOOST_OPENMETHOD_{EXPORT,IMPORT}_DEFAULT_REGISTRY` before including `default_registry.hpp`; defines `get_ids()`
+- `classes.hpp` — `Animal`/`Dog` definitions + `make_dog`
+- `method.hpp` — declares the `speak`/`meet` methods (no declspec arguments)
+- `registry.cpp` — compiled with `EXPORT_REGISTRY`; the shared library that owns and exports the registry state
+- `method.cpp` — client (imports the registry state); defines base overriders, exports C entry points
+- `overrider.cpp` — dynamically loaded at runtime; adds a Dog overrider
+- `main.cpp` — links the registry + method libs, loads the overrider lib, checks `same_ids`, calls `initialize()`, tests cross-module dispatch
 
 ### Custom RTTI
 When `<typeinfo>` is unavailable or insufficient, use static_rtti or implement custom RTTI. See `doc/modules/ROOT/examples/custom_rtti/` and policies in `include/boost/openmethod/policies/`.
@@ -304,53 +300,44 @@ The `initialize()` function:
 
 The v-table pointer enables O(1) method dispatch.
 
-### Policy Static Variables Pattern
+### Policy State Pattern
 
-When adding static variables to policies:
+Stateful policies keep their data in a nested `struct state` inside `fn<Registry>` and reach it
+through the registry's shared `registry_state`. `registry_state` automatically gathers every
+policy's `state` into its `policies` tuple, so a policy's state is part of the single shared
+`static_st<Registry>::st` variable — no per-policy DLL decoration, `MAKE_STATICS` macro, or `id()`
+function is needed (those were all removed).
 
-1. **Declare the variable storage** in `detail` namespace using `BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(variable_name)` (defined in `preamble.hpp`)
-2. **Use type alias** in policy's `fn<Registry>` class: `using var_storage = detail::static_variable_name<Type, Registry>`
-3. **Access via storage**: `var_storage::variable_name` instead of direct static member
-4. **Definition is generated** by the macro: `template<class Registry> Type detail::static_variable_name<Type, Registry, Enable>::variable_name;`
+To add state to a policy's `fn<Registry>`:
 
-This pattern ensures static variables can be properly decorated with dllexport/dllimport for shared library usage.
+1. **Declare a public `struct state`** with the data members:
+   ```cpp
+   struct state {
+       detail::hash_fn fn;
+       std::vector<type_id> control;
+   };
+   ```
+2. **Add a private accessor** returning this policy's slot in the registry's tuple:
+   ```cpp
+   static auto& st() {
+       return Registry::state().template policy<fast_perfect_hash>();
+   }
+   ```
+   `Registry::state()` returns the `registry_state<Registry>`; its `policy<P>()` returns
+   `P::fn<Registry>::state&` via `std::get` on the tuple.
+3. **Use `st()`** wherever the state is read or written: `st().fn`, `st().control`, etc. (name it
+   `st()` so it does not shadow the `state` type).
 
-5. **Add an `id()` function** to the policy's `fn<Registry>` class returning the address of the first byte of the state. Its presence is detectable via `detail::has_id<P>` (a variable template generated by `BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(has_id, id)` in `preamble.hpp`):
+`registry_state` (in `preamble.hpp`) builds its `policies` tuple by instantiating each policy's
+`fn<Registry>`, keeping those that have a nested `state` (`detail::has_policy_state`), and storing
+one of each:
 ```cpp
-static auto id() -> const void* {
-    return &static_::variable_name;
-}
+mp_apply<std::tuple,
+    mp_transform<policy_state_t,
+        mp_filter<has_policy_state,
+            mp_transform_q<policy_fn_q<Registry>, Registry::policy_list>>>>
 ```
-For policies with two possible state variables (e.g., `vptr_vector`), use `if constexpr` to select the active one:
-```cpp
-static auto id() -> const void* {
-    if constexpr (Registry::has_indirect_vptr) {
-        return &static_::vptr_vector_indirect_vptrs;
-    } else {
-        return &static_::vptr_vector_vptrs;
-    }
-}
-```
-For `stderr_output`, which inherits its state, use the class name: `&fn::os`.
 
-**Example from fast_perfect_hash**:
-```cpp
-// In detail namespace
-struct hash_fn {
-    std::size_t mult, shift, min_value, max_value;
-    auto operator()(type_id type) const -> std::size_t {
-        return (mult * reinterpret_cast<uintptr>(type)) >> shift;
-    }
-};
-BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(hash_fn);  // generates static_hash_fn<Type, Registry, Enable>
-
-// In policy
-template<class Registry>
-class fn {
-    using factors_storage = detail::static_hash_fn<detail::hash_fn, Registry>;
-public:
-    static auto hash(type_id type) -> std::size_t {
-        return factors_storage::hash_fn(type);  // Use via storage
-    }
-};
-```
+Only the registry itself has an `id()` (returning `&state().classes`), detected via
+`detail::has_id` (generated by `BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(id)`); the dynamic_loading
+test uses it to compare the shared state address across modules.

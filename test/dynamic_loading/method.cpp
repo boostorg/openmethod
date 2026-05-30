@@ -7,8 +7,6 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
-#define EXPORT_METHOD
-
 #include "registry.hpp"
 #include "method.hpp"
 
@@ -26,7 +24,7 @@ using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
 #if defined(_WIN32) || defined(__CYGWIN__)
-static_assert(std::is_same_v<default_registry::declspec, dllimport>);
+static_assert(std::is_base_of_v<policies::dllimport, default_registry_dllvar>);
 #endif
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);

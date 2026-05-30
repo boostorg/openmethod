@@ -10,16 +10,10 @@
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(EXPORT_REGISTRY)
-#define REGISTRY_DECLSPEC boost::openmethod::dllexport
+#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
 #else
-#define REGISTRY_DECLSPEC boost::openmethod::dllimport
+#define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
 #endif
-
-namespace boost::openmethod {
-REGISTRY_DECLSPEC
-boost_openmethod_declspec(default_registry&);
-} // namespace boost::openmethod
-
 #endif
 
 #include <boost/openmethod/default_registry.hpp>

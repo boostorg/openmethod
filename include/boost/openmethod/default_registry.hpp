@@ -35,12 +35,30 @@ namespace boost::openmethod {
 //! inconsistent use of the macro can cause ODR violations. If defined, it must
 //! be in all the translation units in the program that use `default_registry`,
 //! including those pulled from libraries.
+#if defined(_WIN32) || defined(__CYGWIN__)
+# if defined(BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY)
+//! The `dllvar` policy of @ref default_registry. Its type name is stable across
+//! translation units, but it derives from @ref policies::dllexport in the
+//! library that owns the registry state and from @ref policies::dllimport in
+//! clients, so `default_registry` keeps a single shared symbol while the
+//! export/import attribute flips per translation unit.
+struct default_registry_dllvar : policies::dllexport {};
+# elif defined(BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY)
+struct default_registry_dllvar : policies::dllimport {};
+# endif
+#endif
+
 struct default_registry
     : registry<
           policies::std_rtti, policies::fast_perfect_hash,
           policies::vptr_vector, policies::default_error_handler,
-          policies::stderr_output,
-          policies::declspec<default_registry>
+          policies::stderr_output
+#if (defined(_WIN32) || defined(__CYGWIN__)) &&                                \
+    (defined(BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY) ||                      \
+     defined(BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY))
+          ,
+          default_registry_dllvar
+#endif
 #ifdef BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS
           ,
           policies::runtime_checks

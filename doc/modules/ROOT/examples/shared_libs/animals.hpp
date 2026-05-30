@@ -12,28 +12,18 @@
 
 #include <boost/openmethod/preamble.hpp>
 
-#ifdef BOOST_CLANG
-#pragma clang diagnostic ignored "-Wundefined-var-template"
-#endif
-
-#ifdef BOOST_GCC
-//#pragma GCC diagnostic ignored "-Wundefined-var-template"
-#endif
-
 // tag::content[]
+// The module that owns the registry state defines LIBRARY_NAME and exports it;
+// modules that link against or load it import it. This must be set before
+// <boost/openmethod/default_registry.hpp> is included. No decoration is needed
+// on non-Windows platforms.
 #ifdef _WIN32
 #ifdef LIBRARY_NAME
-#define ANIMALS_API boost::openmethod::dllexport
+#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
 #else
-#define ANIMALS_API boost::openmethod::dllimport
+#define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
 #endif
-#else
-#define ANIMALS_API boost::openmethod::declspec_none
 #endif
-
-namespace boost::openmethod {
-    ANIMALS_API boost_openmethod_declspec(default_registry&);
-}
 
 #include <string>
 #include <boost/openmethod.hpp>
@@ -51,7 +41,7 @@ BOOST_OPENMETHOD(
     meet, (
         boost::openmethod::virtual_ptr<Animal>,
         boost::openmethod::virtual_ptr<Animal>),
-    std::string, ANIMALS_API);
+    std::string);
 // end::content[]
 
 #endif

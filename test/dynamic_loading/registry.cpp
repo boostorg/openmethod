@@ -19,7 +19,7 @@ namespace mp11 = boost::mp11;
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <boost/config.hpp>
-static_assert(std::is_same_v<default_registry::declspec, dllexport>);
+static_assert(std::is_base_of_v<policies::dllexport, default_registry_dllvar>);
 #else
 #include <boost/dll/alias.hpp>
 #endif

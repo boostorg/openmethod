@@ -8,25 +8,16 @@
 
 #include <string>
 
-#if defined(_WIN32) || defined(__CYGWIN__)
-#if defined(EXPORT_METHOD)
-#define METHOD_DECLSPEC boost::openmethod::dllexport
-#else
-#define METHOD_DECLSPEC boost::openmethod::dllimport
-#endif
-#else
-#define METHOD_DECLSPEC boost::openmethod::declspec_none
-#endif
-
+// Methods are consolidated across modules at initialize() time, so they need no
+// DLL decoration of their own.
 BOOST_OPENMETHOD(
-    speak, (boost::openmethod::virtual_ptr<Animal>), const char*,
-    METHOD_DECLSPEC);
+    speak, (boost::openmethod::virtual_ptr<Animal>), const char*);
 
 BOOST_OPENMETHOD(
     meet,
     (boost::openmethod::virtual_ptr<Animal>,
      boost::openmethod::virtual_ptr<Animal>),
-    const char*, METHOD_DECLSPEC);
+    const char*);
 
 inline auto call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
     return speak(animal);

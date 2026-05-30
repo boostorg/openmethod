@@ -975,30 +975,43 @@ struct initialize_aux;
 // -----------------------------------------------------------------------------
 // import/export
 
-struct declspec {};
-struct declspec_none : declspec {};
+namespace policies {
 
 #if defined(__MRDOCS__) || defined(_WIN32) || defined(__CYGWIN__)
-struct dllexport : declspec {};
-struct dllimport : declspec {};
+
+//! Policy category controlling the DLL linkage of the registry state.
+//!
+//! A registry that contains a policy deriving from @ref dllexport exports its
+//! state from the owning shared library; one deriving from @ref dllimport
+//! imports it. A registry with no `dllvar` policy uses ordinary linkage.
+struct dllvar {
+    using category = dllvar;
+    template<class Registry>
+    struct fn {};
+};
+
+//! Exports the registry state from the owning shared library.
+struct dllexport : dllvar {
+    template<class Registry>
+    struct fn {};
+};
+
+//! Imports the registry state from the owning shared library.
+struct dllimport : dllvar {
+    template<class Registry>
+    struct fn {};
+};
+
 #endif
 
-namespace detail {
+} // namespace policies
 
-#define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS_COMMON(ID, ...)                   \
-    template<class Registry, class Type, class Guide = Type&, typename = void> \
-    struct BOOST_PP_CAT(static_, ID) {                                         \
-        using declspec = declspec_none;                                        \
-        static Type ID __VA_ARGS__;                                            \
-    };                                                                         \
-                                                                               \
-    template<class Registry, class Type, class Guide, typename Enable>         \
-    Type BOOST_PP_CAT(static_, ID)<Registry, Type, Guide, Enable>::ID;
+namespace detail {
 
 // Clang warns at every usage site of a dllimport variable template because the
 // definition is deliberately absent (it lives in the exporting DLL). Suppress
 // this false positive using _Pragma inside the dllimport struct so the pragma
-// is emitted in whatever file expands BOOST_OPENMETHOD_DETAIL_MAKE_STATICS.
+// is emitted in whatever file expands it.
 #if defined(__clang__)
 #define BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR                  \
     _Pragma("clang diagnostic push")                                           \
@@ -1010,69 +1023,56 @@ namespace detail {
 #define BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
 #endif
 
+// static_st<Registry>: holds the registry_state for Registry as a static
+// member `st`, the single shared instance of the registry's state. On Windows,
+// SFINAE selects the dllexport or dllimport decoration based on whether the
+// registry's dllvar policy derives from policies::dllexport / policies::dllimport.
+// All specializations resolve to static_st<Registry, void>, giving the same
+// mangled symbol name so exporter and importer share the variable.
+template<class Registry, typename = void>
+struct static_st {
+    static registry_state<Registry> st;
+};
+
+template<class Registry, typename Enable>
+registry_state<Registry> static_st<Registry, Enable>::st;
+
 #if defined(_WIN32) || defined(__CYGWIN__)
-#define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(ID, ...)                          \
-    BOOST_OPENMETHOD_DETAIL_MAKE_STATICS_COMMON(ID, __VA_ARGS__)               \
-                                                                               \
-    template<class Registry, class Type, class Guide>                          \
-    struct BOOST_PP_CAT(static_, ID)<                                          \
-        Registry, Type, Guide,                                                 \
-        std::enable_if_t<std::is_same_v<get_declspec<Guide>, dllexport>>> {    \
-        using declspec = dllexport;                                            \
-        static BOOST_SYMBOL_EXPORT Type ID __VA_ARGS__;                        \
-    };                                                                         \
-                                                                               \
-    template<class Registry, class Type, class Guide>                          \
-    Type BOOST_PP_CAT(static_, ID)<                                            \
-        Registry, Type, Guide,                                                 \
-        std::enable_if_t<std::is_same_v<get_declspec<Guide>, dllexport>>>::ID; \
-                                                                               \
-    template<class Registry, class Type, class Guide>                          \
-    struct BOOST_PP_CAT(static_, ID)<                                          \
-        Registry, Type, Guide,                                                 \
-        std::enable_if_t<std::is_same_v<get_declspec<Guide>, dllimport>>> {    \
-        using declspec = dllimport;                                            \
-        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR                  \
-        static BOOST_SYMBOL_IMPORT Type ID;                                    \
-        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR                   \
-    }
-#else
-#define BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(ID, ...)                          \
-    BOOST_OPENMETHOD_DETAIL_MAKE_STATICS_COMMON(ID, __VA_ARGS__)
-#endif
 
-template<typename Type>
-using get_declspec = decltype(boost_openmethod_declspec(std::declval<Type&>()));
+// The registry's dllvar policy (a type deriving from policies::dllvar), or void.
+template<class Registry>
+using registry_dllvar =
+    find_first_derived_of<policies::dllvar, typename Registry::policy_list>;
 
-BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(st);
+template<class Registry>
+struct static_st<
+    Registry,
+    std::enable_if_t<
+        std::is_base_of_v<policies::dllexport, registry_dllvar<Registry>>>> {
+    static BOOST_SYMBOL_EXPORT registry_state<Registry> st;
+};
+
+template<class Registry>
+registry_state<Registry> static_st<
+    Registry,
+    std::enable_if_t<
+        std::is_base_of_v<policies::dllexport, registry_dllvar<Registry>>>>::st;
+
+template<class Registry>
+struct static_st<
+    Registry,
+    std::enable_if_t<
+        std::is_base_of_v<policies::dllimport, registry_dllvar<Registry>>>> {
+    BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
+    static BOOST_SYMBOL_IMPORT registry_state<Registry> st;
+    BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
+};
+
+#endif // _WIN32 || __CYGWIN__
 
 BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(id);
 
 } // namespace detail
-
-namespace policies {
-
-struct declspec_policy {
-    using category = declspec_policy;
-};
-
-template<typename GuideType>
-struct declspec : declspec_policy {
-    template<class Registry>
-    struct fn {
-        using guide_type = GuideType;
-    };
-};
-
-template<>
-struct declspec<void> : declspec_policy {
-    template<class Registry>
-    struct fn {
-        struct guide_type {};
-    };
-};
-
-} // namespace policies
 
 //! Methods, classes and policies.
 //!
@@ -1146,8 +1146,6 @@ class registry : public detail::registry_base {
     using policy = typename detail::get_policy_aux<
         registry, detail::find_first_derived_of<Category, policy_list>,
         Default>::type;
-    using declspec_guide = typename policy<
-        policies::declspec_policy, policies::declspec<void>>::guide_type;
 
   private:
     template<class...>
@@ -1155,21 +1153,17 @@ class registry : public detail::registry_base {
     template<typename Name, typename ReturnType, class Registry>
     friend class method;
 
-    using static_ = detail::static_st<
-        registry, detail::registry_state<registry<Policy...>>, declspec_guide>;
+    using static_ = detail::static_st<registry>;
 
   public:
     //! The type of this registry.
     using registry_type = registry;
-    using declspec = typename static_::declspec;
 
     BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
     static auto& state() {
         return static_::st;
     }
-    BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
 
-    BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
     static const void* id() {
         return static_cast<const void*>(&static_::st.classes);
     }
