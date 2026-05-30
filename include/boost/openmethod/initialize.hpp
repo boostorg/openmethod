@@ -867,130 +867,131 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
 
         ++tr << type_name(first_info->method_type_id) << " "
              << range{first_info->vp_begin, first_info->vp_end} << "\n";
+        indent _(tr);
+
+        // Build the virtual-parameter classes once, from the local
+        // method_info. All copies describe the same method, so any one of them
+        // yields the same vp list.
+        {
+            std::size_t param_index = 0;
+
+            for (auto ti : range{first_info->vp_begin, first_info->vp_end}) {
+                auto class_ = class_map[rtti::type_index(ti)];
+                if (!class_) {
+                    ++tr << "unknown class " << ti << "(" << type_name(ti)
+                         << ") for parameter #" << (param_index + 1) << "\n";
+                    missing_class error;
+                    error.type = ti;
+
+                    if constexpr (has_error_handler) {
+                        error_handler::error(error);
+                    }
+
+                    abort();
+                }
+
+                method.vp.push_back(class_);
+                ++param_index;
+            }
+        }
+
+        if (rtti::type_index(first_info->return_type_id) !=
+            rtti::type_index(rtti::template static_type<void>())) {
+            auto covariant_return_iter =
+                class_map.find(rtti::type_index(first_info->return_type_id));
+
+            if (covariant_return_iter != class_map.end()) {
+                method.covariant_return_type = covariant_return_iter->second;
+            }
+        }
+
+        // Collect overriders from every module copy of this method.
+        std::unordered_set<const detail::overrider_info*> seen_specs;
+        std::vector<detail::overrider_info*> all_specs;
         std::size_t module_index = 0;
 
-        for (auto meth_info : method.infos) {
+        for (auto info : method.infos) {
             indent _(tr);
             ++tr << "module " << module_index++ << "\n";
 
-            {
-                std::size_t param_index = 0;
-
-                for (auto ti : range{meth_info->vp_begin, meth_info->vp_end}) {
-                    auto class_ = class_map[rtti::type_index(ti)];
-                    if (!class_) {
-                        ++tr << "unknown class " << ti << "(" << type_name(ti)
-                             << ") for parameter #" << (param_index + 1)
-                             << "\n";
-                        missing_class error;
-                        error.type = ti;
-
-                        if constexpr (has_error_handler) {
-                            error_handler::error(error);
-                        }
-
-                        abort();
-                    }
-
-                    method.vp.push_back(class_);
+            for (auto& spec : info->overriders) {
+                if (seen_specs.find(&spec) == seen_specs.end()) {
+                    all_specs.push_back(&spec);
+                    seen_specs.insert(&spec);
                 }
             }
+        }
 
-            if (rtti::type_index(meth_info->return_type_id) !=
-                rtti::type_index(rtti::template static_type<void>())) {
-                auto covariant_return_iter =
-                    class_map.find(rtti::type_index(meth_info->return_type_id));
+        // initialize the function pointer in the synthetic not_implemented
+        // overrider
+        auto spec_size = all_specs.size();
+        method.not_implemented.pf = first_info->not_implemented;
+        method.not_implemented.method_index = method.index;
+        method.not_implemented.spec_index = spec_size;
+        method.ambiguous.pf = first_info->ambiguous;
+        method.ambiguous.method_index = method.index;
+        method.ambiguous.spec_index = spec_size + 1;
+
+        method.overriders.resize(spec_size);
+        auto spec_iter = method.overriders.begin();
+
+        for (auto overrider_info : all_specs) {
+            if constexpr (has_deferred_static_rtti) {
+                static_cast<deferred_overrider_info&>(*overrider_info)
+                    .resolve_type_ids();
+            }
+
+            spec_iter->method_index = method.index;
+            spec_iter->spec_index = spec_iter - method.overriders.begin();
+
+            ++tr << type_name(overrider_info->type) << " ("
+                 << overrider_info->pf << ")\n";
+            spec_iter->info = overrider_info;
+            spec_iter->vp.reserve(first_info->arity());
+            std::size_t param_index = 0;
+
+            for (auto type :
+                 range{overrider_info->vp_begin, overrider_info->vp_end}) {
+                indent _(tr);
+                auto class_ = class_map[rtti::type_index(type)];
+
+                if (!class_) {
+                    ++tr << "unknown class error for *virtual* parameter #"
+                         << (param_index + 1) << "\n";
+                    missing_class error;
+                    error.type = type;
+
+                    if constexpr (has_error_handler) {
+                        error_handler::error(error);
+                    }
+
+                    abort();
+                }
+
+                spec_iter->pf = spec_iter->info->pf;
+                spec_iter->vp.push_back(class_);
+            }
+
+            if (method.covariant_return_type) {
+                auto covariant_return_iter = class_map.find(
+                    rtti::type_index(overrider_info->return_type));
 
                 if (covariant_return_iter != class_map.end()) {
-                    method.covariant_return_type =
+                    spec_iter->covariant_return_type =
                         covariant_return_iter->second;
+                } else {
+                    missing_class error;
+                    error.type = overrider_info->return_type;
+
+                    if constexpr (has_error_handler) {
+                        error_handler::error(error);
+                    }
+
+                    abort();
                 }
             }
 
-            // Collect overriders from all copies of this method
-            std::unordered_set<const detail::overrider_info*> seen_specs;
-            std::vector<detail::overrider_info*> all_specs;
-
-            for (auto info : method.infos) {
-                for (auto& spec : info->overriders) {
-                    if (seen_specs.find(&spec) == seen_specs.end()) {
-                        all_specs.push_back(&spec);
-                        seen_specs.insert(&spec);
-                    }
-                }
-            }
-
-            // initialize the function pointer in the synthetic not_implemented
-            // overrider
-            auto spec_size = all_specs.size();
-            method.not_implemented.pf = first_info->not_implemented;
-            method.not_implemented.method_index = method.index;
-            method.not_implemented.spec_index = spec_size;
-            method.ambiguous.pf = first_info->ambiguous;
-            method.ambiguous.method_index = method.index;
-            method.ambiguous.spec_index = spec_size + 1;
-
-            method.overriders.resize(spec_size);
-            auto spec_iter = method.overriders.begin();
-
-            for (auto overrider_info : all_specs) {
-                if constexpr (has_deferred_static_rtti) {
-                    static_cast<deferred_overrider_info&>(*overrider_info)
-                        .resolve_type_ids();
-                }
-
-                spec_iter->method_index = method.index;
-                spec_iter->spec_index = spec_iter - method.overriders.begin();
-
-                ++tr << type_name(overrider_info->type) << " ("
-                     << overrider_info->pf << ")\n";
-                spec_iter->info = overrider_info;
-                spec_iter->vp.reserve(meth_info->arity());
-                std::size_t param_index = 0;
-
-                for (auto type :
-                     range{overrider_info->vp_begin, overrider_info->vp_end}) {
-                    indent _(tr);
-                    auto class_ = class_map[rtti::type_index(type)];
-
-                    if (!class_) {
-                        ++tr << "unknown class error for *virtual* parameter #"
-                             << (param_index + 1) << "\n";
-                        missing_class error;
-                        error.type = type;
-
-                        if constexpr (has_error_handler) {
-                            error_handler::error(error);
-                        }
-
-                        abort();
-                    }
-
-                    spec_iter->pf = spec_iter->info->pf;
-                    spec_iter->vp.push_back(class_);
-                }
-
-                if (method.covariant_return_type) {
-                    auto covariant_return_iter = class_map.find(
-                        rtti::type_index(overrider_info->return_type));
-
-                    if (covariant_return_iter != class_map.end()) {
-                        spec_iter->covariant_return_type =
-                            covariant_return_iter->second;
-                    } else {
-                        missing_class error;
-                        error.type = overrider_info->return_type;
-
-                        if constexpr (has_error_handler) {
-                            error_handler::error(error);
-                        }
-
-                        abort();
-                    }
-                }
-
-                ++spec_iter;
-            }
+            ++spec_iter;
         }
     }
 

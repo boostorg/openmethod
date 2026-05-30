@@ -13,13 +13,6 @@
 
 namespace boost::openmethod {
 
-namespace detail {
-
-BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(vptr_vector_vptrs);
-BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(vptr_vector_indirect_vptrs);
-
-} // namespace detail
-
 namespace policies {
 
 //! Stores v-table pointers in a vector.
@@ -49,14 +42,13 @@ struct vptr_vector : vptr {
             typename Registry::template policy<policies::type_hash>;
         static constexpr auto has_type_hash = !std::is_same_v<type_hash, void>;
 
-        using static_ = std::conditional_t<
-            Registry::has_indirect_vptr,
-            detail::static_vptr_vector_indirect_vptrs<
-                Registry, std::vector<const vptr_type*>,
-                typename Registry::declspec_guide>,
-            detail::static_vptr_vector_vptrs<
-                Registry, std::vector<vptr_type>,
-                typename Registry::declspec_guide>>;
+      public:
+        struct state {
+            std::conditional_t<
+                Registry::has_indirect_vptr,
+                std::vector<const vptr_type*>,
+                std::vector<vptr_type>> vptrs;
+        };
 
         //! Stores the v-table pointers.
         //!
@@ -93,9 +85,9 @@ struct vptr_vector : vptr {
             }
 
             if constexpr (Registry::has_indirect_vptr) {
-                static_::vptr_vector_indirect_vptrs.resize(size);
+                st().vptrs.resize(size);
             } else {
-                static_::vptr_vector_vptrs.resize(size);
+                st().vptrs.resize(size);
             }
 
             for (auto iter = ctx.classes_begin(); iter != ctx.classes_end();
@@ -111,10 +103,10 @@ struct vptr_vector : vptr {
                     }
 
                     if constexpr (Registry::has_indirect_vptr) {
-                        static_::vptr_vector_indirect_vptrs[index] =
+                        st().vptrs[index] =
                             &iter->vptr();
                     } else {
-                        static_::vptr_vector_vptrs[index] = iter->vptr();
+                        st().vptrs[index] = iter->vptr();
                     }
                 }
             }
@@ -150,9 +142,9 @@ struct vptr_vector : vptr {
                     std::size_t max_index = 0;
 
                     if constexpr (Registry::has_indirect_vptr) {
-                        max_index = static_::vptr_vector_indirect_vptrs.size();
+                        max_index = st().vptrs.size();
                     } else {
-                        max_index = static_::vptr_vector_vptrs.size();
+                        max_index = st().vptrs.size();
                     }
 
                     if (index >= max_index) {
@@ -168,9 +160,9 @@ struct vptr_vector : vptr {
             }
 
             if constexpr (Registry::has_indirect_vptr) {
-                return *static_::vptr_vector_indirect_vptrs[index];
+                return *st().vptrs[index];
             } else {
-                return static_::vptr_vector_vptrs[index];
+                return st().vptrs[index];
             }
         }
 
@@ -184,21 +176,16 @@ struct vptr_vector : vptr {
             using namespace policies;
 
             if constexpr (Registry::has_indirect_vptr) {
-                static_::vptr_vector_indirect_vptrs.clear();
+                st().vptrs.clear();
             } else {
-                static_::vptr_vector_vptrs.clear();
+                st().vptrs.clear();
             }
         }
 
-        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
-        static auto id() -> const void* {
-            if constexpr (Registry::has_indirect_vptr) {
-                return &static_::vptr_vector_indirect_vptrs;
-            } else {
-                return &static_::vptr_vector_vptrs;
-            }
+      private:
+        static auto& st() {
+            return Registry::state().template policy<vptr_vector>();
         }
-        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
     };
 };
 

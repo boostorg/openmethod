@@ -18,6 +18,9 @@
 
 using namespace boost::openmethod;
 
+static_assert(!std::is_same_v<default_registry::declspec, void>);
+static_assert(std::is_same_v<default_registry::declspec, dllexport>);
+
 // tag::before[]
 // dynamic_main.cpp
 

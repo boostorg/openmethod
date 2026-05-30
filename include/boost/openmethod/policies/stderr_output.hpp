@@ -11,12 +11,6 @@
 
 namespace boost::openmethod {
 
-namespace detail {
-
-BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(os);
-
-} // namespace detail
-
 namespace policies {
 
 //! @ref Writes to the C standard error stream.
@@ -25,18 +19,17 @@ namespace policies {
 struct stderr_output : output {
     //! An OutputFn metafunction.
     template<class Registry>
-    struct fn : detail::static_os<
-                    Registry, detail::ostderr,
-                    typename Registry::template policy<
-                        policies::declspec_policy>::guide_type> {
-        //! A @ref LightweightOuputStream.
-        // static detail::ostderr os; // now inherited from static_os
+    struct fn {
+      public:
+        struct state {
+            detail::ostderr os;
+        };
 
-        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
-        static auto id() -> const void* {
-            return &fn::os;
+        [[deprecated]] inline static detail::ostderr os;
+
+        static auto& stream() {
+            return Registry::state().template policy<stderr_output>().os;
         }
-        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
     };
 };
 

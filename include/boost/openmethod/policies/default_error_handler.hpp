@@ -13,12 +13,6 @@
 
 namespace boost::openmethod {
 
-namespace detail {
-
-BOOST_OPENMETHOD_DETAIL_MAKE_STATICS(handler);
-
-} // namespace detail
-
 namespace policies {
 
 //! Calls a std::function with the error.
@@ -85,10 +79,16 @@ struct default_error_handler : error_handler {
         //! The type of the error handler function object.
         using function_type = std::function<void(const error_variant& error)>;
 
-        using static_ = detail::static_handler<
-            Registry, function_type,
-            typename Registry::template policy<
-                policies::declspec_policy>::guide_type>;
+        struct state {
+            function_type handler;
+        };
+
+      private:
+        static auto& st() {
+            return Registry::state().template policy<default_error_handler>();
+        }
+
+      public:
 
         //! Calls a function with the error object, wrapped in an @ref
         //! error_variant.
@@ -98,7 +98,7 @@ struct default_error_handler : error_handler {
         template<class Error>
         static auto error(const Error& error) -> void {
             auto handler =
-                static_::handler ? static_::handler : default_handler;
+                st().handler ? st().handler : default_handler;
             handler(error_variant(error));
         }
 
@@ -111,15 +111,9 @@ struct default_error_handler : error_handler {
         //! @return The previous function.
         // coverity[auto_causes_copy]
         static auto set(function_type new_handler) -> function_type {
-            auto prev = std::exchange(static_::handler, std::move(new_handler));
+            auto prev = std::exchange(st().handler, std::move(new_handler));
             return prev ? prev : default_handler;
         }
-
-        BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
-        static auto id() -> const void* {
-            return &static_::handler;
-        }
-        BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
 
         //! The default error handler function.
         //!

@@ -8,6 +8,9 @@
 
 using namespace boost::openmethod;
 
+static_assert(!std::is_same_v<default_registry::declspec, void>);
+static_assert(std::is_same_v<default_registry::declspec, dllimport>);
+
 // tag::content[]
 BOOST_OPENMETHOD_OVERRIDE(
     meet, (virtual_ptr<Herbivore> a, virtual_ptr<Carnivore> b), std::string) {
@@ -29,10 +32,7 @@ struct Tiger : Carnivore {};
 BOOST_OPENMETHOD_CLASSES(Tiger, Carnivore);
 
 extern "C" {
-#ifdef _WIN32
-__declspec(dllexport)
-#endif
-auto make_tiger() -> Animal* {
+BOOST_SYMBOL_EXPORT auto make_tiger() -> Animal* {
     BOOST_ASSERT(default_registry::static_vptr<Carnivore> != nullptr);
     return new Tiger;
 }

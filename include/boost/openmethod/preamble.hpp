@@ -833,12 +833,44 @@ namespace detail {
 
 struct registry_base {};
 
-template<class>
+// Detects whether T has a nested ::state type.
+template<class T, class = void>
+struct has_policy_state : std::false_type {};
+template<class T>
+struct has_policy_state<T, std::void_t<typename T::state>> : std::true_type {};
+
+// Extracts ::state from T.
+template<class T>
+using policy_state_t = typename T::state;
+
+// Quoted metafunction: maps a policy type P to P::template fn<Registry>.
+template<class Registry>
+struct policy_fn_q {
+    template<class P>
+    using fn = typename P::template fn<Registry>;
+};
+
+template<class Registry>
 struct registry_state {
     static_list<class_info> classes;
     static_list<method_info> methods;
     bool initialized;
     std::vector<word> dispatch_data;
+    using policies_type = mp11::mp_apply<
+        std::tuple,
+        mp11::mp_transform<
+            policy_state_t,
+            mp11::mp_filter<
+                has_policy_state,
+                mp11::mp_transform_q<
+                    policy_fn_q<Registry>,
+                    typename Registry::policy_list>>>>;
+    policies_type policies;
+
+    template<class Policy>
+    auto policy() -> typename Policy::template fn<Registry>::state& {
+        return std::get<typename Policy::template fn<Registry>::state>(policies);
+    }
 };
 
 template<typename T>
@@ -1130,6 +1162,12 @@ class registry : public detail::registry_base {
     //! The type of this registry.
     using registry_type = registry;
     using declspec = typename static_::declspec;
+
+    BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
+    static auto& state() {
+        return static_::st;
+    }
+    BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
 
     BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
     static const void* id() {
