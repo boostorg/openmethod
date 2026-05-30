@@ -185,8 +185,8 @@ void fast_perfect_hash::fn<Registry>::initialize_aux(
 
     if constexpr (mp11::mp_contains<mp11::mp_list<Options...>, trace>::value) {
         if (std::get<trace>(options).on) {
-            Registry::output::os << "Finding hash factor for " << N
-                                 << " types\n";
+            Registry::output::stream() << "Finding hash factor for " << N
+                                       << " types\n";
         }
     }
 

@@ -23,6 +23,9 @@ struct capture_output : policies::output {
     template<class Registry>
     struct fn {
         inline static std::ostringstream os;
+        static auto& stream() {
+            return os;
+        }
     };
 };
 

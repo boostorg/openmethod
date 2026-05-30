@@ -125,10 +125,11 @@ struct default_error_handler : error_handler {
             if constexpr (Registry::has_output) {
                 std::visit(
                     [](auto&& error) {
-                        error.template write<Registry>(Registry::output::os);
+                        error.template write<Registry>(
+                            Registry::output::stream());
                     },
                     error);
-                Registry::output::os << "\n";
+                Registry::output::stream() << "\n";
             }
         }
     };

@@ -310,7 +310,7 @@ struct trace_stream {
         if constexpr (Compiler::has_trace) {
             if (on) {
                 for (std::size_t i = 0; i < indentation_level; ++i) {
-                    Compiler::Registry::output::os << "  ";
+                    Compiler::Registry::output::stream() << "  ";
                 }
             }
         }
@@ -438,7 +438,7 @@ template<class Compiler, typename T>
 auto operator<<(trace_stream<Compiler>& tr, const T& value) -> auto& {
     if constexpr (Compiler::has_trace) {
         if (tr.on) {
-            Compiler::Registry::output::os << value;
+            Compiler::Registry::output::stream() << value;
         }
     }
     return tr;
@@ -476,7 +476,7 @@ auto operator<<(trace_stream<Compiler>& tr, const boost::dynamic_bitset<>& bits)
             auto i = bits.size();
             while (i != 0) {
                 --i;
-                Compiler::Registry::output::os << bits[i];
+                Compiler::Registry::output::stream() << bits[i];
             }
         }
     }
