@@ -12,8 +12,18 @@ set(__ignore__ ${CMAKE_C_COMPILER})
 set(__ignore__ ${CMAKE_C_FLAGS})
 
 if(BOOST_CI_INSTALL_TEST)
-    # Boost as a package (https://github.com/boostorg/cmake#using-boost-after-building-and-installing-it-with-cmake)
-    find_package(Boost CONFIG REQUIRED COMPONENTS openmethod)
+# Header-only libraries:
+    # B2 does not (yet) create/install CMake targets for them, so users are supposed to use the generic Boost::headers target
+    if(BOOST_CI_INSTALLED_BY STREQUAL "B2")
+        find_package(Boost REQUIRED)
+        add_library(_boost_openmethod INTERFACE)
+        target_link_libraries(_boost_openmethod INTERFACE Boost::headers)
+        target_compile_features(_boost_openmethod INTERFACE cxx_std_17)
+        add_library(Boost::openmethod ALIAS _boost_openmethod)
+    else()
+      # Boost as a package (https://github.com/boostorg/cmake#using-boost-after-building-and-installing-it-with-cmake)
+      find_package(Boost CONFIG REQUIRED COMPONENTS openmethod)
+    endif()
 elseif(BOOST_CI_INSTALL_MODULE_TEST)
     # Boost.OpenMethod as a package
     find_package(boost_openmethod CONFIG REQUIRED)
