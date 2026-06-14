@@ -8,6 +8,7 @@
 
 #include <boost/openmethod/preamble.hpp>
 
+#include <tuple>
 #include <variant>
 #include <vector>
 

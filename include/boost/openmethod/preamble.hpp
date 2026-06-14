@@ -12,6 +12,7 @@
 #include <vector>
 #include <cstdint>
 #include <string_view>
+#include <tuple>
 
 #ifdef _MSC_VER
 #pragma warning(push)
