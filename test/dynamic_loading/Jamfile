@@ -39,63 +39,84 @@ local RDYNAMIC =
 # linker deduplicates them across DSOs.  MSVC ignores this property.
 local VISIBILITY = <local-visibility>global ;
 
-# lib_registry: owns and exports the default registry's static policy state.
-# registry.cpp defines EXPORT_REGISTRY and INCLUDED_FROM itself.
-lib boost_openmethod-dl_test_registry
-    : registry.cpp
-    : <link>shared
-      $(VISIBILITY)
-      <library>/boost/dll//boost_dll/<warnings>off
-      <location-prefix>dynamic_loading.test
-    ;
+# Build one set of {registry, method, overrider} shared libraries plus a test
+# executable. Each variant compiles the very same sources but with a different
+# default registry, selected by extra requirements (e.g. a <define>) applied to
+# every target so all modules agree (ODR). Targets are suffixed and outputs go
+# to a per-variant <location-prefix> so that main.cpp, which locates its sibling
+# libraries by filename fragment at runtime, never picks up the other variant.
+rule make-variant ( suffix : extra-req * )
+{
+    # lib_registry: owns and exports the registry's static policy state.
+    # registry.cpp defines EXPORT_REGISTRY and INCLUDED_FROM itself.
+    lib boost_openmethod-dl_test_registry$(suffix)
+        : registry.cpp
+        : <link>shared
+          $(VISIBILITY)
+          $(extra-req)
+          <library>/boost/dll//boost_dll/<warnings>off
+          <location-prefix>dynamic_loading$(suffix).test
+        ;
 
-# lib_method: exports the speak() open-method; imports registry from
-# lib_registry.  method.cpp defines EXPORT_METHOD and INCLUDED_FROM itself.
-lib boost_openmethod-dl_test_method
-    : method.cpp
-    : <link>shared
-      $(VISIBILITY)
-      <library>/boost/dll//boost_dll/<warnings>off
-      <library>boost_openmethod-dl_test_registry
-      <location-prefix>dynamic_loading.test
-    ;
+    # lib_method: exports the speak() open-method; imports registry from
+    # lib_registry.  method.cpp defines EXPORT_METHOD and INCLUDED_FROM itself.
+    lib boost_openmethod-dl_test_method$(suffix)
+        : method.cpp
+        : <link>shared
+          $(VISIBILITY)
+          $(extra-req)
+          <library>/boost/dll//boost_dll/<warnings>off
+          <library>boost_openmethod-dl_test_registry$(suffix)
+          <location-prefix>dynamic_loading$(suffix).test
+        ;
 
-# lib_overrider: adds the Dog overrider; dynamically loaded at runtime.
-# overrider.cpp defines INCLUDED_FROM itself.
-lib boost_openmethod-dl_test_overrider
-    : overrider.cpp
-    : <link>shared
-      $(VISIBILITY)
-      <library>/boost/dll//boost_dll/<warnings>off
-      <library>boost_openmethod-dl_test_method
-      <target-os>windows:<library>boost_openmethod-dl_test_registry
-      <target-os>cygwin:<library>boost_openmethod-dl_test_registry
-      <location-prefix>dynamic_loading.test
-    ;
+    # lib_overrider: adds the Dog overrider; dynamically loaded at runtime.
+    # overrider.cpp defines INCLUDED_FROM itself.
+    lib boost_openmethod-dl_test_overrider$(suffix)
+        : overrider.cpp
+        : <link>shared
+          $(VISIBILITY)
+          $(extra-req)
+          <library>/boost/dll//boost_dll/<warnings>off
+          <library>boost_openmethod-dl_test_method$(suffix)
+          <target-os>windows:<library>boost_openmethod-dl_test_registry$(suffix)
+          <target-os>cygwin:<library>boost_openmethod-dl_test_registry$(suffix)
+          <location-prefix>dynamic_loading$(suffix).test
+        ;
 
-# Test executable:
-#   sources (linked)   : main.cpp, lib_registry, unit_test_framework, boost_dll
-#   runtime-loaded     : lib_method, lib_overrider
-# All shared libraries are placed alongside the test executable via
-# <location-prefix>dynamic_loading.test, so main.cpp can find them by scanning
-# dll::program_location().parent_path() on all platforms.
-run main.cpp
-    boost_openmethod-dl_test_registry
-    /boost/test//boost_unit_test_framework/<warnings>off
-    /boost/dll//boost_dll/<warnings>off
-    :
-    :
-    : <link>shared
-      $(RDYNAMIC)
-      $(VISIBILITY)
-      <library>/boost/filesystem//boost_filesystem/<warnings>off
-      <target-os>linux:<linkflags>"-ldl"
-      <target-os>freebsd:<linkflags>"-ldl"
-      <target-os>android:<linkflags>"-ldl"
-      <target-os>windows:<library>boost_openmethod-dl_test_registry
-      <target-os>windows:<library>boost_openmethod-dl_test_method
-      <target-os>cygwin:<library>boost_openmethod-dl_test_method
-      <dependency>boost_openmethod-dl_test_method
-      <dependency>boost_openmethod-dl_test_overrider
-    : dynamic_loading
-    ;
+    # Test executable:
+    #   sources (linked)   : main.cpp, lib_registry, unit_test_framework, boost_dll
+    #   runtime-loaded     : lib_method, lib_overrider
+    # All shared libraries are placed alongside the test executable via
+    # <location-prefix>dynamic_loading$(suffix).test, so main.cpp can find them
+    # by scanning dll::program_location().parent_path() on all platforms.
+    run main.cpp
+        boost_openmethod-dl_test_registry$(suffix)
+        /boost/test//boost_unit_test_framework/<warnings>off
+        /boost/dll//boost_dll/<warnings>off
+        :
+        :
+        : <link>shared
+          $(RDYNAMIC)
+          $(VISIBILITY)
+          $(extra-req)
+          <library>/boost/filesystem//boost_filesystem/<warnings>off
+          <target-os>linux:<linkflags>"-ldl"
+          <target-os>freebsd:<linkflags>"-ldl"
+          <target-os>android:<linkflags>"-ldl"
+          <target-os>windows:<library>boost_openmethod-dl_test_registry$(suffix)
+          <target-os>windows:<library>boost_openmethod-dl_test_method$(suffix)
+          <target-os>cygwin:<library>boost_openmethod-dl_test_method$(suffix)
+          <dependency>boost_openmethod-dl_test_method$(suffix)
+          <dependency>boost_openmethod-dl_test_overrider$(suffix)
+        : dynamic_loading$(suffix)
+        ;
+}
+
+# Variant 1: the default registry.
+make-variant "" : ;
+
+# Variant 2: indirect_registry (default_registry + indirect_vptr policy),
+# selected via BOOST_OPENMETHOD_DEFAULT_REGISTRY.
+make-variant _indirect
+    : <define>BOOST_OPENMETHOD_DEFAULT_REGISTRY=::boost::openmethod::indirect_registry ;

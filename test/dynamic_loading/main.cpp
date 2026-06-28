@@ -44,10 +44,10 @@ bool same_ids(const void** ids1, const void** ids2) {
 
     int diffs = 0;
 
-    mp11::mp_for_each<default_registry::policy_list>([&](auto p) {
+    mp11::mp_for_each<test_registry::policy_list>([&](auto p) {
         using P = decltype(p);
 
-        if constexpr (detail::has_id<default_registry::policy<P>>) {
+        if constexpr (detail::has_id<test_registry::policy<P>>) {
             BOOST_TEST_MESSAGE(
                 setw(60) << boost::core::demangle(typeid(P).name()) << ": "
                          << *ids1 << " " << *ids2);
