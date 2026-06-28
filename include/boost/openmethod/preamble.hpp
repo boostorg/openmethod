@@ -3,6 +3,7 @@
 
 #include <boost/openmethod/detail/static_list.hpp>
 
+#include <boost/config.hpp>
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/bind.hpp>
 
@@ -96,7 +97,7 @@ struct odr_violation : openmethod_error {
 namespace detail {
 
 template<class Registry>
-struct odr_check {
+struct BOOST_SYMBOL_VISIBLE odr_check {
     static std::size_t count;
     template<class R>
     static std::size_t inc;
