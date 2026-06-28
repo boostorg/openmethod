@@ -108,7 +108,7 @@ struct odr_violation : openmethod_error {
 namespace detail {
 
 template<class Registry>
-struct odr_check {
+struct BOOST_SYMBOL_VISIBLE odr_check {
     static std::size_t count;
     template<class R>
     static std::size_t inc;
