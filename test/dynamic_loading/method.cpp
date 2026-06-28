@@ -40,7 +40,7 @@ BOOST_OPENMETHOD_OVERRIDE(
 
 extern "C" {
 
-BOOST_SYMBOL_EXPORT const void* method_get_ids() {
+BOOST_SYMBOL_EXPORT const void** method_get_ids() {
     return get_ids();
 }
 
