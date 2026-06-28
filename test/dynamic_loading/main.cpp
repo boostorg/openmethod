@@ -8,6 +8,12 @@
 
 #define INCLUDED_FROM "main.cpp"
 
+// When the build asks for the executable to own the registry state
+// (REGISTRY_IN_EXE), this module exports it and the shared libraries import it.
+#if defined(REGISTRY_IN_EXE)
+#define EXPORT_REGISTRY
+#endif
+
 #include "registry.hpp"
 #include "method.hpp"
 
@@ -21,6 +27,14 @@
 
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
+
+#if defined(_WIN32) || defined(__CYGWIN__)
+#if defined(EXPORT_REGISTRY)
+static_assert(std::is_base_of_v<policies::dllexport, default_registry_dllvar>);
+#else
+static_assert(std::is_base_of_v<policies::dllimport, default_registry_dllvar>);
+#endif
+#endif
 
 using policy_ids_fn = const void**();
 
