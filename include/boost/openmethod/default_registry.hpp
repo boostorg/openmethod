@@ -48,11 +48,12 @@ struct default_registry
 };
 
 // On Windows, share the registry state across modules via an explicit
-// instantiation of detail::static_st: the owning module dllexport-s the
-// instantiation definition, clients declare a dllimport-ed instantiation
-// ("extern template") so they reference the owner's symbol instead of
-// instantiating their own copy. The state lives in static_st<registry_type>
-// (the registry<...> base class), not static_st<default_registry>.
+// instantiation of registry_state (the one-member wrapper holding the shared
+// `st`): the owning module dllexport-s the instantiation definition, clients
+// declare a dllimport-ed instantiation ("extern template") so they reference
+// the owner's symbol instead of instantiating their own copy. The state lives
+// in registry_state<registry_type> (the registry<...> base class), not
+// registry_state<default_registry>.
 //
 // An explicit instantiation definition may appear only once in the program,
 // so BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY must be compiled in exactly one
@@ -60,10 +61,10 @@ struct default_registry
 #if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY)
 template struct BOOST_SYMBOL_EXPORT
-    detail::static_st<default_registry::registry_type>;
+    registry_state<default_registry::registry_type>;
 #elif defined(BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY)
 extern template struct BOOST_SYMBOL_IMPORT
-    detail::static_st<default_registry::registry_type>;
+    registry_state<default_registry::registry_type>;
 #endif
 #endif
 
@@ -89,10 +90,10 @@ struct indirect_registry : default_registry::with<policies::indirect_vptr> {};
 #if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY)
 template struct BOOST_SYMBOL_EXPORT
-    detail::static_st<indirect_registry::registry_type>;
+    registry_state<indirect_registry::registry_type>;
 #elif defined(BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY)
 extern template struct BOOST_SYMBOL_IMPORT
-    detail::static_st<indirect_registry::registry_type>;
+    registry_state<indirect_registry::registry_type>;
 #endif
 #endif
 

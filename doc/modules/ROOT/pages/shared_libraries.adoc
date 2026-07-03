@@ -139,10 +139,10 @@ struct my_registry : boost::openmethod::registry</* policies... */> {};
 #ifdef _WIN32
 #ifdef MY_MODULE_OWNS_REGISTRY // in exactly one TU of the owning module
 template struct BOOST_SYMBOL_EXPORT
-    boost::openmethod::detail::static_st<my_registry::registry_type>;
+    boost::openmethod::registry_state<my_registry::registry_type>;
 #else
 extern template struct BOOST_SYMBOL_IMPORT
-    boost::openmethod::detail::static_st<my_registry::registry_type>;
+    boost::openmethod::registry_state<my_registry::registry_type>;
 #endif
 #endif
 ----

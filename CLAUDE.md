@@ -168,23 +168,42 @@ dllexport/dllimport decoration of the registry's state. On other platforms no de
 needed — the state has ordinary external linkage and is shared by the dynamic linker.
 
 **One shared state variable**: All of a registry's mutable state — the class/method/overrider
-lists *and* every stateful policy's `state` (held together in the `registry_state::policies`
-tuple) — lives in a single variable, `detail::static_st<Registry>::st` of type
-`detail::registry_state<Registry>`. A registry reaches it through `Registry::state()`. Sharing a
-registry across a DLL boundary therefore means sharing this one symbol.
+lists *and* every stateful policy's `state` (held together in the `registry_state_type::policies`
+tuple) — lives in a single variable, `registry_state<Registry>::st` of type
+`detail::registry_state_type<Registry>`. A registry reaches it through `Registry::state()`. Sharing
+a registry across a DLL boundary therefore means sharing this one symbol.
+
+`registry_state` (in `boost::openmethod`) is a deliberately thin, function-free class whose only
+member is the static `st`. It is kept *separate* from `registry_state_type` (the struct holding the
+actual fields, in `detail`) because MSVC only honors `dllexport`/`dllimport` on a *whole-class*
+explicit instantiation — not on a variable template (clients silently get a private copy) nor on a
+static-data-member instantiation (error C2720) — and dllexporting `registry_state_type` directly
+would also decorate its member functions and the policies' nested `state` types, which MSVC rejects
+(error C2513). A one-member, function-free class is the only shape MSVC will export as a whole and
+import via `extern template`.
 
 **Mechanism — `extern template` / explicit instantiation**: the shared symbol is
-`static_st<Registry::registry_type>::st`, where `registry_type` is the `registry<Policy...>`
+`registry_state<Registry::registry_type>::st`, where `registry_type` is the `registry<Policy...>`
 *base* of the registry struct (that is what `registry::state()` uses — never key on the derived
 struct). The owning module compiles, in exactly one TU, a dllexport-ed explicit instantiation
 definition; clients compile a dllimport-ed explicit instantiation declaration, so they reference
 the owner's symbol instead of instantiating their own copy:
 ```cpp
 // owner (one TU):
-template struct BOOST_SYMBOL_EXPORT detail::static_st<R::registry_type>;
+template struct BOOST_SYMBOL_EXPORT registry_state<R::registry_type>;
 // clients:
-extern template struct BOOST_SYMBOL_IMPORT detail::static_st<R::registry_type>;
+extern template struct BOOST_SYMBOL_IMPORT registry_state<R::registry_type>;
 ```
+
+**Registries are structs, not aliases — do not "simplify" this**: `default_registry` (and the
+documented custom-registry pattern) is deliberately a *struct deriving from* `registry<Policy...>`,
+never a type alias. The short struct name keeps mangled/linker names short for everything keyed on
+the registry (methods, virtual_ptrs, `static_vptr`, registrars...); an alias would expand to the
+full policy list in all of those symbols. This is also why the `::registry_type` spelling in the
+explicit instantiations above cannot be avoided: an explicit instantiation instantiates exactly the
+specialization written, so making `registry_state<default_registry>` work would require
+`default_registry` to *be* its base (an alias) — rejected for the mangled-name reason. Only the
+shared state symbol carries the full policy list, which is accepted.
 
 **Usage (predefined registries)**: define exactly one of the macros *before* including
 `<boost/openmethod/default_registry.hpp>` (or `<boost/openmethod.hpp>`):
@@ -207,7 +226,7 @@ See `doc/modules/ROOT/examples/shared_libs/` and `test/dynamic_loading/` for com
 shared symbol across modules. `get_ids()` (in `registry.hpp`) returns the registry-state address
 (`default_registry::id()`) followed by any stateful-policy `id()`s; `main.cpp`'s `same_ids()`
 asserts these addresses are identical across modules. (Policy state now lives inside
-`registry_state`, so in practice the registry-state address is the one shared symbol.) Files:
+`registry_state_type`, so in practice the registry-state address is the one shared symbol.) Files:
 - `registry.hpp` — maps `EXPORT_REGISTRY` → the `BOOST_OPENMETHOD_{EXPORT,IMPORT}_{DEFAULT,INDIRECT}_REGISTRY` pair matching the registry under test (indirect iff `BOOST_OPENMETHOD_DEFAULT_REGISTRY` is defined on the command line) before including `default_registry.hpp`; defines `get_ids()`
 - `classes.hpp` — `Animal`/`Dog` definitions + `make_dog`
 - `method.hpp` — declares the `speak`/`meet` methods (no declspec arguments)
@@ -289,10 +308,10 @@ The v-table pointer enables O(1) method dispatch.
 ### Policy State Pattern
 
 Stateful policies keep their data in a nested `struct state` inside `fn<Registry>` and reach it
-through the registry's shared `registry_state`. `registry_state` automatically gathers every
+through the registry's shared state. `registry_state_type` automatically gathers every
 policy's `state` into its `policies` tuple, so a policy's state is part of the single shared
-`static_st<Registry>::st` variable — no per-policy DLL decoration, `MAKE_STATICS` macro, or `id()`
-function is needed (those were all removed).
+`registry_state<Registry>::st` variable — no per-policy DLL decoration, `MAKE_STATICS` macro, or
+`id()` function is needed (those were all removed).
 
 To add state to a policy's `fn<Registry>`:
 
@@ -309,14 +328,14 @@ To add state to a policy's `fn<Registry>`:
        return Registry::state().template policy<fast_perfect_hash>();
    }
    ```
-   `Registry::state()` returns the `registry_state<Registry>`; its `policy<P>()` returns
+   `Registry::state()` returns the `registry_state_type<Registry>`; its `policy<P>()` returns
    `P::fn<Registry>::state&` via `std::get` on the tuple.
 3. **Use `st()`** wherever the state is read or written: `st().fn`, `st().control`, etc. (name it
    `st()` so it does not shadow the `state` type).
 
-`registry_state` (in `preamble.hpp`) builds its `policies` tuple by instantiating each policy's
-`fn<Registry>`, keeping those that have a nested `state` (`detail::has_policy_state`), and storing
-one of each:
+`registry_state_type` (in `preamble.hpp`) builds its `policies` tuple by instantiating each
+policy's `fn<Registry>`, keeping those that have a nested `state` (`detail::has_policy_state`), and
+storing one of each:
 ```cpp
 mp_apply<std::tuple,
     mp_transform<policy_state_t,

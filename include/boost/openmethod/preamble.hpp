@@ -852,7 +852,7 @@ struct policy_fn_q {
 };
 
 template<class Registry>
-struct registry_state {
+struct registry_state_type {
     static_list<class_info> classes;
     static_list<method_info> methods;
     bool initialized;
@@ -973,21 +973,37 @@ struct initialize_aux;
     constexpr bool BOOST_PP_CAT(has_, FN) =                                    \
         BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux))<void, T, Args...>::value
 
-namespace detail {
-
-// static_st<Registry>: holds the registry_state for Registry as a static
-// member `st`, the single shared instance of the registry's state. On
-// Windows, a registry is shared across modules by dllexport-ing an explicit
-// instantiation of static_st in the owning module and declaring a
-// dllimport-ed explicit instantiation ("extern template") in clients; see
-// default_registry.hpp.
+//! The single shared instance of a registry's state.
+//!
+//! `registry_state` is a thin, function-free class whose only member, `st`,
+//! holds all of a registry's mutable state (of type @ref
+//! detail::registry_state_type). Reach it through `Registry::state()`.
+//!
+//! It is deliberately a *separate* one-member class, rather than
+//! `registry_state_type` itself, because sharing the state across a DLL
+//! boundary on Windows requires exporting and importing a *whole class*:
+//!
+//! @li MSVC honors `__declspec(dllexport/dllimport)` on a class explicit
+//!   instantiation, but NOT on a variable template (clients silently get a
+//!   private copy) nor on a static-data-member instantiation (error C2720).
+//!   So the exported symbol must be a class member reached via whole-class
+//!   instantiation.
+//! @li dllexporting `registry_state_type` directly would also decorate its
+//!   member functions and, transitively, the policies' nested `state` types,
+//!   which MSVC rejects (error C2513).
+//!
+//! A one-member, function-free class is the only shape MSVC will export as a
+//! whole and import via `extern template`. See default_registry.hpp for the
+//! per-registry instantiations.
 template<class Registry>
-struct static_st {
-    static registry_state<Registry> st;
+struct registry_state {
+    static detail::registry_state_type<Registry> st;
 };
 
 template<class Registry>
-registry_state<Registry> static_st<Registry>::st;
+detail::registry_state_type<Registry> registry_state<Registry>::st;
+
+namespace detail {
 
 BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(id);
 
@@ -1072,7 +1088,7 @@ class registry : public detail::registry_base {
     template<typename Name, typename ReturnType, class Registry>
     friend class method;
 
-    using static_ = detail::static_st<registry>;
+    using static_ = registry_state<registry>;
 
   public:
     //! The type of this registry.
