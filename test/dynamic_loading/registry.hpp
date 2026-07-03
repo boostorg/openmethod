@@ -8,11 +8,23 @@
 
 #include <boost/openmethod/preamble.hpp>
 
+// The indirect variants select indirect_registry by defining
+// BOOST_OPENMETHOD_DEFAULT_REGISTRY on the command line; the default variants
+// leave it undefined. Pick the export/import macro pair matching the registry
+// under test.
 #if defined(_WIN32) || defined(__CYGWIN__)
 #if defined(EXPORT_REGISTRY)
-#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
+#  if defined(BOOST_OPENMETHOD_DEFAULT_REGISTRY)
+#    define BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY
+#  else
+#    define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
+#  endif
 #else
-#define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
+#  if defined(BOOST_OPENMETHOD_DEFAULT_REGISTRY)
+#    define BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY
+#  else
+#    define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
+#  endif
 #endif
 #endif
 

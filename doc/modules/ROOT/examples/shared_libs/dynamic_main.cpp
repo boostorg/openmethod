@@ -18,10 +18,6 @@
 
 using namespace boost::openmethod;
 
-#if defined(_WIN32) || defined(__CYGWIN__)
-static_assert(std::is_base_of_v<policies::dllexport, default_registry_dllvar>);
-#endif
-
 // tag::before[]
 // dynamic_main.cpp
 

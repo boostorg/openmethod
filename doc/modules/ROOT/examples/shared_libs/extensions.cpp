@@ -8,10 +8,6 @@
 
 using namespace boost::openmethod;
 
-#if defined(_WIN32) || defined(__CYGWIN__)
-static_assert(std::is_base_of_v<policies::dllimport, default_registry_dllvar>);
-#endif
-
 // tag::content[]
 BOOST_OPENMETHOD_OVERRIDE(
     meet, (virtual_ptr<Herbivore> a, virtual_ptr<Carnivore> b), std::string) {

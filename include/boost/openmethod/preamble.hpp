@@ -973,103 +973,21 @@ struct initialize_aux;
     constexpr bool BOOST_PP_CAT(has_, FN) =                                    \
         BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux))<void, T, Args...>::value
 
-// -----------------------------------------------------------------------------
-// import/export
-
-namespace policies {
-
-#if defined(__MRDOCS__) || defined(_WIN32) || defined(__CYGWIN__)
-
-//! Policy category controlling the DLL linkage of the registry state.
-//!
-//! A registry that contains a policy deriving from @ref dllexport exports its
-//! state from the owning shared library; one deriving from @ref dllimport
-//! imports it. A registry with no `dllvar` policy uses ordinary linkage.
-struct dllvar {
-    using category = dllvar;
-    template<class Registry>
-    struct fn {};
-};
-
-//! Exports the registry state from the owning shared library.
-struct dllexport : dllvar {
-    template<class Registry>
-    struct fn {};
-};
-
-//! Imports the registry state from the owning shared library.
-struct dllimport : dllvar {
-    template<class Registry>
-    struct fn {};
-};
-
-#endif
-
-} // namespace policies
-
 namespace detail {
 
-// Clang warns at every usage site of a dllimport variable template because the
-// definition is deliberately absent (it lives in the exporting DLL). Suppress
-// this false positive using _Pragma inside the dllimport struct so the pragma
-// is emitted in whatever file expands it.
-#if defined(__clang__)
-#define BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR                  \
-    _Pragma("clang diagnostic push")                                           \
-    _Pragma("clang diagnostic ignored \"-Wundefined-var-template\"")
-#define BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR                   \
-    _Pragma("clang diagnostic pop")
-#else
-#define BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
-#define BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
-#endif
-
 // static_st<Registry>: holds the registry_state for Registry as a static
-// member `st`, the single shared instance of the registry's state. On Windows,
-// SFINAE selects the dllexport or dllimport decoration based on whether the
-// registry's dllvar policy derives from policies::dllexport / policies::dllimport.
-// All specializations resolve to static_st<Registry, void>, giving the same
-// mangled symbol name so exporter and importer share the variable.
-template<class Registry, typename = void>
+// member `st`, the single shared instance of the registry's state. On
+// Windows, a registry is shared across modules by dllexport-ing an explicit
+// instantiation of static_st in the owning module and declaring a
+// dllimport-ed explicit instantiation ("extern template") in clients; see
+// default_registry.hpp.
+template<class Registry>
 struct static_st {
     static registry_state<Registry> st;
 };
 
-template<class Registry, typename Enable>
-registry_state<Registry> static_st<Registry, Enable>::st;
-
-#if defined(_WIN32) || defined(__CYGWIN__)
-
-// The registry's dllvar policy (a type deriving from policies::dllvar), or void.
 template<class Registry>
-using registry_dllvar =
-    find_first_derived_of<policies::dllvar, typename Registry::policy_list>;
-
-template<class Registry>
-struct static_st<
-    Registry,
-    std::enable_if_t<
-        std::is_base_of_v<policies::dllexport, registry_dllvar<Registry>>>> {
-    static BOOST_SYMBOL_EXPORT registry_state<Registry> st;
-};
-
-template<class Registry>
-registry_state<Registry> static_st<
-    Registry,
-    std::enable_if_t<
-        std::is_base_of_v<policies::dllexport, registry_dllvar<Registry>>>>::st;
-
-template<class Registry>
-struct static_st<
-    Registry,
-    std::enable_if_t<
-        std::is_base_of_v<policies::dllimport, registry_dllvar<Registry>>>> {
-    BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
-    static BOOST_SYMBOL_IMPORT registry_state<Registry> st;
-    BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
-};
-
-#endif // _WIN32 || __CYGWIN__
+registry_state<Registry> static_st<Registry>::st;
 
 BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(id);
 
@@ -1160,7 +1078,6 @@ class registry : public detail::registry_base {
     //! The type of this registry.
     using registry_type = registry;
 
-    BOOST_OPENMETHOD_DETAIL_SUPPRESS_DLLIMPORT_UNDEF_VAR
     static auto& state() {
         return static_::st;
     }
@@ -1168,7 +1085,6 @@ class registry : public detail::registry_base {
     static const void* id() {
         return static_cast<const void*>(&static_::st.classes);
     }
-    BOOST_OPENMETHOD_DETAIL_RESTORE_DLLIMPORT_UNDEF_VAR
 
     template<class... Options>
     struct compiler;

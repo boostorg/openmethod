@@ -173,47 +173,33 @@ tuple) — lives in a single variable, `detail::static_st<Registry>::st` of type
 `detail::registry_state<Registry>`. A registry reaches it through `Registry::state()`. Sharing a
 registry across a DLL boundary therefore means sharing this one symbol.
 
-**The `dllvar` policy**: DLL decoration is driven by a policy category, `policies::dllvar`, with
-two marker policies `policies::dllexport` and `policies::dllimport` (all defined only on
-Windows/Cygwin). `detail::static_st` is a SFINAE-specialized template keyed on `Registry`:
-- primary (no `dllvar` policy, or non-Windows) → undecorated `st`;
-- registry's `dllvar` policy derives from `policies::dllexport` → `BOOST_SYMBOL_EXPORT st` (defined here);
-- derives from `policies::dllimport` → `BOOST_SYMBOL_IMPORT st` (no definition — it lives in the owning module).
-
-All specializations resolve to `static_st<Registry, void>::st`, so the **mangled symbol name is
-identical** across translation units; only the export/import attribute differs.
-
-**Stable symbol across TUs (the key trick)**: to export from the owning module and import in
-clients while keeping ONE shared symbol, give the registry a `dllvar` policy whose *type name is
-stable* but whose *base class* varies per translation unit. `default_registry` does this with
-`default_registry_dllvar` (in `default_registry.hpp`):
+**Mechanism — `extern template` / explicit instantiation**: the shared symbol is
+`static_st<Registry::registry_type>::st`, where `registry_type` is the `registry<Policy...>`
+*base* of the registry struct (that is what `registry::state()` uses — never key on the derived
+struct). The owning module compiles, in exactly one TU, a dllexport-ed explicit instantiation
+definition; clients compile a dllimport-ed explicit instantiation declaration, so they reference
+the owner's symbol instead of instantiating their own copy:
 ```cpp
-#if defined(_WIN32) || defined(__CYGWIN__)
-# if defined(BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY)
-struct default_registry_dllvar : policies::dllexport {};
-# elif defined(BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY)
-struct default_registry_dllvar : policies::dllimport {};
-# endif
-#endif
+// owner (one TU):
+template struct BOOST_SYMBOL_EXPORT detail::static_st<R::registry_type>;
+// clients:
+extern template struct BOOST_SYMBOL_IMPORT detail::static_st<R::registry_type>;
 ```
-The type name `default_registry_dllvar` is identical in every TU (so `default_registry`, and thus
-`static_st<default_registry>::st`, has one mangled name), but it derives from `dllexport` in the
-owning module and `dllimport` in clients. A base class is not part of a class's mangled name, so
-the symbol matches while SFINAE picks export vs import.
 
-**Usage**: define exactly one of the macros *before* including
+**Usage (predefined registries)**: define exactly one of the macros *before* including
 `<boost/openmethod/default_registry.hpp>` (or `<boost/openmethod.hpp>`):
-`BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY` in the module that owns the state,
-`BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY` in every client. With neither (or off-Windows),
-`default_registry` carries no `dllvar` policy and the state has ordinary linkage. A custom registry
-opts in the same way: `registry<..., my_dllvar>` where `my_dllvar : policies::dllexport` (owner) or
-`: policies::dllimport` (client), with a per-TU macro choosing the base.
+`BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY` in **exactly one TU** of the module that owns the
+state (it emits an explicit instantiation *definition*, which may appear only once in the
+program), `BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY` in every client TU. `indirect_registry` has
+its own state and its own analogous pair, `BOOST_OPENMETHOD_{EXPORT,IMPORT}_INDIRECT_REGISTRY`.
+With neither macro (or off-Windows), the state has ordinary linkage.
+
+**Custom registries**: the library provides no general macro. Users write the explicit
+instantiation / `extern template` declaration themselves (as in the snippet above, possibly
+wrapped in their own per-registry macros), after the registry's definition and before any use.
 
 **Methods need no decoration**: method objects are *consolidated* across modules at `initialize()`
-time, not shared via a single symbol, so `BOOST_OPENMETHOD(...)` takes no declspec argument. There
-is no longer any per-method `boost_openmethod_declspec` ADL hook.
-
-**`policies::declspec_none`** remains as the "no decoration" tag (e.g. for non-Windows code paths).
+time, not shared via a single symbol, so `BOOST_OPENMETHOD(...)` takes no declspec argument.
 
 See `doc/modules/ROOT/examples/shared_libs/` and `test/dynamic_loading/` for complete examples.
 
@@ -222,7 +208,7 @@ shared symbol across modules. `get_ids()` (in `registry.hpp`) returns the regist
 (`default_registry::id()`) followed by any stateful-policy `id()`s; `main.cpp`'s `same_ids()`
 asserts these addresses are identical across modules. (Policy state now lives inside
 `registry_state`, so in practice the registry-state address is the one shared symbol.) Files:
-- `registry.hpp` — maps `EXPORT_REGISTRY` → `BOOST_OPENMETHOD_{EXPORT,IMPORT}_DEFAULT_REGISTRY` before including `default_registry.hpp`; defines `get_ids()`
+- `registry.hpp` — maps `EXPORT_REGISTRY` → the `BOOST_OPENMETHOD_{EXPORT,IMPORT}_{DEFAULT,INDIRECT}_REGISTRY` pair matching the registry under test (indirect iff `BOOST_OPENMETHOD_DEFAULT_REGISTRY` is defined on the command line) before including `default_registry.hpp`; defines `get_ids()`
 - `classes.hpp` — `Animal`/`Dog` definitions + `make_dog`
 - `method.hpp` — declares the `speak`/`meet` methods (no declspec arguments)
 - `registry.cpp` — compiled with `EXPORT_REGISTRY`; the shared library that owns and exports the registry state

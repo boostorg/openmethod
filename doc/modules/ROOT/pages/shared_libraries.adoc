@@ -38,8 +38,8 @@ call `initialize`.
 
 Let's look at an example. The following header is shared between the program and
 the dynamically loaded library. It defines the class hierarchy, the `meet`
-method, and sets up declspec decoration for Windows compatibility (explained in
-the <<Windows>> section below):
+method, and sets up the export and import of the registry state for Windows
+compatibility (explained in the <<Windows>> section below):
 
 [source,c++]
 ----
@@ -86,53 +86,65 @@ dispatch tables, and method function pointers are duplicated: when a DLL's
 static constructors register classes and overriders, they populate the DLL's own
 copy of the registry, invisible to the main program.
 
-OpenMethod solves this with _declspec decoration_. Three types are provided in
-`namespace boost::openmethod`:
+All of a registry's mutable state lives in a single variable. Sharing a registry
+across modules therefore means sharing that one symbol: the _owning_ module
+defines and `dllexport`{empty}s it, and every _client_ module `dllimport`{empty}s
+it.
 
-- `dllexport` -- marks the _owning_ module, which defines and exports shared
-  state
-- `dllimport` -- marks _client_ modules, which import shared state from the
-  owner
-- `declspec_none` -- a no-op for non-Windows platforms, enabling portable
-  headers
+For `default_registry`, two macros control this:
 
-The `animals.hpp` header shown above demonstrates the pattern. The key elements
-are:
+- `BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY` -- defined in _exactly one_
+  translation unit of the owning module, it emits an explicit instantiation of
+  the registry state, decorated with `dllexport`.
+- `BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY` -- defined in every client
+  translation unit, it emits an `extern template` declaration, decorated with
+  `dllimport`, so clients reference the owner's symbol instead of instantiating
+  their own copy.
 
-1. A preprocessor block that selects `dllexport` or `dllimport` depending on
-   which module is being compiled. The owning module (the executable, in this
-   example) defines a distinguishing macro; client modules (the DLL) do not:
-+
+Either macro must be defined _before_ including
+`<boost/openmethod/default_registry.hpp>` (directly or via
+`<boost/openmethod.hpp>`). On non-Windows platforms the macros have no effect,
+so the same header works everywhere. cpp:indirect_registry[] has its own state,
+controlled by the analogous `BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY` and
+`BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY` pair.
+
+The `animals.hpp` header shown above demonstrates the pattern: the owning module
+(the executable, in this example) defines a distinguishing macro
+(`LIBRARY_NAME`); a preprocessor block selects export or import accordingly:
+
 [source,c++]
 ----
 #ifdef _WIN32
 #ifdef LIBRARY_NAME
-#define ANIMALS_API boost::openmethod::dllexport
+#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
 #else
-#define ANIMALS_API boost::openmethod::dllimport
+#define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
 #endif
-#else
-#define ANIMALS_API boost::openmethod::declspec_none
 #endif
 ----
 
-2. A `boost_openmethod_declspec` function declaration in `namespace
-   boost::openmethod` that tells the library how to decorate the registry's
-   static variables:
-+
-[source,c++]
-----
-namespace boost::openmethod {
-    ANIMALS_API boost_openmethod_declspec(default_registry&);
-}
-----
+Nothing else needs decoration. In particular, methods declared with
+`BOOST_OPENMETHOD` require no export or import: method objects are consolidated
+across modules when `initialize` runs.
 
-3. The declspec type passed as a fourth argument to `BOOST_OPENMETHOD`,
-   decorating the method's function pointer and associated statics:
-+
+A custom registry is shared the same way, but the library does not provide
+macros for it. Write the explicit instantiation and the `extern template`
+declaration yourself (possibly wrapped in your own per-registry macros), after
+the registry's definition:
+
 [source,c++]
 ----
-BOOST_OPENMETHOD(meet, (...), std::string, ANIMALS_API);
+struct my_registry : boost::openmethod::registry</* policies... */> {};
+
+#ifdef _WIN32
+#ifdef MY_MODULE_OWNS_REGISTRY // in exactly one TU of the owning module
+template struct BOOST_SYMBOL_EXPORT
+    boost::openmethod::detail::static_st<my_registry::registry_type>;
+#else
+extern template struct BOOST_SYMBOL_IMPORT
+    boost::openmethod::detail::static_st<my_registry::registry_type>;
+#endif
+#endif
 ----
 
 ### CMake Setup
@@ -154,11 +166,10 @@ target_link_libraries(my_plugin PRIVATE Boost::openmethod my_app)
 (`.lib` on MSVC) that the DLL links against. On POSIX, `ENABLE_EXPORTS` adds
 `-rdynamic`, which is the only setup needed.
 
-NOTE: The owning module must compile code that triggers static registration --
-it must include headers containing `BOOST_OPENMETHOD_CLASSES` or
-`BOOST_OPENMETHOD` macros. Simply declaring `boost_openmethod_declspec` is not
-sufficient; the registry state is only instantiated and exported when
-registration code references it.
+NOTE: `BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY` produces an explicit
+instantiation _definition_, which may appear only once in the program. Define it
+in exactly one translation unit of the owning module; all other translation
+units, in every module, use the `IMPORT` macro.
 
 ## Indirect Vptrs
 

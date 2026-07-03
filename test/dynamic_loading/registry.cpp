@@ -24,11 +24,6 @@ namespace mp11 = boost::mp11;
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <boost/config.hpp>
-#if defined(EXPORT_REGISTRY)
-static_assert(std::is_base_of_v<policies::dllexport, default_registry_dllvar>);
-#else
-static_assert(std::is_base_of_v<policies::dllimport, default_registry_dllvar>);
-#endif
 #else
 #include <boost/dll/alias.hpp>
 #endif
