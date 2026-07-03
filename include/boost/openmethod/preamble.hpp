@@ -16,7 +16,10 @@
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable : 4702)
+// 4702: unreachable code. 4251: registry_state<R>::st (dll-exported) has type
+// registry_state_type<R>, which intentionally has no dll-interface; benign for
+// a static member, which is not part of object layout.
+#pragma warning(disable : 4702 4251)
 #endif
 
 namespace boost::openmethod {
