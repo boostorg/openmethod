@@ -1096,9 +1096,9 @@ class registry : public detail::registry_base {
         return static_::st;
     }
 
-    template<class Policy>
+    template<class P>
     static auto& state() {
-        return std::get<typename Policy::template fn<registry>::state>(
+        return std::get<typename P::template fn<registry>::state>(
             static_::st.policies);
     }
 
