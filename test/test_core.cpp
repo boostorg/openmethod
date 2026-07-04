@@ -258,7 +258,7 @@ static_assert(
 static_assert(
     std::is_same_v<
         detail::use_classes_tuple_type<Animal, Dog, Bulldog, Cat, Dolphin>,
-        std::tuple<
+        detail::tuple<
             use_class_aux<default_registry, mp11::mp_list<Animal, Animal>>,
             use_class_aux<default_registry, mp11::mp_list<Dog, Animal, Dog>>,
             use_class_aux<

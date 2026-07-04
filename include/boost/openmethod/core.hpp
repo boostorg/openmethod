@@ -380,7 +380,7 @@ type_id use_class_aux<
 
 template<class... Classes>
 using use_classes_tuple_type = boost::mp11::mp_apply<
-    std::tuple,
+    detail::tuple,
     boost::mp11::mp_transform_q<
         boost::mp11::mp_bind_front<
             detail::use_class_aux,
@@ -2267,7 +2267,7 @@ class method<Id, ReturnType(Parameters...), Registry>
     //! @tparam Fn One or more functions to the overrider list
     template<auto... Fn>
     class override {
-        std::tuple<override_aux<Fn, decltype(Fn)>...> impl;
+        detail::tuple<override_aux<Fn, decltype(Fn)>...> impl;
     };
 
   private:

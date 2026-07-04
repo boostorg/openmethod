@@ -837,6 +837,46 @@ namespace detail {
 
 struct registry_base {};
 
+// A minimal tuple. Unlike std::tuple (very expensive to instantiate with
+// MSVC), it has no converting constructors, no comparisons, and no EBO
+// machinery. It is used as a plain holder of heterogeneous objects
+// (policy states, registrars), which are always default-constructed; `get`
+// retrieves an element by type - the first match, which is also the only one
+// in the uses we make of it.
+template<class... Ts>
+struct tuple;
+
+template<>
+struct tuple<> {};
+
+template<class T, class... Ts>
+struct tuple<T, Ts...> {
+    T head;
+    tuple<Ts...> tail;
+};
+
+template<class T, class Tuple>
+struct tuple_getter;
+
+template<class T, class... Ts>
+struct tuple_getter<T, tuple<T, Ts...>> {
+    static auto fn(tuple<T, Ts...>& t) -> T& {
+        return t.head;
+    }
+};
+
+template<class T, class U, class... Ts>
+struct tuple_getter<T, tuple<U, Ts...>> {
+    static auto fn(tuple<U, Ts...>& t) -> T& {
+        return tuple_getter<T, tuple<Ts...>>::fn(t.tail);
+    }
+};
+
+template<class T, class... Ts>
+auto get(tuple<Ts...>& t) -> T& {
+    return tuple_getter<T, tuple<Ts...>>::fn(t);
+}
+
 // Detects whether T has a nested ::state type.
 template<class T, class = void>
 struct has_policy_state : std::false_type {};
@@ -861,7 +901,7 @@ struct registry_state_type {
     bool initialized;
     std::vector<word> dispatch_data;
     using policies_type = mp11::mp_apply<
-        std::tuple,
+        detail::tuple,
         mp11::mp_transform<
             policy_state_t,
             mp11::mp_filter<
@@ -1098,7 +1138,7 @@ class registry : public detail::registry_base {
 
     template<class P>
     static auto& state() {
-        return std::get<typename P::template fn<registry>::state>(
+        return detail::get<typename P::template fn<registry>::state>(
             static_::st.policies);
     }
 
