@@ -387,7 +387,8 @@ using use_classes_tuple_type = boost::mp11::mp_apply<
             typename detail::extract_registry<Classes...>::registry>,
         boost::mp11::mp_apply<
             detail::inheritance_map,
-            typename detail::extract_registry<Classes...>::others>>>;
+            boost::mp11::mp_unique<
+                typename detail::extract_registry<Classes...>::others>>>>;
 
 } // namespace detail
 
@@ -2267,7 +2268,11 @@ class method<Id, ReturnType(Parameters...), Registry>
     //! @tparam Fn One or more functions to the overrider list
     template<auto... Fn>
     class override {
-        detail::tuple<override_aux<Fn, decltype(Fn)>...> impl;
+        boost::mp11::mp_apply<
+            detail::tuple,
+            boost::mp11::mp_unique<
+                boost::mp11::mp_list<override_aux<Fn, decltype(Fn)>...>>>
+            impl;
     };
 
   private:

@@ -841,40 +841,20 @@ struct registry_base {};
 // MSVC), it has no converting constructors, no comparisons, and no EBO
 // machinery. It is used as a plain holder of heterogeneous objects
 // (policy states, registrars), which are always default-constructed; `get`
-// retrieves an element by type - the first match, which is also the only one
-// in the uses we make of it.
+// retrieves an element by type. Elements are held in base classes, so element
+// types must be unique - lists that may contain duplicates are passed through
+// mp_unique first.
+template<class T>
+struct tuple_element {
+    T element;
+};
+
 template<class... Ts>
-struct tuple;
-
-template<>
-struct tuple<> {};
-
-template<class T, class... Ts>
-struct tuple<T, Ts...> {
-    T head;
-    tuple<Ts...> tail;
-};
-
-template<class T, class Tuple>
-struct tuple_getter;
-
-template<class T, class... Ts>
-struct tuple_getter<T, tuple<T, Ts...>> {
-    static auto fn(tuple<T, Ts...>& t) -> T& {
-        return t.head;
-    }
-};
-
-template<class T, class U, class... Ts>
-struct tuple_getter<T, tuple<U, Ts...>> {
-    static auto fn(tuple<U, Ts...>& t) -> T& {
-        return tuple_getter<T, tuple<Ts...>>::fn(t.tail);
-    }
-};
+struct tuple : tuple_element<Ts>... {};
 
 template<class T, class... Ts>
 auto get(tuple<Ts...>& t) -> T& {
-    return tuple_getter<T, tuple<Ts...>>::fn(t);
+    return static_cast<tuple_element<T>&>(t).element;
 }
 
 // Detects whether T has a nested ::state type.
