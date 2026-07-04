@@ -63,6 +63,23 @@ function(boost_openmethod_add_test name)
     endif()
 endfunction()
 
+# Precompiled headers: most test_*.cpp files just #include <boost/openmethod.hpp>
+# (and friends) before anything else, so a shared PCH avoids re-parsing that
+# (large, mp11-heavy) header once per test executable. A handful of files
+# instead define their own registry and #define BOOST_OPENMETHOD_DEFAULT_REGISTRY
+# *before* the first inclusion of core.hpp (directly or via boost/openmethod.hpp);
+# force-including a PCH that already pulled in core.hpp would defeat that
+# override, so those files are detected (by scanning for the macro) and left
+# without a PCH.
+set(BOOST_OPENMETHOD_TEST_PCH_HEADERS
+    <boost/openmethod.hpp>
+    <boost/openmethod/initialize.hpp>
+    <boost/openmethod/interop/std_shared_ptr.hpp>
+    <boost/openmethod/interop/std_unique_ptr.hpp>
+)
+
+set(boost_openmethod_pch_owner "")
+
 file(GLOB test_cpp_files "test_*.cpp")
 
 foreach(test_cpp ${test_cpp_files})
@@ -72,6 +89,18 @@ foreach(test_cpp ${test_cpp_files})
     target_link_libraries(${test_target} PRIVATE Boost::openmethod Boost::unit_test_framework)
     boost_openmethod_add_test(${test_target})
     add_dependencies(tests ${test_target})
+
+    file(READ ${test_cpp} test_cpp_contents)
+    string(FIND "${test_cpp_contents}" "BOOST_OPENMETHOD_DEFAULT_REGISTRY" test_cpp_overrides_registry)
+
+    if (test_cpp_overrides_registry EQUAL -1)
+        if (NOT boost_openmethod_pch_owner)
+            target_precompile_headers(${test_target} PRIVATE ${BOOST_OPENMETHOD_TEST_PCH_HEADERS})
+            set(boost_openmethod_pch_owner ${test_target})
+        else()
+            target_precompile_headers(${test_target} REUSE_FROM ${boost_openmethod_pch_owner})
+        endif()
+    endif()
 endforeach()
 
 add_executable(boost_openmethod-test_mix_release_debug EXCLUDE_FROM_ALL mix_release_debug/main.cpp mix_release_debug/lib.cpp)
