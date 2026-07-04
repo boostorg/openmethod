@@ -11,6 +11,7 @@
 #include <limits>
 #include <random>
 #include <tuple>
+#include <type_traits>
 #include <variant>
 #ifdef _MSC_VER
 #pragma warning(push)
@@ -78,20 +79,29 @@ struct fast_perfect_hash : type_hash {
 
     using errors = std::variant<search_error>;
 
+    //! `state` layout when runtime checks are disabled.
+    struct no_checks {
+        detail::hash_fn fn;
+    };
+
+    //! `state` layout when runtime checks are enabled: adds the table of
+    //! registered type ids used to validate hashed types.
+    struct with_checks : no_checks {
+        std::vector<type_id> control;
+    };
+
     //! A TypeHashFn metafunction.
     //!
     //! @tparam Registry The registry containing this policy
     template<class Registry>
     class fn {
       public:
-        struct state {
-            detail::hash_fn fn;
-            std::vector<type_id> control;
-        };
+        using state = std::conditional_t<
+            Registry::has_runtime_checks, with_checks, no_checks>;
 
       private:
         static auto& st() {
-            return Registry::state().template policy<fast_perfect_hash>();
+            return Registry::template state<fast_perfect_hash>();
         }
 
         static void check(std::size_t index, type_id type);

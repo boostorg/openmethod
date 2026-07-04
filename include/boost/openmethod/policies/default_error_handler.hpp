@@ -85,7 +85,7 @@ struct default_error_handler : error_handler {
 
       private:
         static auto& st() {
-            return Registry::state().template policy<default_error_handler>();
+            return Registry::template state<default_error_handler>();
         }
 
       public:

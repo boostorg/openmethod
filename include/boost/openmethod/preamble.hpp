@@ -870,11 +870,6 @@ struct registry_state_type {
                     policy_fn_q<Registry>,
                     typename Registry::policy_list>>>>;
     policies_type policies;
-
-    template<class Policy>
-    auto policy() -> typename Policy::template fn<Registry>::state& {
-        return std::get<typename Policy::template fn<Registry>::state>(policies);
-    }
 };
 
 template<typename T>
@@ -1099,6 +1094,12 @@ class registry : public detail::registry_base {
 
     static auto& state() {
         return static_::st;
+    }
+
+    template<class Policy>
+    static auto& state() {
+        return std::get<typename Policy::template fn<registry>::state>(
+            static_::st.policies);
     }
 
     static const void* id() {

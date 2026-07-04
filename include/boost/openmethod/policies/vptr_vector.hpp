@@ -185,7 +185,7 @@ struct vptr_vector : vptr {
 
       private:
         static auto& st() {
-            return Registry::state().template policy<vptr_vector>();
+            return Registry::template state<vptr_vector>();
         }
     };
 };

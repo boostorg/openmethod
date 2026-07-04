@@ -325,11 +325,12 @@ To add state to a policy's `fn<Registry>`:
 2. **Add a private accessor** returning this policy's slot in the registry's tuple:
    ```cpp
    static auto& st() {
-       return Registry::state().template policy<fast_perfect_hash>();
+       return Registry::template state<fast_perfect_hash>();
    }
    ```
-   `Registry::state()` returns the `registry_state_type<Registry>`; its `policy<P>()` returns
-   `P::fn<Registry>::state&` via `std::get` on the tuple.
+   `Registry::state<P>()` (a templated overload of `Registry::state()`, alongside the
+   non-template overload that returns the whole `registry_state_type<Registry>`) returns
+   `P::fn<Registry>::state&` via `std::get` on the `policies` tuple.
 3. **Use `st()`** wherever the state is read or written: `st().fn`, `st().control`, etc. (name it
    `st()` so it does not shadow the `state` type).
 

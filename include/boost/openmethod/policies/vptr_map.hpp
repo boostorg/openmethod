@@ -42,7 +42,7 @@ class vptr_map : public vptr {
 
       private:
         static auto& st() {
-            return Registry::state().template policy<vptr_map<MapFn>>();
+            return Registry::template state<vptr_map<MapFn>>();
         }
 
       public:

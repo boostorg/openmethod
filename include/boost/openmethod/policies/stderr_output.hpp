@@ -28,7 +28,7 @@ struct stderr_output : output {
         [[deprecated]] inline static detail::ostderr os;
 
         static auto& stream() {
-            return Registry::state().template policy<stderr_output>().os;
+            return Registry::template state<stderr_output>().os;
         }
     };
 };
