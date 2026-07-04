@@ -7,7 +7,9 @@
 #define BOOST_OPENMETHOD_TEST_HELPERS_HPP
 
 #include <iostream>
+#include <string>
 
+#include <boost/mp11/list.hpp>
 #include <boost/openmethod/core.hpp>
 #include <boost/openmethod/initialize.hpp>
 
@@ -80,6 +82,46 @@ struct Cat : Property, virtual Animal {
 };
 
 } // namespace animals
+
+namespace game {
+
+struct Player {
+    virtual ~Player() {
+    }
+};
+
+struct Warrior : Player {};
+struct Wizard : Player {};
+
+struct Bear : Player {};
+
+struct Object {
+    virtual ~Object() {
+    }
+};
+
+struct Axe : Object {};
+
+template<class VirtualBearPtr>
+auto poke_bear(VirtualBearPtr) {
+    return std::string("growl");
+}
+
+template<class VirtualWarriorPtr, class VirtualAxePtr, class VirtualBearPtr>
+auto fight_bear(VirtualWarriorPtr, VirtualAxePtr, VirtualBearPtr) {
+    return "kill bear";
+}
+
+template<int N>
+struct indirect_test_registry
+    : test_registry_<N>::template with<
+          boost::openmethod::policies::indirect_vptr> {};
+
+template<int N>
+using policy_types =
+    boost::mp11::mp_list<test_registry_<N>, indirect_test_registry<N>>;
+
+} // namespace game
 
 namespace test_matrices {
 

@@ -6,7 +6,7 @@
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/initialize.hpp>
 
-#define BOOST_TEST_MODULE virtual_ptr_dispatch
+#define BOOST_TEST_MODULE virtual_ptr_final
 #include <boost/test/unit_test.hpp>
 
 #include "test_util.hpp"
@@ -17,42 +17,44 @@ using namespace boost::openmethod::detail;
 using namespace game;
 
 struct BOOST_OPENMETHOD_ID(poke);
-struct BOOST_OPENMETHOD_ID(fight);
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
-    test_virtual_ptr_dispatch, Registry, policy_types<__COUNTER__>) {
+    test_virtual_ptr, Registry, policy_types<__COUNTER__>) {
 
     BOOST_OPENMETHOD_REGISTER(
         use_classes<Player, Warrior, Object, Axe, Bear, Registry>);
-
     using poke = method<
         BOOST_OPENMETHOD_ID(poke),
         auto(virtual_ptr<Player, Registry>)->std::string, Registry>;
     BOOST_OPENMETHOD_REGISTER(typename poke::template override<
                               poke_bear<virtual_ptr<Player, Registry>>>);
 
-    using fight = method<
-        BOOST_OPENMETHOD_ID(fight),
-        auto(
-            virtual_ptr<Player, Registry>, virtual_ptr<Object, Registry>,
-            virtual_ptr<Player, Registry>)
-            ->std::string,
-        Registry>;
-    BOOST_OPENMETHOD_REGISTER(
-        typename fight::template override<fight_bear<
-            virtual_ptr<Player, Registry>, virtual_ptr<Object, Registry>,
-            virtual_ptr<Player, Registry>>>);
-
     initialize<Registry>();
 
-    Bear bear;
-    BOOST_TEST(poke::fn(virtual_ptr<Player, Registry>(bear)) == "growl");
+    using vptr_player = virtual_ptr<Player, Registry>;
+    static_assert(detail::is_virtual_ptr<vptr_player>);
+    using vptr_bear = virtual_ptr<Bear, Registry>;
 
-    Warrior warrior;
-    Axe axe;
+    Player player;
+    auto virtual_player = vptr_player::final(player);
+    BOOST_TEST(&*virtual_player == &player);
     BOOST_TEST(
-        fight::fn(
-            virtual_ptr<Player, Registry>(warrior),
-            virtual_ptr<Object, Registry>(axe),
-            virtual_ptr<Player, Registry>(bear)) == "kill bear");
+        (virtual_player.vptr() == Registry::template static_vptr<Player>));
+
+    Bear bear;
+    BOOST_TEST((&*vptr_bear::final(bear)) == &bear);
+    BOOST_TEST((
+        vptr_bear::final(bear).vptr() == Registry::template static_vptr<Bear>));
+
+    BOOST_TEST(
+        (vptr_player(bear).vptr() == Registry::template static_vptr<Bear>));
+
+    vptr_bear virtual_bear_ptr(bear);
+
+    struct upcast {
+        static void fn(vptr_player) {
+        }
+    };
+
+    upcast::fn(virtual_bear_ptr);
 }

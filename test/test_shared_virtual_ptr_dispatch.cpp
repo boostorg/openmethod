@@ -4,9 +4,10 @@
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <boost/openmethod.hpp>
+#include <boost/openmethod/interop/std_shared_ptr.hpp>
 #include <boost/openmethod/initialize.hpp>
 
-#define BOOST_TEST_MODULE virtual_ptr_dispatch
+#define BOOST_TEST_MODULE shared_virtual_ptr_dispatch
 #include <boost/test/unit_test.hpp>
 
 #include "test_util.hpp"
@@ -27,32 +28,32 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
 
     using poke = method<
         BOOST_OPENMETHOD_ID(poke),
-        auto(virtual_ptr<Player, Registry>)->std::string, Registry>;
+        auto(shared_virtual_ptr<Player, Registry>)->std::string, Registry>;
+
     BOOST_OPENMETHOD_REGISTER(typename poke::template override<
-                              poke_bear<virtual_ptr<Player, Registry>>>);
+                              poke_bear<shared_virtual_ptr<Player, Registry>>>);
 
     using fight = method<
         BOOST_OPENMETHOD_ID(fight),
         auto(
-            virtual_ptr<Player, Registry>, virtual_ptr<Object, Registry>,
-            virtual_ptr<Player, Registry>)
+            shared_virtual_ptr<Player, Registry>,
+            shared_virtual_ptr<Object, Registry>,
+            shared_virtual_ptr<Player, Registry>)
             ->std::string,
         Registry>;
-    BOOST_OPENMETHOD_REGISTER(
-        typename fight::template override<fight_bear<
-            virtual_ptr<Player, Registry>, virtual_ptr<Object, Registry>,
-            virtual_ptr<Player, Registry>>>);
+
+    BOOST_OPENMETHOD_REGISTER(typename fight::template override<fight_bear<
+                                  shared_virtual_ptr<Player, Registry>,
+                                  shared_virtual_ptr<Object, Registry>,
+                                  shared_virtual_ptr<Player, Registry>>>);
 
     initialize<Registry>();
 
-    Bear bear;
-    BOOST_TEST(poke::fn(virtual_ptr<Player, Registry>(bear)) == "growl");
+    auto bear = make_shared_virtual<Bear, Registry>();
+    auto warrior = make_shared_virtual<Warrior, Registry>();
+    auto axe = make_shared_virtual<Axe, Registry>();
 
-    Warrior warrior;
-    Axe axe;
-    BOOST_TEST(
-        fight::fn(
-            virtual_ptr<Player, Registry>(warrior),
-            virtual_ptr<Object, Registry>(axe),
-            virtual_ptr<Player, Registry>(bear)) == "kill bear");
+    BOOST_TEST(poke::fn(bear) == "growl");
+
+    BOOST_TEST(fight::fn(warrior, axe, bear) == "kill bear");
 }
