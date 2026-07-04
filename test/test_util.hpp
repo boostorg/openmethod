@@ -50,6 +50,37 @@ inline std::ostream& operator<<(std::ostream& os, const string_pair& pair) {
     return os << "(" << pair.first << ", " << pair.second << ")";
 }
 
+namespace animals {
+
+struct Animal {
+    explicit Animal(std::string str) {
+        name = std::move(str);
+    }
+
+    Animal(const Animal&) = delete;
+
+    Animal(Animal&&) = default;
+
+    virtual ~Animal() {
+    }
+
+    std::string name;
+};
+
+struct Property {
+    std::string owner = "Bill";
+};
+
+struct Dog : Property, Animal {
+    using Animal::Animal;
+};
+
+struct Cat : Property, virtual Animal {
+    using Animal::Animal;
+};
+
+} // namespace animals
+
 namespace test_matrices {
 
 MAKE_STRING_CONSTANT(NONE)

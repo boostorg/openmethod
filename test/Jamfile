@@ -49,5 +49,16 @@ for local src in [ glob compile_fail_*.cpp ]
 build-project dynamic_loading ;
 
 # quick (for CI)
-alias quick : test_dispatch ;
+alias quick
+    : test_dispatch_lvalue_refs
+      test_dispatch_rvalue_refs
+      test_dispatch_pointer
+      test_dispatch_shared_ptr_by_value
+      test_dispatch_shared_ptr_by_ref
+      test_dispatch_unique_ptr
+      test_dispatch_multi
+      test_dispatch_next_fn
+      test_dispatch_across_namespaces
+      test_dispatch_comma_in_return_type
+    ;
 explicit quick ;
