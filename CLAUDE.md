@@ -163,9 +163,15 @@ Tests require these C++17 features (checked by Boost.Build):
 
 ### Working with Shared Libraries / DLL Support
 
-**Overview**: The library supports shared library usage on Windows (and Cygwin) with
-dllexport/dllimport decoration of the registry's state. On other platforms no decoration is
-needed — the state has ordinary external linkage and is shared by the dynamic linker.
+**Overview**: The library supports shared library usage across modules by sharing the registry's
+state through an export/import decoration of a single symbol. On Windows (and Cygwin) the decoration
+is dllexport/dllimport; on ELF it is `visibility("default")` on the export side. In the common case
+off Windows the decoration can be omitted entirely — the state then has ordinary external linkage
+and is shared by the dynamic linker — but that only works if the program is *not* built with hidden
+visibility. Under `-fvisibility=hidden` (e.g. the Boost super-project's `BoostRoot.cmake`) an
+implicitly instantiated `st` is a COMDAT that gets internalized to a per-module local symbol, so
+the export/import macros must be used on ELF too (they emit a single strong, default-visibility
+explicit instantiation that the other modules import).
 
 **One shared state variable**: All of a registry's mutable state — the class/method/overrider
 lists *and* every stateful policy's `state` (held together in the `registry_state_type::policies`
@@ -185,8 +191,8 @@ import via `extern template`.
 **Mechanism — `extern template` / explicit instantiation**: the shared symbol is
 `registry_state<Registry::registry_type>::st`, where `registry_type` is the `registry<Policy...>`
 *base* of the registry struct (that is what `registry::state()` uses — never key on the derived
-struct). The owning module compiles, in exactly one TU, a dllexport-ed explicit instantiation
-definition; clients compile a dllimport-ed explicit instantiation declaration, so they reference
+struct). The owning module compiles, in exactly one TU, an exported explicit instantiation
+definition; clients compile an imported explicit instantiation declaration, so they reference
 the owner's symbol instead of instantiating their own copy:
 ```cpp
 // owner (one TU):
@@ -194,6 +200,10 @@ template struct BOOST_SYMBOL_EXPORT registry_state<R::registry_type>;
 // clients:
 extern template struct BOOST_SYMBOL_IMPORT registry_state<R::registry_type>;
 ```
+`BOOST_SYMBOL_EXPORT`/`BOOST_SYMBOL_IMPORT` are dllexport/dllimport on Windows and
+`visibility("default")` / empty on ELF, so the same two lines serve both platforms. This is no
+longer guarded by `_WIN32`: on ELF the pair is what makes the state shareable under hidden
+visibility.
 
 **Registries are structs, not aliases — do not "simplify" this**: `default_registry` (and the
 documented custom-registry pattern) is deliberately a *struct deriving from* `registry<Policy...>`,
@@ -211,7 +221,8 @@ shared state symbol carries the full policy list, which is accepted.
 state (it emits an explicit instantiation *definition*, which may appear only once in the
 program), `BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY` in every client TU. `indirect_registry` has
 its own state and its own analogous pair, `BOOST_OPENMETHOD_{EXPORT,IMPORT}_INDIRECT_REGISTRY`.
-With neither macro (or off-Windows), the state has ordinary linkage.
+With neither macro, the state has ordinary linkage — fine off Windows only when the program is not
+built with hidden visibility.
 
 **Custom registries**: the library provides no general macro. Users write the explicit
 instantiation / `extern template` declaration themselves (as in the snippet above, possibly

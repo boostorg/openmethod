@@ -76,11 +76,11 @@ function(boost_openmethod_add_dynamic_loading_variant suffix owner)
     # the shared libraries loaded at runtime (e.g. the overrider can resolve
     # symbols from the method/registry/exe, and an exe-owned registry state can
     # be imported by the dlopen'd libraries).
-    # CXX_VISIBILITY_PRESET must be "default" so that the template static
-    # variables used as the shared registry state are exported with DEFAULT ELF
-    # visibility. With hidden visibility (as set by BoostRoot.cmake in the
-    # super-project build) they become UNIQUE HIDDEN and are not deduplicated by
-    # the dynamic linker, breaking cross-DSO state sharing.
+    # We do NOT force CXX_VISIBILITY_PRESET here: the shared registry-state
+    # symbol carries BOOST_SYMBOL_VISIBLE in the library (see registry_state in
+    # preamble.hpp), so it keeps DEFAULT ELF visibility even under a
+    # hidden-visibility build (as set by BoostRoot.cmake in the super-project),
+    # and cross-DSO state sharing works without any per-target override.
     foreach(target ${reg} ${meth} ${ovr} ${exe})
         set_target_properties(
             ${target}
@@ -88,9 +88,7 @@ function(boost_openmethod_add_dynamic_loading_variant suffix owner)
                 RUNTIME_OUTPUT_DIRECTORY "${outdir}"
                 LIBRARY_OUTPUT_DIRECTORY "${outdir}"
                 ARCHIVE_OUTPUT_DIRECTORY "${outdir}"
-                ENABLE_EXPORTS ON
-                CXX_VISIBILITY_PRESET default
-                VISIBILITY_INLINES_HIDDEN OFF)
+                ENABLE_EXPORTS ON)
         if (extra_defs)
             target_compile_definitions(${target} PRIVATE ${extra_defs})
         endif()
