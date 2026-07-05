@@ -62,7 +62,16 @@ struct aggregate_reports<mp11::mp_list<Reports...>, mp11::mp_list<>, Void> {
 
 // Policy initialization helpers
 
-#if defined(_MSC_VER) && _MSC_VER <= 1950
+#ifdef _MSC_VER
+// Do not probe with a call expression (the generic
+// BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN form): while evaluating
+// decltype(T::initialize(...)) for a T that has no such member, MSVC
+// (19.44 and later, still present in 19.51) wrongly instantiates the body of
+// the enclosing-namespace boost::openmethod::initialize function template
+// (for its auto return type), which re-enters this probe with new types -
+// unbounded recursion. 19.44 stops with C1202/C7752; 19.51 exhausts all
+// memory (C1060) instead. Take the address of a specialization instead: it
+// only involves T's members.
 template<typename, class, class...>
 struct has_initialize_aux : std::false_type {};
 
@@ -1814,7 +1823,23 @@ inline auto initialize(Options&&... options) {
 
 namespace detail {
 
+#ifdef _MSC_VER
+// Same MSVC workaround as for has_initialize above: an enclosing-namespace
+// boost::openmethod::finalize function template exists, so a call-expression
+// probe is unsafe.
+template<typename, class, class...>
+struct has_finalize_aux : std::false_type {};
+
+template<class T, class... Args>
+struct has_finalize_aux<
+    std::void_t<decltype(&T::template finalize<std::decay_t<Args>...>)>, T,
+    Args...> : std::true_type {};
+
+template<class T, class... Args>
+constexpr bool has_finalize = has_finalize_aux<void, T, Args...>::value;
+#else
 BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(finalize);
+#endif
 
 } // namespace detail
 
