@@ -30,8 +30,9 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
 }
 
 BOOST_OPENMETHOD_OVERRIDE(
-    meet, (virtual_ptr<Animal>, virtual_ptr<Animal>), const char*) {
-    return "ignore";
+    meet, (virtual_ptr<Animal>, virtual_ptr<Animal>), greeting) {
+    // Base overrider: no next, so the next word is always "n/a".
+    return {"ignore", "n/a"};
 }
 
 extern "C" {
@@ -50,7 +51,7 @@ method_call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
     return speak(animal);
 }
 
-BOOST_SYMBOL_EXPORT const char* method_call_meet(
+BOOST_SYMBOL_EXPORT greeting method_call_meet(
     boost::openmethod::virtual_ptr<Animal> a,
     boost::openmethod::virtual_ptr<Animal> b) {
     return meet(a, b);

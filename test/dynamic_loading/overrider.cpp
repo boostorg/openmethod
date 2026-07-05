@@ -23,8 +23,9 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Dog>), const char*) {
 }
 
 BOOST_OPENMETHOD_OVERRIDE(
-    meet, (virtual_ptr<Dog>, virtual_ptr<Dog>), const char*) {
-    return "wag tails";
+    meet, (virtual_ptr<Dog> a, virtual_ptr<Dog> b), greeting) {
+    std::string next_word = has_next() ? next(a, b).first : "n/a";
+    return {"wag tails", next_word};
 }
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
@@ -45,7 +46,7 @@ overrider_call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
     return speak(animal);
 }
 
-BOOST_SYMBOL_EXPORT const char* overrider_call_meet(
+BOOST_SYMBOL_EXPORT greeting overrider_call_meet(
     boost::openmethod::virtual_ptr<Animal> a,
     boost::openmethod::virtual_ptr<Animal> b) {
     return meet(a, b);

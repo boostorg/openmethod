@@ -89,7 +89,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         method_lib.get<const char*(virtual_ptr<Animal>)>("method_call_speak");
     auto method_make_dog =
         method_lib.get<void(unique_virtual_ptr<Animal>&)>("method_make_dog");
-    using meet_fn = const char*(virtual_ptr<Animal>, virtual_ptr<Animal>);
+    using meet_fn = greeting(virtual_ptr<Animal>, virtual_ptr<Animal>);
     auto method_meet = method_lib.get<meet_fn>("method_call_meet");
 
     BOOST_TEST(same_ids(get_ids(), method_get_ids()));
@@ -109,7 +109,12 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
 #endif
     BOOST_TEST(method_speak(main_dog) == "?");
     BOOST_TEST(method_speak(method_dog) == "?");
-    BOOST_TEST(std::string(method_meet(main_dog, method_dog)) == "ignore");
+    {
+        // Only the Animal,Animal overrider is registered, so it has no next.
+        auto r = method_meet(main_dog, method_dog);
+        BOOST_TEST(r.first == "ignore");
+        BOOST_TEST(r.second == "n/a");
+    }
 
     dll::shared_library overrider_lib(
         find_lib(search_dir, "test_overrider"), load_mode);
@@ -133,8 +138,17 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST(std::string(overrider_speak(main_dog)) == "woof");
     BOOST_TEST(std::string(overrider_speak(method_dog)) == "woof");
     BOOST_TEST(std::string(overrider_speak(overrider_dog)) == "woof");
-    BOOST_TEST(
-        std::string(overrider_meet(main_dog, overrider_dog)) == "wag tails");
-    BOOST_TEST(
-        std::string(method_meet(main_dog, overrider_dog)) == "wag tails");
+    {
+        // Both args are dogs, so the dynamically-loaded Dog,Dog overrider runs;
+        // its next() resolves to the Animal,Animal overrider in method.cpp,
+        // across the DSO boundary, through the multi-dispatch table.
+        auto r = overrider_meet(main_dog, overrider_dog);
+        BOOST_TEST(r.first == "wag tails");
+        BOOST_TEST(r.second == "ignore");
+    }
+    {
+        auto r = method_meet(main_dog, overrider_dog);
+        BOOST_TEST(r.first == "wag tails");
+        BOOST_TEST(r.second == "ignore");
+    }
 }
