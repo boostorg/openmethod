@@ -116,15 +116,18 @@ function(openmethod_compile_fail_test testname fail_regex)
         NAME "${test_target}"
         COMMAND "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target "${test_target}" --config $<CONFIG>)
     set_property(TEST "${test_target}" PROPERTY PASS_REGULAR_EXPRESSION "${fail_regex}")
-    # Each of these tests runs `cmake --build` on the shared build tree. When
-    # ctest runs tests in parallel, concurrent build-tool invocations race on
-    # shared files (e.g. with the Visual Studio generator, every MSBuild
-    # invocation rewrites ZERO_CHECK.tlog/ZERO_CHECK.lastbuildstate, and the
-    # losers abort with MSB3491 before compiling anything, so the expected
-    # diagnostic never appears in the output). Serialize the compile-fail
-    # tests among themselves; they still run in parallel with the ordinary
-    # tests, which do not touch the build tree.
-    set_property(TEST "${test_target}" PROPERTY RESOURCE_LOCK openmethod_compile_fail)
+    # Each of these tests runs `cmake --build` on the shared build tree. With
+    # the Visual Studio generator, concurrent MSBuild invocations race on shared
+    # files (every MSBuild invocation rewrites ZERO_CHECK.tlog/
+    # ZERO_CHECK.lastbuildstate, and the losers abort with MSB3491 before
+    # compiling anything, so the expected diagnostic never appears in the
+    # output). Serialize the compile-fail tests among themselves in that case;
+    # they still run in parallel with the ordinary tests, which do not touch the
+    # build tree. Other generators (Ninja, Makefiles) tolerate concurrent
+    # `cmake --build` invocations, so leave those free to run in parallel.
+    if (CMAKE_GENERATOR MATCHES "Visual Studio")
+        set_property(TEST "${test_target}" PROPERTY RESOURCE_LOCK openmethod_compile_fail)
+    endif()
 endfunction()
 
 openmethod_compile_fail_test(
