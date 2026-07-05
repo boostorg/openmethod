@@ -3,7 +3,7 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#define LIBRARY_NAME "boost_openmethod-shared"
+#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
 
 // dynamic_main.cpp
 
@@ -54,7 +54,7 @@ int main() {
         std::cout << "\nLoading shared object / DLL.\n";
 
         boost::dll::shared_library lib(
-            LIBRARY_NAME,
+            "boost_openmethod-shared",
             boost::dll::load_mode::rtld_global |
                 boost::dll::load_mode::append_decorations);
 

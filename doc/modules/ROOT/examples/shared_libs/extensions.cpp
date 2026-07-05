@@ -4,6 +4,8 @@
 // http://www.boost.org/LICENSE_1_0.txt)
 
 // extensions.cpp
+#define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
+
 #include "animals.hpp"
 
 using namespace boost::openmethod;

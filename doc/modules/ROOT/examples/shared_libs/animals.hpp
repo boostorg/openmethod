@@ -13,18 +13,6 @@
 #include <boost/openmethod/preamble.hpp>
 
 // tag::content[]
-// The module that owns the registry state defines LIBRARY_NAME and exports it;
-// modules that link against or load it import it. This must be set before
-// <boost/openmethod/default_registry.hpp> is included. No decoration is needed
-// on non-Windows platforms.
-#ifdef _WIN32
-#ifdef LIBRARY_NAME
-#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
-#else
-#define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
-#endif
-#endif
-
 #include <string>
 #include <boost/openmethod.hpp>
 
