@@ -79,6 +79,12 @@ rule make-variant ( suffix : extra-req * )
         ;
 
     # lib_overrider: adds the Dog overrider; dynamically loaded at runtime.
+    # It imports the shared registry state (extern template, via registry.hpp),
+    # so it must link lib_registry, which *defines* that symbol. lib_method only
+    # imports the symbol too, so linking it does not satisfy the reference. On
+    # ELF an undefined symbol in a shared object is resolved lazily at load time,
+    # but Mach-O (macOS) and PE (Windows) require it to be satisfied by a
+    # directly linked module at link time, so link lib_registry unconditionally.
     lib boost_openmethod-dl_test_overrider$(suffix)
         : overrider.cpp
         : <link>shared
@@ -86,8 +92,7 @@ rule make-variant ( suffix : extra-req * )
           $(extra-req)
           <library>/boost/dll//boost_dll/<warnings>off
           <library>boost_openmethod-dl_test_method$(suffix)
-          <target-os>windows:<library>boost_openmethod-dl_test_registry$(suffix)
-          <target-os>cygwin:<library>boost_openmethod-dl_test_registry$(suffix)
+          <library>boost_openmethod-dl_test_registry$(suffix)
           <location-prefix>dynamic_loading$(suffix).test
         ;
 
