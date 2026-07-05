@@ -127,6 +127,11 @@ rule make-variant ( suffix : extra-req * )
 
 # Two variants (dll-owned registry state) x {default, indirect} registry. The
 # exe-owned variants are CMake-only (see the note above).
+#
+# The colons in the registry's qualified name are escaped (\:) because b2's
+# scanner treats ':' as a special character and otherwise warns "Unescaped
+# special character in argument"; the escaped form still yields the define value
+# BOOST_OPENMETHOD_DEFAULT_REGISTRY=::boost::openmethod::indirect_registry.
 make-variant _default : ;
 make-variant _indirect
-    : <define>BOOST_OPENMETHOD_DEFAULT_REGISTRY=::boost::openmethod::indirect_registry ;
+    : <define>BOOST_OPENMETHOD_DEFAULT_REGISTRY=\:\:boost\:\:openmethod\:\:indirect_registry ;
