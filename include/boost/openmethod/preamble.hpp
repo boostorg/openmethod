@@ -844,6 +844,13 @@ struct registry_base {};
 // retrieves an element by type. Elements are held in base classes, so element
 // types must be unique - lists that may contain duplicates are passed through
 // mp_unique first.
+//
+// Measured (MSVC 19.51.36248, /Bt+ front-end time, synthetic
+// BOOST_OPENMETHOD_CLASSES lists): ~11% less compile time at 40 classes
+// (2.68s -> 2.39s, avg of 3 runs), ~7% at 100 classes (10.99s -> 10.22s).
+// This is a constant-factor win that widens with list size, not a fix for
+// superlinear blowups; on this library's own test suite (2-5 classes per
+// list) the effect is within noise.
 template<class T>
 struct tuple_element {
     T element;

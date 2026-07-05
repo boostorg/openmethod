@@ -62,7 +62,15 @@ struct aggregate_reports<mp11::mp_list<Reports...>, mp11::mp_list<>, Void> {
 
 // Policy initialization helpers
 
-#ifdef _MSC_VER
+#ifdef BOOST_MSVC
+#if BOOST_MSVC > 1951
+#pragma message( \
+    "boost/openmethod: this MSVC version is newer than 19.51, the last " \
+    "one confirmed to need the has_initialize/has_finalize SFINAE " \
+    "workaround below (wrong instantiation of the enclosing " \
+    "boost::openmethod::initialize function template during member-call " \
+    "SFINAE). Check whether this compiler still has the bug.")
+#endif
 // Do not probe with a call expression (the generic
 // BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN form): while evaluating
 // decltype(T::initialize(...)) for a T that has no such member, MSVC
@@ -1823,7 +1831,16 @@ inline auto initialize(Options&&... options) {
 
 namespace detail {
 
-#ifdef _MSC_VER
+#ifdef BOOST_MSVC
+#if BOOST_MSVC > 1951
+#pragma message( \
+    "boost/openmethod: this MSVC version is newer than 19.51, the last " \
+    "one confirmed to need the has_initialize/has_finalize SFINAE " \
+    "workaround below (wrong instantiation of the enclosing " \
+    "boost::openmethod::finalize function template during member-call " \
+    "SFINAE). Check whether this compiler still has the bug; if not, this " \
+    "workaround (and the matching one for has_initialize) can be removed.")
+#endif
 // Same MSVC workaround as for has_initialize above: an enclosing-namespace
 // boost::openmethod::finalize function template exists, so a call-expression
 // probe is unsafe.
