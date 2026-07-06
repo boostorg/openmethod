@@ -79,6 +79,8 @@ struct default_error_handler : error_handler {
         //! The type of the error handler function object.
         using function_type = std::function<void(const error_variant& error)>;
 
+        //! The policy's state: the error handler function object. Held in
+        //! the registry's shared state (see @ref registry_state).
         struct state {
             function_type handler;
         };

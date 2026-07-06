@@ -3,14 +3,29 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
+// tag::content[]
 // extensions.cpp
+
+// end::content[]
+
+// static_extensions.cpp and indirect_extensions.cpp reuse this file, defining
+// a different export/import macro before including it.
+#if !defined(BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY) &&                      \
+    !defined(BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY)
+// tag::content[]
 #define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
+// end::content[]
+#endif
+
+// tag::content[]
 
 #include "animals.hpp"
+// end::content[]
 
 using namespace boost::openmethod;
 
 // tag::content[]
+
 BOOST_OPENMETHOD_OVERRIDE(
     meet, (virtual_ptr<Herbivore> a, virtual_ptr<Carnivore> b), std::string) {
     auto p = BOOST_OPENMETHOD_TYPE(

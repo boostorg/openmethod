@@ -8,11 +8,11 @@
 
 // clang-format off
 
-// animals.hpp
-
 #include <boost/openmethod/preamble.hpp>
 
 // tag::content[]
+// animals.hpp
+
 #include <string>
 #include <boost/openmethod.hpp>
 

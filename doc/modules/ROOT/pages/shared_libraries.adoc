@@ -5,12 +5,51 @@
 This section discusses how OpenMethod interoperates with shared libraries on
 Linux, other POSIX-like platforms, and Windows.
 
+OpenMethod uses global data to keep track of methods, overriders and classes,
+all managed by static constructors and destructors. cpp:initialize[] uses that
+information to set up dispatch tables. For a program and its shared libraries
+to contribute classes, methods and overriders to the same registry, that data
+must be truly global: a single copy, shared by all the modules.
+
+All of a registry's mutable state lives in a single variable. Sharing a
+registry across modules therefore means sharing that one symbol: the _owning_
+module exports it, and every _client_ module imports it. For
+`default_registry`, two macros control this:
+
+- `BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY` -- defined in _exactly one_
+  translation unit of the owning module, it emits an explicit instantiation of
+  the registry state, decorated for export.
+- `BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY` -- defined in every client
+  translation unit, it emits an `extern template` declaration, decorated for
+  import, so clients reference the owner's symbol instead of instantiating
+  their own copy.
+
+Either macro must be defined _before_ including
+`<boost/openmethod/default_registry.hpp>` (directly or via
+`<boost/openmethod.hpp>`). The same two macros work on all platforms; the
+<<implementation_notes>> section explains what they expand to, and when they can be
+omitted.
+
+Nothing else needs decoration. In particular, methods declared with
+`BOOST_OPENMETHOD` require no export or import: method objects are consolidated
+across modules when `initialize` runs (see <<implementation_notes>>).
+
+If a library only uses its own registries, for example, if using open-methods
+as an implementation detail, it has its own global data, and there is no need
+for any of this - nor to call `initialize` again.
+
 ## Static Linking
 
-Statically linking to a shared library behaves the same way as linking to a
-static library on all platforms. Objects from the program and the shared
-libraries can contribute classes, methods and overriders to the default
-registry, or any registries.
+When a program links against a shared library at build time, all the modules
+are loaded before `main` starts, their static constructors run, and a single
+call to `initialize` sets up the dispatch tables. The only requirement is the
+one stated above: one module owns the registry state, the others import it.
+
+The natural arrangement is for the shared library to own the registry: the
+program already links against the library, so, on Windows, the import library
+dependency runs in the usual direction. The `static_main.cpp` and
+`static_extensions.cpp` programs in the examples directory demonstrate this
+arrangement.
 
 ## Dynamic Linking
 
@@ -18,47 +57,38 @@ By "dynamic linking", we mean a program loading a shared library after it has
 started, and accessing its content. A common application of dynamic linking is
 to implement plugin architectures.
 
-OpenMethod uses global data to keep track of methods, overriders and classes,
-all managed by static constructors and destructors. cpp:initialize[] uses that
-information to set up dispatch tables. These variables must be truly global and
-unique for the library to operate correctly.
+A dynamically loaded library can add classes, methods and overriders to an
+existing registry. `initialize` must be called to rebuild the dispatch tables
+after loading or unloading a shared library.
 
-Under this condition, a shared library can dynamically add classes, methods and
-overriders to an existing registry. `initialize` must be called to rebuild the
-dispatch tables after loading or unloading a shared library.
+Here the program is the natural owner of the registry state: it must be able
+to run before the library is loaded, and regardless of whether it is loaded at
+all.
 
-Dynamic linking on Linux and POSIX-like platforms fulfills the unicity
-requirement with little effort from the programmer. On Linux, it is just a
-matter of tossing in `-rdynamic`, or adding `ENABLE_EXPORTS ON` to the library's
-target properties if using `cmake`.
-
-If a library only uses its own registries, for example, if using open-methods as
-an implementation detail, it has its own global data, and there is no need to
-call `initialize`.
-
-Let's look at an example. The following header is shared between the program and
-the dynamically loaded library. It defines the class hierarchy, the `meet`
-method, and sets up the export and import of the registry state for Windows
-compatibility (explained in the <<Windows>> section below):
+Let's look at an example. The following header is shared between the program
+and the dynamically loaded library. It defines the class hierarchy and the
+`meet` method:
 
 [source,c++]
 ----
 include::{shared}/animals.hpp[tag=content]
 ----
 
-The shared library contains an object that adds two overriders, a new class,
-`Tiger`, and a factory function:
-
-[source,c++]
-----
-include::{shared}/extensions.cpp[tag=content]
-----
-
-The main program provides a catch-all overrider, then calls the `meet` method:
+The main program owns the registry state, so it defines the `EXPORT` macro -
+in its only translation unit, satisfying the exactly-one rule. It provides a
+catch-all overrider, then calls the `meet` method:
 
 [source,c++]
 ----
 include::{shared}/dynamic_main.cpp[tag=before]
+----
+
+The shared library imports the registry state. It adds two overriders, a new
+class, `Tiger`, and a factory function:
+
+[source,c++]
+----
+include::{shared}/extensions.cpp[tag=content]
 ----
 
 We load the shared library using Boost.DLL. After calling `initialize`, the new
@@ -78,79 +108,15 @@ overriders provided by the shared library are removed from the method.
 include::{shared}/dynamic_main.cpp[tag=unload]
 ----
 
-## Windows
-
-On Windows, by default, each module (executable or DLL) receives its own copy of
-global variables. Without special measures, the registry state,
-dispatch tables, and method function pointers are duplicated: when a DLL's
-static constructors register classes and overriders, they populate the DLL's own
-copy of the registry, invisible to the main program.
-
-All of a registry's mutable state lives in a single variable. Sharing a registry
-across modules therefore means sharing that one symbol: the _owning_ module
-defines and `dllexport`{empty}s it, and every _client_ module `dllimport`{empty}s
-it.
-
-For `default_registry`, two macros control this:
-
-- `BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY` -- defined in _exactly one_
-  translation unit of the owning module, it emits an explicit instantiation of
-  the registry state, decorated with `dllexport`.
-- `BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY` -- defined in every client
-  translation unit, it emits an `extern template` declaration, decorated with
-  `dllimport`, so clients reference the owner's symbol instead of instantiating
-  their own copy.
-
-Either macro must be defined _before_ including
-`<boost/openmethod/default_registry.hpp>` (directly or via
-`<boost/openmethod.hpp>`). On non-Windows platforms the macros have no effect,
-so the same header works everywhere. cpp:indirect_registry[] has its own state,
-controlled by the analogous `BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY` and
-`BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY` pair.
-
-The `animals.hpp` header shown above demonstrates the pattern: the owning module
-(the executable, in this example) defines a distinguishing macro
-(`LIBRARY_NAME`); a preprocessor block selects export or import accordingly:
-
-[source,c++]
-----
-#ifdef _WIN32
-#ifdef LIBRARY_NAME
-#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
-#else
-#define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
-#endif
-#endif
-----
-
-Nothing else needs decoration. In particular, methods declared with
-`BOOST_OPENMETHOD` require no export or import: method objects are consolidated
-across modules when `initialize` runs.
-
-A custom registry is shared the same way, but the library does not provide
-macros for it. Write the explicit instantiation and the `extern template`
-declaration yourself (possibly wrapped in your own per-registry macros), after
-the registry's definition:
-
-[source,c++]
-----
-struct my_registry : boost::openmethod::registry</* policies... */> {};
-
-#ifdef _WIN32
-#ifdef MY_MODULE_OWNS_REGISTRY // in exactly one TU of the owning module
-template struct BOOST_SYMBOL_EXPORT
-    boost::openmethod::registry_state<my_registry::registry_type>;
-#else
-extern template struct BOOST_SYMBOL_IMPORT
-    boost::openmethod::registry_state<my_registry::registry_type>;
-#endif
-#endif
-----
+NOTE: `dlclose` does not necessarily unload the library when using gcc's
+`-rdynamic` option. The library may remain loaded until the program exits, so
+the output of the last `meet` call may still be the same as the previous one.
 
 ### CMake Setup
 
-On Windows, the DLL must link against the executable to resolve the imported
-symbols. This is the reverse of the typical linking direction:
+Since the executable owns the registry state, the shared library must link
+against the executable to resolve the imported symbol. This is the reverse of
+the typical linking direction:
 
 [source,cmake]
 ----
@@ -162,13 +128,14 @@ add_library(my_plugin SHARED extensions.cpp)
 target_link_libraries(my_plugin PRIVATE Boost::openmethod my_app)
 ----
 
-`ENABLE_EXPORTS ON` on the executable tells CMake to generate an import library
-(`.lib` on MSVC) that the DLL links against. On POSIX, `ENABLE_EXPORTS` adds
-`-rdynamic`, which is the only setup needed.
+On Windows, `ENABLE_EXPORTS ON` on the executable tells CMake to generate an
+import library (`.lib` on MSVC) that the DLL links against. On POSIX,
+`ENABLE_EXPORTS` adds `-rdynamic` (or the platform's equivalent), which makes
+the executable's symbols visible to the libraries it loads.
 
 NOTE: `BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY` produces an explicit
-instantiation _definition_, which may appear only once in the program. Define it
-in exactly one translation unit of the owning module; all other translation
+instantiation _definition_, which may appear only once in the program. Define
+it in exactly one translation unit of the owning module; all other translation
 units, in every module, use the `IMPORT` macro.
 
 ## Indirect Vptrs
@@ -186,8 +153,13 @@ that has the same policies as `default_registry`, plus `indirect_vptr`. We can
 use it to override the default registry, for example using a compiler
 command-line switch (`-DBOOST_OPENMETHOD_DEFAULT_REGISTRY=indirect_registry`).
 
+cpp:indirect_registry[] has its own state, controlled by the analogous
+`BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY` and
+`BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY` pair.
+
 Here is an example of a program that carries `virtual_ptr`{empty}s across
-`initialize` calls:
+`initialize` calls. Note that, since the registry in use is now
+`indirect_registry`, the `INDIRECT` macro pair is used to share its state:
 
 [source,c++]
 ----
@@ -195,4 +167,106 @@ include::{shared}/indirect_main.cpp[tag=content]
 ----
 
 This program loads a shared library that is itself compiled with
-`-DBOOST_OPENMETHOD_DEFAULT_REGISTRY=indirect_registry`.
+`-DBOOST_OPENMETHOD_DEFAULT_REGISTRY=indirect_registry`, and imports the
+registry state with `BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY`.
+
+## Custom Registries
+
+A custom registry is shared the same way, but the library does not provide
+macros for it. Write the explicit instantiation and the `extern template`
+declaration yourself (possibly wrapped in your own per-registry macros), after
+the registry's definition:
+
+[source,c++]
+----
+struct my_registry : boost::openmethod::registry</* policies... */> {};
+
+#ifdef MY_MODULE_OWNS_REGISTRY // in exactly one TU of the owning module
+template struct BOOST_SYMBOL_EXPORT
+    boost::openmethod::registry_state<my_registry::registry_type>;
+#else
+extern template struct BOOST_SYMBOL_IMPORT
+    boost::openmethod::registry_state<my_registry::registry_type>;
+#endif
+----
+
+[#implementation_notes]
+## Implementation Notes
+
+### One state variable per registry
+
+Everything mutable in a registry is agglomerated into a single variable. The
+registry's class and method lists, the dispatch tables, and the state of every
+stateful policy (for example, the hash function parameters of
+cpp:fast_perfect_hash[], or the vector of v-table pointers of
+cpp:vptr_vector[]) are all members of one object, of which there is exactly
+one instance per registry. Policies do not keep their own globals: their state
+is gathered, by template machinery, into a tuple inside that same object.
+
+This is what makes sharing a registry across modules tractable: there is
+exactly _one_ symbol to export and import, whatever the registry's policies.
+The variable is the sole member of cpp:registry_state[], a deliberately thin,
+function-free class template. That shape is dictated by MSVC:
+`dllexport`/`dllimport` are only honored on a _whole-class_ explicit
+instantiation - not on a variable template, nor on the instantiation of a
+lone static data member - and exporting a class wholesale also decorates its
+member functions and nested types, which the state-holding class itself could
+not tolerate. A one-member wrapper class with no functions is the one shape
+that can be exported and imported on every platform.
+
+### Registrars are consolidated, not shared
+
+The export/import mechanism is deliberately limited to that single state
+variable. No attempt is made to share the _registrars_ - the static objects
+generated by `BOOST_OPENMETHOD`, `BOOST_OPENMETHOD_OVERRIDE` and
+`BOOST_OPENMETHOD_CLASSES` - across modules. Each module keeps its own copies
+of the method objects, of the registration records, and of the per-class
+v-table pointers used for dispatch.
+
+Instead, the copies are consolidated at runtime. When a module is loaded, its
+static constructors append its class and method records to the lists in the
+shared registry state, each record pointing back into the module that
+registered it. When `initialize` runs, records that describe the same method
+or class - typically, one per module, keyed by type - are grouped together.
+The dispatch tables are computed once, from the consolidated information; then
+the resulting slots and strides are copied back into _every_ module's copy of
+each method object, and every module's v-table pointers are updated through
+the pointers captured at registration time. Each module thus dispatches
+through its own statics, at full speed, but all the copies agree because they
+were derived from the same computation.
+
+This is why method declarations need no `dllexport`/`dllimport` arguments, and
+why modules do not need to agree on who "owns" a method: ownership only exists
+for the registry state.
+
+### Platform Details
+
+On Windows, by default, each module (executable or DLL) receives its own copy
+of global variables. Without special measures, the registry state, dispatch
+tables, and method function pointers are duplicated: when a DLL's static
+constructors register classes and overriders, they populate the DLL's own copy
+of the registry, invisible to the main program. The `EXPORT` and `IMPORT`
+macros expand to `+__declspec(dllexport)+` and `+__declspec(dllimport)+`
+decorations on an explicit instantiation of the registry state, making the
+owner's copy the only one.
+
+On Linux and other ELF platforms, the macros can sometimes be omitted. Without
+them, the registry state is an implicitly instantiated template variable with
+ordinary external linkage, and the dynamic linker collapses all the modules'
+copies into one - provided the symbol is visible, which is what `-rdynamic`
+(`ENABLE_EXPORTS ON` in CMake) ensures for an executable. However, if the
+program is built with `-fvisibility=hidden`, each module's copy is internalized
+to a module-local symbol, and the modules end up with separate registries, just
+like on Windows. The macros handle this case: `EXPORT` emits an explicit
+instantiation with default visibility; `IMPORT` emits a plain `extern template`
+declaration, which suppresses the client's own instantiation, forcing it to
+reference the owner's symbol. Since the macros are harmless when they are not
+needed, portable code should simply always use them.
+
+The platforms also differ in _when_ the imported symbol must be resolved. On
+ELF, a shared library may be linked with unresolved references, which the
+dynamic linker satisfies at load time; a plugin can thus import the registry
+state from the executable that will load it. Mach-O (macOS) and PE (Windows)
+require every reference to be satisfied at link time: a client library must
+link against the owning module - hence the reverse link in the CMake setup
+above.

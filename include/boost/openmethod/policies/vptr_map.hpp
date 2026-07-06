@@ -36,7 +36,12 @@ class vptr_map : public vptr {
             Registry::has_indirect_vptr, const vptr_type*, vptr_type>;
 
       public:
+        //! The policy's state: the map of v-table pointers. Held in the
+        //! registry's shared state (see @ref registry_state).
         struct state {
+            //! The v-table pointers (pointers to v-table pointers if
+            //! `Registry` contains the @ref indirect_vptr policy), keyed by
+            //! type id.
             typename MapFn::template fn<type_id, Value> vptrs;
         };
 

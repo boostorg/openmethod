@@ -224,11 +224,11 @@ BOOST_OPENMETHOD_CLOSE_NAMESPACE_DETAIL_UNLESS_MRDOCS
 //!
 //! `virtual_traits` must be specialized for each type that can be used as a
 //! virtual parameters. It enables methods to:
-//! @li find the type of the object the argument refers to (e.g. `Node` from
-//! `Node&`)
-//! @li obtain a non-modifiable reference to that object (e.g. a `const Node&` from
-//! `Node&`)
-//! @li cast the argument to another type (e.g. cast a `Node&` to a `Plus&`)
+//! @li find the type of the object the argument refers to (e.g. @c Node from
+//! @c Node&)
+//! @li obtain a non-modifiable reference to that object (e.g. a @c const
+//! @c Node& from @c Node&)
+//! @li cast the argument to another type (e.g. cast a @c Node& to a @c Plus&)
 //!
 //! @par Requirements
 //!
@@ -656,9 +656,9 @@ inline auto final_virtual_ptr(Arg&& obj) {
 //!
 //! @par Requirements
 //!
-//! @li @ref virtual_traits must be specialized for `Class&`.
-//! @li `Class` must be a class type, possibly cv-qualified, registered in
-//! `Registry`.
+//! @li @ref virtual_traits must be specialized for @c Class&.
+//! @li @c Class must be a class type, possibly cv-qualified, registered in
+//! @c Registry.
 //!
 //! @tparam Class The class of the object, possibly cv-qualified
 //! @tparam Registry The registry in which `Class` is registered
@@ -750,9 +750,9 @@ class virtual_ptr {
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `Other` must be a polymorphic class, according to `Registry`'s
-    //! `rtti` policy.
-    //! @li `Other\*` must be constructible from `Class\*`.
+    //! @li @c Other must be a polymorphic class, according to the @c rtti
+    //! policy of @c Registry.
+    //! @li @c Other* must be constructible from @c Class*.
     //!
     //! @par Errors
     //!
@@ -799,10 +799,10 @@ class virtual_ptr {
     //!
     //! @par Requirements
     //!
-    //! @li `Other` must be a polymorphic class, according to `Registry`'s
-    //! `rtti` policy.
+    //! @li @c Other must be a polymorphic class, according to the @c rtti
+    //! policy of @c Registry.
     //!
-    //! @li `Other\*` must be constructible from `Class\*`.
+    //! @li @c Other* must be constructible from @c Class*.
     //!
     //! @par Errors
     //!
@@ -874,7 +874,7 @@ class virtual_ptr {
     //! @param other A virtual_ptr to a type-compatible object
     //!
     //! @par Requirements
-    //! @li `Other`\'s object pointer must be assignable to a `Class\*`.
+    //! @li @c Other's object pointer must be assignable to a @c Class*.
     template<
         class Other,
         typename = std::enable_if_t<std::is_constructible_v<
@@ -911,10 +911,10 @@ class virtual_ptr {
     //!
     //! @par Requirements
     //!
-    //! @li `Other` must be a polymorphic class, according to `Registry`'s
-    //! `rtti` policy.
+    //! @li @c Other must be a polymorphic class, according to the @c rtti
+    //! policy of @c Registry.
     //!
-    //! @li `Other\*` must be constructible from `Class\*`.
+    //! @li @c Other* must be constructible from @c Class*.
     //!
     //! @par Errors
     //!
@@ -962,9 +962,9 @@ class virtual_ptr {
     //! @param other A pointer to a polymorphic object
     //!
     //! @par Requirements
-    //! @li `Other` must be a polymorphic class, according to `Registry`'s
-    //! `rtti` policy.
-    //! @li `Other\*` must be constructible from `Class\*`.
+    //! @li @c Other must be a polymorphic class, according to the @c rtti
+    //! policy of @c Registry.
+    //! @li @c Other* must be constructible from @c Class*.
     //!
     //! @par Errors
     //!
@@ -1039,7 +1039,7 @@ class virtual_ptr {
     //! @param other A virtual_ptr to a type-compatible object
     //!
     //! @par Requirements
-    //! @li `Other`\'s object pointer must be assignable to a `Class\*`.
+    //! @li @c Other's object pointer must be assignable to a @c Class*.
     template<
         class Other,
         typename = std::enable_if_t<std::is_assignable_v<
@@ -1112,7 +1112,7 @@ class virtual_ptr {
     //! @tparam Other The target class of the cast
     //! @return A `virtual_ptr<Other, Registry>` pointing to the same object
     //! @par Requirements
-    //! @li `Other` must be a base or derived class of `Class`.
+    //! @li @c Other must be a base or derived class of @c Class.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1256,11 +1256,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a smart pointer to a polymorphic class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `const Other&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a smart pointer to a polymorphic class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c const @c Other&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1303,11 +1303,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a smart pointer to a polymorphic class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `Other&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a smart pointer to a polymorphic class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c Other&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1353,11 +1353,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a smart pointer to a polymorphic class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `Other&&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a smart pointer to a polymorphic class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c Other&&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1401,11 +1401,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a virtual pointer to a class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `Other&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a virtual pointer to a class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c Other&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1441,11 +1441,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a smart pointer to a class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `Other&&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a smart pointer to a class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c Other&&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1505,11 +1505,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a smart pointer to a polymorphic class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `const Other&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a smart pointer to a polymorphic class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c const @c Other&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1545,11 +1545,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a smart pointer to a polymorphic class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `Other&&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a smart pointer to a polymorphic class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c Other&&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1590,11 +1590,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a virtual pointer to a class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `Other&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a virtual pointer to a class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c Other&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1634,11 +1634,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a virtual pointer to a class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `Other&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a virtual pointer to a class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c Other&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1679,11 +1679,11 @@ class virtual_ptr<
     //! @endcode
     //!
     //! @par Requirements
-    //! @li `SmartPtr` and `Other` must be instantiated from the same template -
-    //! e.g. both `std::shared_ptr` or both `std::unique_ptr`.
-    //! @li `Other` must be a smart pointer to a class derived from
-    //! `element_type`.
-    //! @li `SmartPtr` must be constructible from `Other&&`.
+    //! @li @c SmartPtr and @c Other must be instantiated from the same template -
+    //! e.g. both @c std::shared_ptr or both @c std::unique_ptr.
+    //! @li @c Other must be a smart pointer to a class derived from
+    //! @c element_type.
+    //! @li @c SmartPtr must be constructible from @c Other&&.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -1730,7 +1730,7 @@ class virtual_ptr<
     //! @tparam Other The target class of the cast
     //! @return A `virtual_ptr<Other, Registry>` pointing to the same object
     //! @par Requirements
-    //! @li `Other` must be a base or a derived class of `Class`.
+    //! @li @c Other must be a base or a derived class of @c Class.
     template<
         class Other,
         typename = std::enable_if_t<
@@ -2248,14 +2248,14 @@ class method<Id, ReturnType(Parameters...), Registry>
     //!
     //! @li Have the same number of formal parameters as the method.
     //!
-    //! @li Each `virtual_ptr<T>` in the method's parameter list must have a
-    //! corresponding `virtual_ptr<U>` parameter in the same position in the
-    //! overrider's parameter list, such that `U` is the same as `T`, or has
-    //! `T` as an accessible unambiguous base.
+    //! @li Each @c virtual_ptr<T> in the method's parameter list must have a
+    //! corresponding @c virtual_ptr<U> parameter in the same position in the
+    //! overrider's parameter list, such that @c U is the same as @c T, or has
+    //! @c T as an accessible unambiguous base.
     //!
-    //! @li Each `virtual_<T>` in the method's parameter list must have a
-    //! corresponding `U` parameter in the same position in the overrider's
-    //! parameter list, such that `U` is the same as `T`, or has `T` as an
+    //! @li Each @c virtual_<T> in the method's parameter list must have a
+    //! corresponding @c U parameter in the same position in the overrider's
+    //! parameter list, such that @c U is the same as @c T, or has @c T as an
     //! accessible unambiguous base.
     //!
     //! @li All other formal parameters must have the same type as the method's

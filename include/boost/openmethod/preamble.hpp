@@ -587,8 +587,8 @@ struct RttiFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `rtti`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref RttiFn
+//! @li derive from @c rtti.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref RttiFn
 //! blueprint.
 struct rtti {
     // Policy category.
@@ -654,8 +654,8 @@ struct ErrorHandlerFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `error_handler`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref
+//! @li derive from @c error_handler.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref
 //! ErrorHandlerFn blueprint.
 struct error_handler {
     // Policy category.
@@ -708,8 +708,8 @@ struct VptrFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `vptr`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref
+//! @li derive from @c vptr.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref
 //! VptrFn blueprint.
 struct vptr {
     // Policy category.
@@ -771,8 +771,8 @@ struct TypeHashFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `rtti`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref
+//! @li derive from @c type_hash.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref
 //! TypeHashFn blueprint.
 struct type_hash {
     // Policy category.
@@ -804,8 +804,8 @@ struct OutputFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `output`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref
+//! @li derive from @c output.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref
 //! OutputFn blueprint.
 struct output {
     // Policy category.
@@ -1008,18 +1008,32 @@ struct initialize_aux;
 //! `registry_state_type` itself, because sharing the state across a DLL
 //! boundary on Windows requires exporting and importing a *whole class*:
 //!
-//! @li MSVC honors `__declspec(dllexport/dllimport)` on a class explicit
+//! @li MSVC honors @c __declspec(dllexport/dllimport) on a class explicit
 //!   instantiation, but NOT on a variable template (clients silently get a
 //!   private copy) nor on a static-data-member instantiation (error C2720).
 //!   So the exported symbol must be a class member reached via whole-class
 //!   instantiation.
-//! @li dllexporting `registry_state_type` directly would also decorate its
-//!   member functions and, transitively, the policies' nested `state` types,
+//! @li dllexporting @c registry_state_type directly would also decorate its
+//!   member functions and, transitively, the policies' nested @c state types,
 //!   which MSVC rejects (error C2513).
 //!
 //! A one-member, function-free class is the only shape MSVC will export as a
 //! whole and import via `extern template`. See default_registry.hpp for the
 //! per-registry instantiations.
+//!
+//! For the predefined registries, the export/import pair is emitted by the
+//! {{BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY}} /
+//! {{BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY}} macros (and the analogous
+//! `INDIRECT` pair for @ref indirect_registry). For a custom registry, write
+//! the pair yourself, after the registry's definition:
+//! @code
+//! // in exactly one translation unit of the owning module:
+//! template struct BOOST_SYMBOL_EXPORT
+//!     boost::openmethod::registry_state<my_registry::registry_type>;
+//! // in every client translation unit:
+//! extern template struct BOOST_SYMBOL_IMPORT
+//!     boost::openmethod::registry_state<my_registry::registry_type>;
+//! @endcode
 template<class Registry>
 struct registry_state {
     static detail::registry_state_type<Registry> st;
@@ -1077,10 +1091,10 @@ BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(id);
 //!
 //! @par Requirements
 //!
-//! @li `Policy` must contain a `category` alias to its root base class. The
+//! @li @c Policy must contain a @c category alias to its root base class. The
 //! registry may contain at most one policy per category.
 //!
-//! @li `Policy` must contain a `fn<Registry>` metafunction.
+//! @li @c Policy must contain a @c fn<Registry> metafunction.
 //!
 //! @see @ref policies
 template<class... Policy>
@@ -1117,18 +1131,51 @@ class registry : public detail::registry_base {
 
   public:
     //! The type of this registry.
+    //!
+    //! `registry_type` is the `registry` specialization itself - for a
+    //! registry defined as a struct deriving from `registry` (like @ref
+    //! default_registry), the base class, not the struct. It is the type on
+    //! which the registry's state is keyed. It appears in the explicit
+    //! instantiation / `extern template` declaration pair that shares a
+    //! custom registry's state across shared libraries:
+    //! `registry_state<my_registry::registry_type>` (see @ref
+    //! registry_state).
     using registry_type = registry;
 
+    //! Return the registry's mutable state.
+    //!
+    //! Everything mutable in a registry - the class and method registration
+    //! lists, the dispatch tables, and the state of every stateful policy -
+    //! is agglomerated in a single variable,
+    //! `registry_state<registry_type>::st`. `state` returns a reference to
+    //! it.
+    //!
+    //! Modules (executables and shared libraries) contributing to the same
+    //! registry must share this one variable; see @ref registry_state and
+    //! {{BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY}}.
     static auto& state() {
         return static_::st;
     }
 
+    //! Return a policy's state.
+    //!
+    //! Returns a reference to the `P::fn<registry_type>::state` object held
+    //! in the registry's state. This is how stateful policies access their
+    //! data members: policies do not keep their own global variables.
+    //!
+    //! @tparam P A stateful policy of this registry, i.e. one whose
+    //! `fn<Registry>` contains a nested `state` type.
     template<class P>
     static auto& state() {
         return detail::get<typename P::template fn<registry>::state>(
             static_::st.policies);
     }
 
+    //! Return an address identifying the registry's state.
+    //!
+    //! The address is the same in all the modules of a program if, and only
+    //! if, they share the registry's state. Useful for diagnosing shared
+    //! library setups.
     static const void* id() {
         return static_cast<const void*>(&static_::st.classes);
     }

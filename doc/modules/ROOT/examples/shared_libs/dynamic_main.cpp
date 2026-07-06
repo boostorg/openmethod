@@ -3,11 +3,13 @@
 // accompanying file LICENSE_1_0.txt or copy at
 // http://www.boost.org/LICENSE_1_0.txt)
 
-#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
-
+// tag::before[]
 // dynamic_main.cpp
 
+#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
+
 #include "animals.hpp"
+// end::before[]
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/initialize.hpp>
@@ -19,7 +21,6 @@
 using namespace boost::openmethod;
 
 // tag::before[]
-// dynamic_main.cpp
 
 BOOST_OPENMETHOD_CLASSES(Herbivore, Cow, Carnivore, Wolf);
 
@@ -72,7 +73,7 @@ int main() {
                   << meet(
                          *std::make_unique<Cow>(),
                          *std::unique_ptr<Animal>(make_tiger()))
-                  << "\n"; // hunt
+                  << "\n"; // run
         // end::load[]
 
         // tag::unload[]
@@ -96,7 +97,6 @@ int main() {
         // end::before[]
         // end::load[]
         // end::unload[]
-
     } catch (const std::exception& ex) {
         std::cerr << "Exception: " << ex.what() << '\n';
         return 1;

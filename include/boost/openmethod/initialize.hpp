@@ -1761,11 +1761,11 @@ void registry<Policies...>::compiler<Options...>::print(
 //! The function returns an object of an unspecified type that contains a
 //! `report` member, itself an object of an unspecified type, thatcontains the
 //! following members:
-//! @li `std::size_t cells`: The number of cells in all multi-method dispatch
+//! @li @c std::size_t @c cells: The number of cells in all multi-method dispatch
 //! tables.
-//! @li `std::size_t not_implemented`: The number of multi-method dispatch tables that
+//! @li @c std::size_t @c not_implemented: The number of multi-method dispatch tables that
 //! contain at least one not implemented entry.
-//! @li `std::size_t ambiguous`: The number of multi-method dispatch tables that contain at
+//! @li @c std::size_t @c ambiguous: The number of multi-method dispatch tables that contain at
 //! least one ambiguous entry.
 //!
 //! @note

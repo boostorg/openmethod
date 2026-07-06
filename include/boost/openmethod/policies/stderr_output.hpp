@@ -21,6 +21,8 @@ struct stderr_output : output {
     template<class Registry>
     struct fn {
       public:
+        //! The policy's state: the output stream object. Held in the
+        //! registry's shared state (see @ref registry_state).
         struct state {
             detail::ostderr os;
         };

@@ -44,7 +44,12 @@ struct vptr_vector : vptr {
         static constexpr auto has_type_hash = !std::is_same_v<type_hash, void>;
 
       public:
+        //! The policy's state: the vector of v-table pointers. Held in the
+        //! registry's shared state (see @ref registry_state).
         struct state {
+            //! The v-table pointers (pointers to v-table pointers if
+            //! `Registry` contains the @ref indirect_vptr policy), indexed by
+            //! (possibly hashed) type ids.
             std::conditional_t<
                 Registry::has_indirect_vptr,
                 std::vector<const vptr_type*>,

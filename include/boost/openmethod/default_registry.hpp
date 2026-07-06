@@ -23,9 +23,9 @@ namespace boost::openmethod {
 //! @li @ref policies::std_rtti: Use standard RTTI.
 //! @li @ref policies::fast_perfect_hash: Use a fast perfect hash function to
 //!   map type ids to indices.
-//! @li @ref policies::vptr_vector: Store v-table pointers in a `std::vector`.
+//! @li @ref policies::vptr_vector: Store v-table pointers in a @c std::vector.
 //! @li @ref policies::default_error_handler: Write short diagnostic messages.
-//! @li @ref policies::stderr_output: Write messages to `stderr`.
+//! @li @ref policies::stderr_output: Write messages to @c stderr.
 //!
 //! If
 //! {{BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS}}
@@ -35,6 +35,14 @@ namespace boost::openmethod {
 //! inconsistent use of the macro can cause ODR violations. If defined, it must
 //! be in all the translation units in the program that use `default_registry`,
 //! including those pulled from libraries.
+//!
+//! For a program and its shared libraries to contribute to the same
+//! `default_registry`, its state must be shared across the modules: the
+//! owning module exports it by defining
+//! {{BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY}} in exactly one translation
+//! unit, and every client module imports it by defining
+//! {{BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY}}, in both cases before
+//! including this header.
 struct default_registry
     : registry<
           policies::std_rtti, policies::fast_perfect_hash,
@@ -88,6 +96,11 @@ static odr_check<default_registry> default_registry_odr_check_instance;
 //!
 //! `indirect_registry` is a predefined @ref registry that uses the same
 //! policies as @ref default_registry, plus the @ref indirect_vptr policy.
+//!
+//! `indirect_registry` has its own state, separate from `default_registry`'s.
+//! To share it across shared libraries, use
+//! {{BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY}} and
+//! {{BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY}}.
 //!
 //! @see indirect_vptr.
 struct indirect_registry : default_registry::with<policies::indirect_vptr> {};

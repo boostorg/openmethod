@@ -6,16 +6,16 @@
 // tag::content[]
 // static_main.cpp
 
+// The shared library (static_extensions.cpp) owns the registry state; the
+// executable imports it.
+#define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
+
 #include "animals.hpp"
 #include <boost/openmethod/initialize.hpp>
 #include <iostream>
+#include <memory>
 
 using namespace boost::openmethod::aliases;
-
-struct Cow : Herbivore {};
-struct Wolf : Carnivore {};
-
-BOOST_OPENMETHOD_CLASSES(Animal, Herbivore, Cow, Wolf, Carnivore);
 
 BOOST_OPENMETHOD_OVERRIDE(
     meet, (virtual_ptr<Animal>, virtual_ptr<Animal>), std::string) {

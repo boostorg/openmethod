@@ -96,6 +96,10 @@ struct fast_perfect_hash : type_hash {
     template<class Registry>
     class fn {
       public:
+        //! The policy's state: the hash factors (@ref no_checks), plus the
+        //! control table if the registry has runtime checks enabled (@ref
+        //! with_checks). Held in the registry's shared state (see @ref
+        //! registry_state).
         using state = std::conditional_t<
             Registry::has_runtime_checks, with_checks, no_checks>;
 
