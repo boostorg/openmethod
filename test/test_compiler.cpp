@@ -474,10 +474,8 @@ BOOST_AUTO_TEST_CASE(test_registries_do_not_share_vptr_state) {
 
     BOOST_OPENMETHOD_REGISTER(use_classes<A, B, registry1>);
     BOOST_OPENMETHOD_REGISTER(use_classes<A, B, registry2>);
-    auto& m1 = method<A, auto(virtual_<A&>)->void, registry1>::fn;
-    auto& m2 = method<A, auto(virtual_<A&>)->void, registry2>::fn;
-    (void)m1;
-    (void)m2;
+    (void)method<A, auto(virtual_<A&>)->void, registry1>::fn;
+    (void)method<A, auto(virtual_<A&>)->void, registry2>::fn;
 
     initialize<registry1>();
     initialize<registry2>();

@@ -1869,22 +1869,38 @@ constexpr bool has_finalize = has_finalize_aux<void, T, Args...>::value;
 BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(finalize);
 #endif
 
+// Call finalize on a single policy if it has the function. Mirror of
+// initialize_policy.
+template<typename Policy, typename Registry, typename Options>
+void finalize_policy(const Options& options) {
+    using PolicyFn = typename Policy::template fn<Registry>;
+    if constexpr (has_finalize<PolicyFn, const Options&>) {
+        PolicyFn::finalize(options);
+    }
+}
+
+// Policies are finalized in the reverse of `policy_list` order — the mirror of
+// initialize_policies — so a policy is torn down before the ones it depends on.
+template<
+    typename Registry,
+    typename Policies = mp11::mp_reverse<typename Registry::policy_list>>
+struct finalize_policies;
+
+template<typename Registry, typename... Policies>
+struct finalize_policies<Registry, mp11::mp_list<Policies...>> {
+    template<typename Options>
+    static void fn(const Options& options) {
+        (finalize_policy<Policies, Registry>(options), ...);
+    }
+};
+
 } // namespace detail
 
 template<class... Policies>
 template<class... Options>
 auto registry<Policies...>::finalize(Options... opts) -> void {
     std::tuple<Options...> options(opts...); // gcc-8 doesn't like CTAD here
-    // Policies are finalized in reverse `policy_list` order, the mirror of
-    // initialize(), so a dependent policy is torn down before the policy it
-    // depends on.
-    mp11::mp_for_each<mp11::mp_reverse<policy_list>>([&options](auto policy) {
-        using fn = typename decltype(policy)::template fn<registry>;
-        if constexpr (detail::has_finalize<fn, const std::tuple<Options...>&>) {
-            fn::finalize(options);
-        }
-    });
-
+    detail::finalize_policies<registry>::fn(options);
     static_::st.dispatch_data.clear();
     static_::st.initialized = false;
 }

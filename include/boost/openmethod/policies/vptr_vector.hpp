@@ -53,8 +53,8 @@ struct vptr_vector : vptr {
                 boost::mp11::mp_find<
                     typename Registry::policy_list,
                     detail::find_first_derived_of<
-                        policies::type_hash, typename Registry::policy_list>>::
-                        value <
+                        policies::type_hash,
+                        typename Registry::policy_list>>::value <
                     boost::mp11::mp_find<
                         typename Registry::policy_list, vptr_vector>::value,
             "the type_hash policy must appear before vptr_vector in the "
@@ -68,9 +68,9 @@ struct vptr_vector : vptr {
             //! `Registry` contains the @ref indirect_vptr policy), indexed by
             //! (possibly hashed) type ids.
             std::conditional_t<
-                Registry::has_indirect_vptr,
-                std::vector<const vptr_type*>,
-                std::vector<vptr_type>> vptrs;
+                Registry::has_indirect_vptr, std::vector<const vptr_type*>,
+                std::vector<vptr_type>>
+                vptrs;
         };
 
         //! Stores the v-table pointers.
@@ -84,9 +84,8 @@ struct vptr_vector : vptr {
         //! @param ctx A Context object.
         //! @param options A tuple of option objects.
         template<class Context, class... Options>
-        static auto
-        initialize(const Context& ctx, const std::tuple<Options...>& options)
-            -> void {
+        static auto initialize(
+            const Context& ctx, const std::tuple<Options...>& options) -> void {
             std::size_t size;
             (void)options;
 
@@ -122,8 +121,7 @@ struct vptr_vector : vptr {
                     }
 
                     if constexpr (Registry::has_indirect_vptr) {
-                        st().vptrs[index] =
-                            &iter->vptr();
+                        st().vptrs[index] = &iter->vptr();
                     } else {
                         st().vptrs[index] = iter->vptr();
                     }
@@ -158,13 +156,7 @@ struct vptr_vector : vptr {
                 index = std::size_t(dynamic_type);
 
                 if constexpr (Registry::has_runtime_checks) {
-                    std::size_t max_index = 0;
-
-                    if constexpr (Registry::has_indirect_vptr) {
-                        max_index = st().vptrs.size();
-                    } else {
-                        max_index = st().vptrs.size();
-                    }
+                    std::size_t max_index = st().vptrs.size();
 
                     if (index >= max_index) {
                         if constexpr (Registry::has_error_handler) {
