@@ -43,6 +43,23 @@ struct vptr_vector : vptr {
             typename Registry::template policy<policies::type_hash>;
         static constexpr auto has_type_hash = !std::is_same_v<type_hash, void>;
 
+        // vptr_vector::initialize reads the type_hash policy's state, so that
+        // policy must have been initialized first, i.e. must appear before
+        // vptr_vector in the registry's policy_list (policies are initialized
+        // left to right; see detail::initialize_policies). type_hash aliases
+        // the policy's fn<Registry>, so locate the policy itself in the list.
+        static_assert(
+            !has_type_hash ||
+                boost::mp11::mp_find<
+                    typename Registry::policy_list,
+                    detail::find_first_derived_of<
+                        policies::type_hash, typename Registry::policy_list>>::
+                        value <
+                    boost::mp11::mp_find<
+                        typename Registry::policy_list, vptr_vector>::value,
+            "the type_hash policy must appear before vptr_vector in the "
+            "registry's policy_list");
+
       public:
         //! The policy's state: the vector of v-table pointers. Held in the
         //! registry's shared state (see @ref registry_state).

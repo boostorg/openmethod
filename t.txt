@@ -1,2 +1,0 @@
-I have a similar problem with OpenMethod. I have optional bindings with standard
-smart pointers (OK, they come with the std lib), but I recently added one for boost::intrusive_ptr. More are

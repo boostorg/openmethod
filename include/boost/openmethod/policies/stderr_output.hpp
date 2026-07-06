@@ -29,6 +29,13 @@ struct stderr_output : output {
 
         [[deprecated]] inline static detail::ostderr os;
 
+        //! Returns the stream diagnostics are written to.
+        //!
+        //! The stream lives in the registry's shared state (see @ref
+        //! registry_state), so every module sharing the registry writes to the
+        //! same object.
+        //!
+        //! @return A reference to the policy's output stream.
         static auto& stream() {
             return Registry::template state<stderr_output>().os;
         }

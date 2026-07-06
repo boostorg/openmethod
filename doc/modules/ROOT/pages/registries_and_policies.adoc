@@ -72,7 +72,7 @@ the definition of `default_registry`, copied from
 struct default_registry
     : registry<
           policies::std_rtti,
-          policies::vptr_vector, policies::fast_perfect_hash,
+          policies::fast_perfect_hash, policies::vptr_vector,
           policies::default_error_handler,
           policies::stderr_output
 #ifdef BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS
@@ -86,6 +86,16 @@ struct default_registry
 When defining a new registry, it is recommended to define a new class, derived
 from `registry<...>`, rather than via a typedef, which would create excessively
 long symbol names and make debugging harder.
+
+The order of the policies matters. When cpp:initialize[] runs, it calls each
+policy's `initialize` in the order the policies appear in the registry, from
+left to right; cpp:finalize[] calls each policy's `finalize` in the reverse
+order. A policy that depends on another policy having been initialized must
+therefore be listed _after_ its dependency. In particular, `vptr_vector` reads
+the state of the `type_hash` policy, so the `type_hash` policy must come before
+`vptr_vector` — as in `default_registry` above, where `fast_perfect_hash`
+precedes `vptr_vector`. This particular requirement is enforced with a
+`static_assert`.
 
 A registry can also be created by copying an existing registry's policies,
 using the cpp:with[] and cpp:without[] nested templates. For example,
