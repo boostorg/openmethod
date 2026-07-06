@@ -228,7 +228,7 @@ void fast_perfect_hash::fn<Registry>::initialize_aux(
         std::size_t attempts = 0;
         buckets.resize(hash_size);
 
-        while (attempts < 1'00'000) {
+        while (attempts < 100'000) {
             std::fill(
                 buckets.begin(), buckets.end(), type_id(detail::uintptr_max));
             ++attempts;

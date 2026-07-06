@@ -857,17 +857,17 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
 
     for (auto& info : registry::static_::st.methods) {
         auto key = rtti::type_index(info.method_type_id);
-        method* method;
+        method* pm;
 
         if (method_map.find(key) == method_map.end()) {
             methods.emplace_back();
-            method = &methods.back();
-            method_map[key] = method;
+            pm = &methods.back();
+            method_map[key] = pm;
         } else {
-            method = method_map[key];
+            pm = method_map[key];
         }
 
-        method->infos.push_back(&info);
+        pm->infos.push_back(&info);
     }
 
     std::size_t method_index = 0;

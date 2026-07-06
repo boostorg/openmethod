@@ -90,11 +90,7 @@ struct vptr_vector : vptr {
                 ++size;
             }
 
-            if constexpr (Registry::has_indirect_vptr) {
-                st().vptrs.resize(size);
-            } else {
-                st().vptrs.resize(size);
-            }
+            st().vptrs.resize(size);
 
             for (auto iter = ctx.classes_begin(); iter != ctx.classes_end();
                  ++iter) {
@@ -179,13 +175,7 @@ struct vptr_vector : vptr {
         //! @param options Zero or more option objects.
         template<class... Options>
         static auto finalize(const std::tuple<Options...>&) -> void {
-            using namespace policies;
-
-            if constexpr (Registry::has_indirect_vptr) {
-                st().vptrs.clear();
-            } else {
-                st().vptrs.clear();
-            }
+            st().vptrs.clear();
         }
 
       private:
