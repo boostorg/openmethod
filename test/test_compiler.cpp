@@ -431,3 +431,30 @@ BOOST_AUTO_TEST_CASE(test_assign_slots_a1_c1_b1) {
     BOOST_TEST(get_class<B>(comp)->first_slot == 2u);
     BOOST_TEST(get_class<B>(comp)->vtbl.size() == 1u);
 }
+
+// ============================================================================
+// Test finalize.
+
+BOOST_AUTO_TEST_CASE(test_finalize_clears_vptr_vector) {
+    using test_registry = test_registry_<__COUNTER__>;
+
+    struct A {
+        virtual ~A() = default;
+    };
+    struct B : A {};
+
+    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, test_registry>);
+    ADD_METHOD(A);
+
+    initialize<test_registry>();
+
+    auto& vptrs = test_registry::state<policies::vptr_vector>().vptrs;
+    BOOST_TEST(!vptrs.empty());
+
+    // The vptr policy provides a finalize() (portable across MSVC/non-MSVC).
+    static_assert(detail::has_finalize<
+                  test_registry::policy<policies::vptr>, const std::tuple<>&>);
+
+    finalize<test_registry>();
+    BOOST_TEST(vptrs.empty()); // finalize cleared the vector
+}
