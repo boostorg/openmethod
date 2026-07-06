@@ -43,23 +43,10 @@
 
 using test_registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY;
 
-static auto get_ids() -> const void** {
-    using namespace boost::openmethod;
-    namespace mp11 = boost::mp11;
-
-    constexpr auto n_policies = mp11::mp_size<test_registry::policy_list>::value;
-    static const void* ids[1 + n_policies + 1] = {test_registry::id()};
-    std::size_t i = 1;
-
-    mp11::mp_for_each<test_registry::policy_list>([&](auto p) {
-        using P = decltype(p);
-
-        if constexpr (detail::has_id<test_registry::policy<P>>) {
-            ids[i++] = test_registry::policy<P>::id();
-        }
-    });
-
-    return ids;
+// The single address that identifies the registry's shared state. It must be
+// identical across all modules that share the registry (see registry::id()).
+static auto get_ids() -> const void* {
+    return test_registry::id();
 }
 
 #endif

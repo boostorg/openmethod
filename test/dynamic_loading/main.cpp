@@ -26,9 +26,8 @@
 #include <stdexcept>
 
 using namespace boost::openmethod;
-namespace mp11 = boost::mp11;
 
-using policy_ids_fn = const void**();
+using state_id_fn = const void*();
 
 BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
@@ -43,31 +42,11 @@ find_lib(const boost::filesystem::path& dir, const char* name_fragment) {
     throw std::runtime_error(std::string("lib not found: ") + name_fragment);
 }
 
-bool same_ids(const void** ids1, const void** ids2) {
-    using std::setw;
+bool same_ids(const void* id1, const void* id2) {
     BOOST_TEST_MESSAGE(
-        setw(60) << "registry state" << ": " << *ids1++ << " " << *ids2++);
+        std::setw(60) << "registry state" << ": " << id1 << " " << id2);
 
-    int diffs = 0;
-
-    mp11::mp_for_each<test_registry::policy_list>([&](auto p) {
-        using P = decltype(p);
-
-        if constexpr (detail::has_id<test_registry::policy<P>>) {
-            BOOST_TEST_MESSAGE(
-                setw(60) << boost::core::demangle(typeid(P).name()) << ": "
-                         << *ids1 << " " << *ids2);
-
-            if (*ids1 != *ids2) {
-                ++diffs;
-            }
-
-            ++ids1;
-            ++ids2;
-        }
-    });
-
-    return diffs == 0;
+    return id1 == id2;
 }
 
 BOOST_AUTO_TEST_CASE(test_shared_state) {
@@ -84,7 +63,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST_MESSAGE("search_dir: " << search_dir);
     auto method_path = find_lib(search_dir, "test_method");
     dll::shared_library method_lib(method_path, load_mode);
-    auto method_get_ids = method_lib.get<policy_ids_fn>("method_get_ids");
+    auto method_get_ids = method_lib.get<state_id_fn>("method_get_ids");
     auto method_speak =
         method_lib.get<const char*(virtual_ptr<Animal>)>("method_call_speak");
     auto method_make_dog =
@@ -121,7 +100,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     dll::shared_library overrider_lib(
         find_lib(search_dir, "test_overrider"), load_mode);
     auto overrider_get_ids =
-        overrider_lib.get<policy_ids_fn>("overrider_get_ids");
+        overrider_lib.get<state_id_fn>("overrider_get_ids");
     auto overrider_speak = overrider_lib.get<const char*(virtual_ptr<Animal>)>(
         "overrider_call_speak");
     auto overrider_make_dog =
