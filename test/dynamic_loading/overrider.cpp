@@ -46,9 +46,11 @@ overrider_call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
     return speak(animal);
 }
 
-BOOST_SYMBOL_EXPORT greeting overrider_call_meet(
-    boost::openmethod::virtual_ptr<Animal> a,
+// See method_call_meet: returned via out-parameter to avoid a non-POD return
+// type on an extern "C" function (-Wreturn-type-c-linkage).
+BOOST_SYMBOL_EXPORT void overrider_call_meet(
+    greeting& result, boost::openmethod::virtual_ptr<Animal> a,
     boost::openmethod::virtual_ptr<Animal> b) {
-    return meet(a, b);
+    result = meet(a, b);
 }
 }

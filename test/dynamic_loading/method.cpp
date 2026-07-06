@@ -51,10 +51,13 @@ method_call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
     return speak(animal);
 }
 
-BOOST_SYMBOL_EXPORT greeting method_call_meet(
-    boost::openmethod::virtual_ptr<Animal> a,
+// Returned through an out-parameter rather than by value: an extern "C"
+// function returning a non-POD type (greeting) trips -Wreturn-type-c-linkage,
+// same as method_make_dog above.
+BOOST_SYMBOL_EXPORT void method_call_meet(
+    greeting& result, boost::openmethod::virtual_ptr<Animal> a,
     boost::openmethod::virtual_ptr<Animal> b) {
-    return meet(a, b);
+    result = meet(a, b);
 }
 
 }
