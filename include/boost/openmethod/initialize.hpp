@@ -110,6 +110,10 @@ template<typename Registry, typename... Policies>
 struct initialize_policies<Registry, mp11::mp_list<Policies...>> {
     template<typename Context, typename Options>
     static void fn(const Context& ctx, const Options& options) {
+        // Policies are initialized in `policy_list` order (left to right). A
+        // policy that depends on another policy having been initialized (e.g.
+        // vptr_vector reading a type_hash policy's state) must therefore appear
+        // *after* its dependency in the list. finalize() runs in reverse order.
         (initialize_policy<Policies, Registry>(ctx, options), ...);
     }
 };
@@ -1772,6 +1776,13 @@ void registry<Policies...>::compiler<Options...>::print(
 //! A translation unit that calls `initialize` must include the
 //! `<boost/openmethod/initialize.hpp>` header.
 //!
+//! @note
+//! Each policy's `initialize` is called in the order the policies appear in the
+//! registry's `policy_list` (left to right). If a policy depends on another
+//! policy having been initialized first, the dependency must appear *earlier*
+//! in the list; ensuring this is the user's responsibility. @ref finalize
+//! finalizes the policies in the reverse order.
+//!
 //! @tparam Registry The registry to initialize.
 //! @tparam Options... Zero or more option types, deduced from the function
 //! arguments.
@@ -1864,15 +1875,18 @@ template<class... Policies>
 template<class... Options>
 auto registry<Policies...>::finalize(Options... opts) -> void {
     std::tuple<Options...> options(opts...); // gcc-8 doesn't like CTAD here
-    mp11::mp_for_each<policy_list>([&options](auto policy) {
+    // Policies are finalized in reverse `policy_list` order, the mirror of
+    // initialize(), so a dependent policy is torn down before the policy it
+    // depends on.
+    mp11::mp_for_each<mp11::mp_reverse<policy_list>>([&options](auto policy) {
         using fn = typename decltype(policy)::template fn<registry>;
         if constexpr (detail::has_finalize<fn, const std::tuple<Options...>&>) {
             fn::finalize(options);
         }
     });
 
-    static_::dispatch_data.clear();
-    static_::initialized = false;
+    static_::st.dispatch_data.clear();
+    static_::st.initialized = false;
 }
 
 //! Release resources held by registry.
@@ -1883,6 +1897,11 @@ auto registry<Policies...>::finalize(Options... opts) -> void {
 //! @note
 //! A translation unit that contains a call to `finalize` must include the
 //! `<boost/openmethod/initialize.hpp>` header.
+//!
+//! @note
+//! Each policy's `finalize` is called in the reverse of the registry's
+//! `policy_list` order, the mirror of @ref initialize, so a policy is finalized
+//! before the policies it depends on.
 //!
 //! @tparam Registry The registry to finalize.
 //! @tparam Options... Zero or more option types, deduced from the function
