@@ -45,7 +45,7 @@ using test_registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY;
 
 // The single address that identifies the registry's shared state. It must be
 // identical across all modules that share the registry (see registry::id()).
-static auto get_ids() -> const void* {
+static auto registry_state_id() -> const void* {
     return test_registry::id();
 }
 

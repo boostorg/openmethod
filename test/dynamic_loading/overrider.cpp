@@ -32,8 +32,8 @@ BOOST_OPENMETHOD_CLASSES(Animal, Dog);
 
 extern "C" {
 
-BOOST_SYMBOL_EXPORT const void* overrider_get_ids() {
-    return get_ids();
+BOOST_SYMBOL_EXPORT const void* overrider_state_id() {
+    return registry_state_id();
 }
 
 BOOST_SYMBOL_EXPORT void

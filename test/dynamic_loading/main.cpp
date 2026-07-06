@@ -63,7 +63,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
     BOOST_TEST_MESSAGE("search_dir: " << search_dir);
     auto method_path = find_lib(search_dir, "test_method");
     dll::shared_library method_lib(method_path, load_mode);
-    auto method_get_ids = method_lib.get<state_id_fn>("method_get_ids");
+    auto method_state_id = method_lib.get<state_id_fn>("method_state_id");
     auto method_speak =
         method_lib.get<const char*(virtual_ptr<Animal>)>("method_call_speak");
     auto method_make_dog =
@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         void(greeting&, virtual_ptr<Animal>, virtual_ptr<Animal>);
     auto method_meet = method_lib.get<meet_fn>("method_call_meet");
 
-    BOOST_TEST(same_ids(get_ids(), method_get_ids()));
+    BOOST_TEST(same_ids(registry_state_id(), method_state_id()));
 
     initialize();
 
@@ -99,8 +99,8 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
 
     dll::shared_library overrider_lib(
         find_lib(search_dir, "test_overrider"), load_mode);
-    auto overrider_get_ids =
-        overrider_lib.get<state_id_fn>("overrider_get_ids");
+    auto overrider_state_id =
+        overrider_lib.get<state_id_fn>("overrider_state_id");
     auto overrider_speak = overrider_lib.get<const char*(virtual_ptr<Animal>)>(
         "overrider_call_speak");
     auto overrider_make_dog =
@@ -108,7 +108,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
             "overrider_make_dog");
     auto overrider_meet = overrider_lib.get<meet_fn>("overrider_call_meet");
 
-    BOOST_TEST(same_ids(get_ids(), overrider_get_ids()));
+    BOOST_TEST(same_ids(registry_state_id(), overrider_state_id()));
 
     initialize();
     unique_virtual_ptr<Animal> overrider_dog;
