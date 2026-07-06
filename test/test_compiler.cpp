@@ -444,7 +444,7 @@ BOOST_AUTO_TEST_CASE(test_finalize_clears_vptr_vector) {
     struct B : A {};
 
     BOOST_OPENMETHOD_REGISTER(use_classes<A, B, test_registry>);
-    ADD_METHOD(A);
+    (void)method<A, auto(virtual_<A&>)->void, test_registry>::fn;
 
     initialize<test_registry>();
 
