@@ -458,3 +458,41 @@ BOOST_AUTO_TEST_CASE(test_finalize_clears_vptr_vector) {
     finalize<test_registry>();
     BOOST_TEST(vptrs.empty()); // finalize cleared the vector
 }
+
+BOOST_AUTO_TEST_CASE(test_registries_do_not_share_vptr_state) {
+    // Two distinct registries, both using vptr_vector, must each have their own
+    // vptr_vector state; they do not share it.
+    using registry1 = test_registry_<__COUNTER__>;
+    using registry2 = test_registry_<__COUNTER__>;
+
+    static_assert(!std::is_same_v<registry1, registry2>);
+
+    struct A {
+        virtual ~A() = default;
+    };
+    struct B : A {};
+
+    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, registry1>);
+    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, registry2>);
+    auto& m1 = method<A, auto(virtual_<A&>)->void, registry1>::fn;
+    auto& m2 = method<A, auto(virtual_<A&>)->void, registry2>::fn;
+    (void)m1;
+    (void)m2;
+
+    initialize<registry1>();
+    initialize<registry2>();
+
+    auto& vptrs1 = registry1::state<policies::vptr_vector>().vptrs;
+    auto& vptrs2 = registry2::state<policies::vptr_vector>().vptrs;
+
+    // Distinct state objects.
+    BOOST_TEST(
+        static_cast<const void*>(&vptrs1) != static_cast<const void*>(&vptrs2));
+
+    // Independent: clearing one registry's state leaves the other intact.
+    BOOST_TEST(!vptrs1.empty());
+    BOOST_TEST(!vptrs2.empty());
+    finalize<registry1>();
+    BOOST_TEST(vptrs1.empty());
+    BOOST_TEST(!vptrs2.empty());
+}
