@@ -39,6 +39,19 @@ local RDYNAMIC =
 # linker deduplicates them across DSOs.  MSVC ignores this property.
 local VISIBILITY = <local-visibility>global ;
 
+# Link the external Boost utility libraries (dll, test, filesystem, and their
+# transitive deps like system) statically. Only *our* registry/method/overrider
+# libraries need to be shared objects; the Boost dependencies are pulled in via
+# the propagated <link>shared and would otherwise be built as shared libraries
+# too. That breaks under sanitizers:
+#   * Clang UBSAN: Clang links the static UBSAN runtime, so a shared library is
+#     left with undefined __ubsan_*_abort symbols; Boost.Filesystem builds with
+#     -Wl,--no-undefined, turning those into a hard link error. (GCC links
+#     libubsan into the DSO, so it is unaffected.)
+#   * macOS UBSAN: a shared Boost.Test with hidden visibility gives each DSO its
+#     own copy of typeinfo for lazy_ostream, tripping -fsanitize=vptr at runtime.
+# Linking these dependencies statically into the executable side-steps both.
+
 # Build one set of {registry, method, overrider} shared libraries plus a test
 # executable. Each variant compiles the very same sources but with a different
 # default registry, selected by extra requirements (e.g. a <define>) applied to
@@ -62,7 +75,7 @@ rule make-variant ( suffix : extra-req * )
         : <link>shared
           $(VISIBILITY)
           $(extra-req)
-          <library>/boost/dll//boost_dll/<warnings>off
+          <library>/boost/dll//boost_dll/<warnings>off/<link>static
           <location-prefix>dynamic_loading$(suffix).test
         ;
 
@@ -73,7 +86,7 @@ rule make-variant ( suffix : extra-req * )
         : <link>shared
           $(VISIBILITY)
           $(extra-req)
-          <library>/boost/dll//boost_dll/<warnings>off
+          <library>/boost/dll//boost_dll/<warnings>off/<link>static
           <library>boost_openmethod-dl_test_registry$(suffix)
           <location-prefix>dynamic_loading$(suffix).test
         ;
@@ -90,7 +103,7 @@ rule make-variant ( suffix : extra-req * )
         : <link>shared
           $(VISIBILITY)
           $(extra-req)
-          <library>/boost/dll//boost_dll/<warnings>off
+          <library>/boost/dll//boost_dll/<warnings>off/<link>static
           <library>boost_openmethod-dl_test_method$(suffix)
           <library>boost_openmethod-dl_test_registry$(suffix)
           <location-prefix>dynamic_loading$(suffix).test
@@ -104,15 +117,15 @@ rule make-variant ( suffix : extra-req * )
     # by scanning dll::program_location().parent_path() on all platforms.
     run main.cpp
         boost_openmethod-dl_test_registry$(suffix)
-        /boost/test//boost_unit_test_framework/<warnings>off
-        /boost/dll//boost_dll/<warnings>off
+        /boost/test//boost_unit_test_framework/<warnings>off/<link>static
+        /boost/dll//boost_dll/<warnings>off/<link>static
         :
         :
         : <link>shared
           $(RDYNAMIC)
           $(VISIBILITY)
           $(extra-req)
-          <library>/boost/filesystem//boost_filesystem/<warnings>off
+          <library>/boost/filesystem//boost_filesystem/<warnings>off/<link>static
           <target-os>linux:<linkflags>"-ldl"
           <target-os>freebsd:<linkflags>"-ldl"
           <target-os>android:<linkflags>"-ldl"
