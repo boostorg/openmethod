@@ -39,6 +39,18 @@ local RDYNAMIC =
 # linker deduplicates them across DSOs.  MSVC ignores this property.
 local VISIBILITY = <local-visibility>global ;
 
+# Disable Clang's -fsanitize=vptr sub-check under UBSAN. This test creates
+# polymorphic objects inside dlopen'd libraries and downcasts them in another
+# module (core.hpp optimal_cast, reached through open-method dispatch). The vptr
+# check validates an object's vptr against the expected type's RTTI, but on
+# platforms that do not deduplicate a class's typeinfo/vtable across DSOs
+# (notably macOS/Mach-O) it fires a false positive even though the object really
+# is of that type. Gate on the UBSAN feature so nothing changes elsewhere; it is
+# a no-op for GCC (which has no vptr sanitizer). ASAN is unaffected.
+local NO_VPTR =
+    <undefined-sanitizer>on:<cxxflags>-fno-sanitize=vptr
+    <undefined-sanitizer>norecover:<cxxflags>-fno-sanitize=vptr ;
+
 # Link the external Boost utility libraries (dll, test, filesystem, and their
 # transitive deps like system) statically. Only *our* registry/method/overrider
 # libraries need to be shared objects; the Boost dependencies are pulled in via
@@ -74,6 +86,7 @@ rule make-variant ( suffix : extra-req * )
         : registry.cpp
         : <link>shared
           $(VISIBILITY)
+          $(NO_VPTR)
           $(extra-req)
           <library>/boost/dll//boost_dll/<warnings>off/<link>static
           <location-prefix>dynamic_loading$(suffix).test
@@ -85,6 +98,7 @@ rule make-variant ( suffix : extra-req * )
         : method.cpp
         : <link>shared
           $(VISIBILITY)
+          $(NO_VPTR)
           $(extra-req)
           <library>/boost/dll//boost_dll/<warnings>off/<link>static
           <library>boost_openmethod-dl_test_registry$(suffix)
@@ -102,6 +116,7 @@ rule make-variant ( suffix : extra-req * )
         : overrider.cpp
         : <link>shared
           $(VISIBILITY)
+          $(NO_VPTR)
           $(extra-req)
           <library>/boost/dll//boost_dll/<warnings>off/<link>static
           <library>boost_openmethod-dl_test_method$(suffix)
@@ -124,6 +139,7 @@ rule make-variant ( suffix : extra-req * )
         : <link>shared
           $(RDYNAMIC)
           $(VISIBILITY)
+          $(NO_VPTR)
           $(extra-req)
           <library>/boost/filesystem//boost_filesystem/<warnings>off/<link>static
           <target-os>linux:<linkflags>"-ldl"
