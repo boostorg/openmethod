@@ -96,38 +96,26 @@ local windows_pipeline(name, image, environment, arch = "amd64") =
 };
 
 [
+    # openmethod requires <charconv> (cxx17_hdr_charconv), which libstdc++ only
+    # provides fully from GCC 11 / libstdc++-11. Clang on Linux uses the system
+    # libstdc++, so the floor is the image, not the front-end. The old GCC 8/9/10
+    # and Clang 7-12 jobs ran on Ubuntu 18.04/20.04 (libstdc++ < 11) and silently
+    # executed *zero* openmethod tests. They are consolidated onto Ubuntu 24.04
+    # with its default toolchain (gcc-13, clang-18); GCC 11-14 and Clang 13-18
+    # already cover the intervening versions.
     linux_pipeline(
-        "Linux 18.04 GCC 8 32/64",
-        "cppalliance/droneubuntu1804:1",
-        { TOOLSET: 'gcc', COMPILER: 'g++-8', CXXSTD: '17', ADDRMD: '32,64' },
-        "g++-8-multilib",
+        "Linux 24.04 GCC 13 32/64",
+        "cppalliance/droneubuntu2404:1",
+        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '17,20,2b', ADDRMD: '32,64' },
+        "g++-13-multilib",
     ),
 
     linux_pipeline(
-        "Linux 20.04 GCC 9* 32/64",
-        "cppalliance/droneubuntu2004:1",
-        { TOOLSET: 'gcc', COMPILER: 'g++', CXXSTD: '17,2a', ADDRMD: '32,64' },
-    ),
-
-    linux_pipeline(
-        "Linux 20.04 GCC 9* ARM64",
-        "cppalliance/droneubuntu2004:multiarch",
-        { TOOLSET: 'gcc', COMPILER: 'g++', CXXSTD: '17,2a' },
-        arch="arm64",
-    ),
-
-    linux_pipeline(
-        "Linux 20.04 GCC 9* S390x",
-        "cppalliance/droneubuntu2004:multiarch",
-        { TOOLSET: 'gcc', COMPILER: 'g++', CXXSTD: '17,2a' },
+        "Linux 24.04 GCC 14 S390x",
+        "cppalliance/droneubuntu2404:multiarch",
+        { TOOLSET: 'gcc', COMPILER: 'g++-14', CXXSTD: '17,2a' },
+        "g++-14-multilib",
         arch="s390x",
-    ),
-
-    linux_pipeline(
-        "Linux 20.04 GCC 10 32/64",
-        "cppalliance/droneubuntu2004:1",
-        { TOOLSET: 'gcc', COMPILER: 'g++-10', CXXSTD: '17,20', ADDRMD: '32,64' },
-        "g++-10-multilib",
     ),
 
     linux_pipeline(
@@ -220,46 +208,13 @@ local windows_pipeline(name, image, environment, arch = "amd64") =
         "g++-14-multilib",
     ),
 
+    # Clang 7-12 ran on Ubuntu 20.04 (libstdc++ < 11, no <charconv>) and executed
+    # zero tests; consolidated onto Ubuntu 24.04 with its default clang-18.
     linux_pipeline(
-        "Linux 20.04 Clang 7",
-        "cppalliance/droneubuntu2004:1",
-        { TOOLSET: 'clang', COMPILER: 'clang++-7', CXXSTD: '17' },
-        "clang-7",
-    ),
-
-    linux_pipeline(
-        "Linux 20.04 Clang 8",
-        "cppalliance/droneubuntu2004:1",
-        { TOOLSET: 'clang', COMPILER: 'clang++-8', CXXSTD: '17' },
-        "clang-8",
-    ),
-
-    linux_pipeline(
-        "Linux 20.04 Clang 9",
-        "cppalliance/droneubuntu2004:1",
-        { TOOLSET: 'clang', COMPILER: 'clang++-9', CXXSTD: '17,2a' },
-        "clang-9",
-    ),
-
-    linux_pipeline(
-        "Linux 20.04 Clang 10",
-        "cppalliance/droneubuntu2004:1",
-        { TOOLSET: 'clang', COMPILER: 'clang++-10', CXXSTD: '17,2a' },
-        "clang-10",
-    ),
-
-    linux_pipeline(
-        "Linux 20.04 Clang 11",
-        "cppalliance/droneubuntu2004:1",
-        { TOOLSET: 'clang', COMPILER: 'clang++-11', CXXSTD: '17,2a' },
-        "clang-11",
-    ),
-
-    linux_pipeline(
-        "Linux 20.04 Clang 12",
-        "cppalliance/droneubuntu2004:1",
-        { TOOLSET: 'clang', COMPILER: 'clang++-12', CXXSTD: '17,2a' },
-        "clang-12",
+        "Linux 24.04 Clang 18",
+        "cppalliance/droneubuntu2404:1",
+        { TOOLSET: 'clang', COMPILER: 'clang++-18', CXXSTD: '17,20,2b' },
+        "clang-18",
     ),
 
     linux_pipeline(
