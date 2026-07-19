@@ -17,17 +17,17 @@
 // the explicit-instantiation export/import (see default_registry.hpp) is needed
 // on ELF too.
 #if defined(EXPORT_REGISTRY)
-#  if defined(BOOST_OPENMETHOD_DEFAULT_REGISTRY)
-#    define BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY
-#  else
-#    define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
-#  endif
+#if defined(BOOST_OPENMETHOD_DEFAULT_REGISTRY)
+#define BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY
 #else
-#  if defined(BOOST_OPENMETHOD_DEFAULT_REGISTRY)
-#    define BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY
-#  else
-#    define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
-#  endif
+#define BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY
+#endif
+#else
+#if defined(BOOST_OPENMETHOD_DEFAULT_REGISTRY)
+#define BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY
+#else
+#define BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
+#endif
 #endif
 
 #include <boost/openmethod/default_registry.hpp>

@@ -41,8 +41,7 @@ BOOST_SYMBOL_EXPORT const void* method_state_id() {
     return registry_state_id();
 }
 
-BOOST_SYMBOL_EXPORT void
-method_make_dog(unique_virtual_ptr<Animal>& p) {
+BOOST_SYMBOL_EXPORT void method_make_dog(unique_virtual_ptr<Animal>& p) {
     p = make_dog();
 }
 
@@ -59,5 +58,4 @@ BOOST_SYMBOL_EXPORT void method_call_meet(
     boost::openmethod::virtual_ptr<Animal> b) {
     result = meet(a, b);
 }
-
 }

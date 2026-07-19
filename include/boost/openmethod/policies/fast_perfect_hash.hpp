@@ -116,7 +116,6 @@ struct fast_perfect_hash : type_hash {
             const std::tuple<Options...>& options);
 
       public:
-
         //! Finds the hash factors
         //!
         //! Attempts to find suitable values for the multiplication factor `M`
@@ -130,9 +129,8 @@ struct fast_perfect_hash : type_hash {
         //! @param ctx A Context object.
         //! @return A pair containing the minimum and maximum hash values.
         template<class Context, class... Options>
-        static auto
-        initialize(const Context& ctx, const std::tuple<Options...>& options)
-            -> void {
+        static auto initialize(
+            const Context& ctx, const std::tuple<Options...>& options) -> void {
             if constexpr (Registry::has_runtime_checks) {
                 initialize_aux(ctx, st().control, options);
             } else {
@@ -145,8 +143,7 @@ struct fast_perfect_hash : type_hash {
         //!
         //! @return A pair containing the minimum and maximum hash values.
         static auto hash_range() -> std::pair<std::size_t, std::size_t> {
-            return std::pair{
-                st().fn.min_value, st().fn.max_value};
+            return std::pair{st().fn.min_value, st().fn.max_value};
         }
 
         //! Hash a type id
@@ -184,7 +181,6 @@ struct fast_perfect_hash : type_hash {
                 st().control.clear();
             }
         }
-
     };
 };
 
@@ -199,8 +195,8 @@ void fast_perfect_hash::fn<Registry>::initialize_aux(
 
     if constexpr (mp11::mp_contains<mp11::mp_list<Options...>, trace>::value) {
         if (std::get<trace>(options).on) {
-            Registry::output::stream() << "Finding hash factor for " << N
-                                       << " types\n";
+            Registry::output::stream()
+                << "Finding hash factor for " << N << " types\n";
         }
     }
 
@@ -254,9 +250,10 @@ void fast_perfect_hash::fn<Registry>::initialize_aux(
             }
 
             if constexpr (InitializeContext::template has_option<trace>) {
-                ctx.tr << "  found " << st().fn.mult << " after " << total_attempts
-                       << " attempts; span = [" << st().fn.min_value << ", "
-                       << st().fn.max_value << "]\n";
+                ctx.tr << "  found " << st().fn.mult << " after "
+                       << total_attempts << " attempts; span = ["
+                       << st().fn.min_value << ", " << st().fn.max_value
+                       << "]\n";
             }
 
             return;

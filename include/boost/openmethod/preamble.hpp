@@ -745,8 +745,8 @@ struct TypeHashFn {
     //! blueprint.
     //! @return A pair containing the minimum and maximum hash values.
     template<class Context>
-    static auto initialize(const Context& ctx)
-        -> std::pair<std::size_t, std::size_t>;
+    static auto
+    initialize(const Context& ctx) -> std::pair<std::size_t, std::size_t>;
 
     //! Hash a `type_id`.
     //!
@@ -894,8 +894,7 @@ struct registry_state_type {
             mp11::mp_filter<
                 has_policy_state,
                 mp11::mp_transform_q<
-                    policy_fn_q<Registry>,
-                    typename Registry::policy_list>>>>;
+                    policy_fn_q<Registry>, typename Registry::policy_list>>>>;
     policies_type policies;
 };
 

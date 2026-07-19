@@ -31,13 +31,13 @@ BOOST_OPENMETHOD(
     times, (virtual_ptr<const matrix>, virtual_ptr<const matrix>), void);
 
 BOOST_OPENMETHOD_OVERRIDE(
-    times,
-    (virtual_ptr<const matrix>, virtual_ptr<const diagonal_matrix>), void) {
+    times, (virtual_ptr<const matrix>, virtual_ptr<const diagonal_matrix>),
+    void) {
 }
 
 BOOST_OPENMETHOD_OVERRIDE(
-    times,
-    (virtual_ptr<const diagonal_matrix>, virtual_ptr<const matrix>), void) {
+    times, (virtual_ptr<const diagonal_matrix>, virtual_ptr<const matrix>),
+    void) {
 }
 
 BOOST_AUTO_TEST_CASE(bad_call_type_ids) {

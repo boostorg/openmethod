@@ -6,8 +6,8 @@
 #include <boost/openmethod/default_registry.hpp>
 
 namespace {
-constexpr std::size_t non_polymorphic_high_bit =
-    std::size_t(1) << (sizeof(std::size_t) * 8 - 1);
+constexpr std::size_t non_polymorphic_high_bit = std::size_t(1)
+    << (sizeof(std::size_t) * 8 - 1);
 
 inline std::size_t next_non_polymorphic_id() {
     static std::size_t counter = 0;
@@ -92,8 +92,7 @@ struct custom_rtti : boost::openmethod::policies::rtti {
         }
 
         template<class Stream>
-        static void type_name(
-            boost::openmethod::type_id type, Stream& stream) {
+        static void type_name(boost::openmethod::type_id type, Stream& stream) {
             static const char* name[] = {"Animal", "Dog", "Cat"};
             auto idx = reinterpret_cast<std::size_t>(type);
             stream << (idx >= 1 && idx <= 3 ? name[idx - 1] : "?");

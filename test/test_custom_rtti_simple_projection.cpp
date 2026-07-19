@@ -61,8 +61,7 @@ struct custom_rtti : boost::openmethod::policies::rtti {
         }
 
         template<class Stream>
-        static void type_name(
-            boost::openmethod::type_id type, Stream& stream) {
+        static void type_name(boost::openmethod::type_id type, Stream& stream) {
             stream
                 << (type == nullptr ? "?"
                                     : reinterpret_cast<const char*>(type));
@@ -74,8 +73,8 @@ struct custom_rtti : boost::openmethod::policies::rtti {
     };
 };
 
-struct test_registry
-    : boost::openmethod::default_registry::with<custom_rtti> {};
+struct test_registry : boost::openmethod::default_registry::with<custom_rtti> {
+};
 
 #define BOOST_OPENMETHOD_DEFAULT_REGISTRY test_registry
 

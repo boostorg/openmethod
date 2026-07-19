@@ -36,8 +36,7 @@ BOOST_SYMBOL_EXPORT const void* overrider_state_id() {
     return registry_state_id();
 }
 
-BOOST_SYMBOL_EXPORT void
-overrider_make_dog(unique_virtual_ptr<Animal>& p) {
+BOOST_SYMBOL_EXPORT void overrider_make_dog(unique_virtual_ptr<Animal>& p) {
     p = make_dog();
 }
 

@@ -12,7 +12,8 @@
 using boost::openmethod::virtual_ptr;
 
 struct Role {
-    virtual ~Role() {}
+    virtual ~Role() {
+    }
 };
 
 struct Employee : Role {
@@ -26,7 +27,8 @@ struct Manager : Employee {
 struct Founder : Role {};
 
 struct Expense {
-    virtual ~Expense() {}
+    virtual ~Expense() {
+    }
 };
 
 struct Public : Expense {};

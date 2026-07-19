@@ -64,11 +64,11 @@ struct aggregate_reports<mp11::mp_list<Reports...>, mp11::mp_list<>, Void> {
 
 #ifdef BOOST_MSVC
 #if BOOST_MSVC > 1951
-#pragma message( \
-    "boost/openmethod: this MSVC version is newer than 19.51, the last " \
-    "one confirmed to need the has_initialize/has_finalize SFINAE " \
-    "workaround below (wrong instantiation of the enclosing " \
-    "boost::openmethod::initialize function template during member-call " \
+#pragma message(                                                               \
+    "boost/openmethod: this MSVC version is newer than 19.51, the last "       \
+    "one confirmed to need the has_initialize/has_finalize SFINAE "            \
+    "workaround below (wrong instantiation of the enclosing "                  \
+    "boost::openmethod::initialize function template during member-call "      \
     "SFINAE). Check whether this compiler still has the bug.")
 #endif
 // Do not probe with a call expression (the generic
@@ -562,8 +562,8 @@ struct registry<Policies...>::compiler : detail::generic_compiler {
     static void select_dominant_overriders(
         std::vector<overrider*>& dominants, std::size_t& pick,
         std::size_t& remaining);
-    static auto is_more_specific(const overrider* a, const overrider* b)
-        -> bool;
+    static auto
+    is_more_specific(const overrider* a, const overrider* b) -> bool;
     static auto is_base(const overrider* a, const overrider* b) -> bool;
 
     std::tuple<Options...> options;
@@ -1669,9 +1669,10 @@ void registry<Policies...>::compiler<Options...>::select_dominant_overriders(
                         if (candidates[i]->covariant_return_type->is_base_of(
                                 candidates[j]->covariant_return_type)) {
                             candidates[i] = nullptr;
-                        } else if (
-                            candidates[j]->covariant_return_type->is_base_of(
-                                candidates[i]->covariant_return_type)) {
+                        } else if (candidates[j]
+                                       ->covariant_return_type->is_base_of(
+                                           candidates[i]
+                                               ->covariant_return_type)) {
                             candidates[j] = nullptr;
                         }
                     }
@@ -1844,12 +1845,12 @@ namespace detail {
 
 #ifdef BOOST_MSVC
 #if BOOST_MSVC > 1951
-#pragma message( \
-    "boost/openmethod: this MSVC version is newer than 19.51, the last " \
-    "one confirmed to need the has_initialize/has_finalize SFINAE " \
-    "workaround below (wrong instantiation of the enclosing " \
-    "boost::openmethod::finalize function template during member-call " \
-    "SFINAE). Check whether this compiler still has the bug; if not, this " \
+#pragma message(                                                               \
+    "boost/openmethod: this MSVC version is newer than 19.51, the last "       \
+    "one confirmed to need the has_initialize/has_finalize SFINAE "            \
+    "workaround below (wrong instantiation of the enclosing "                  \
+    "boost::openmethod::finalize function template during member-call "        \
+    "SFINAE). Check whether this compiler still has the bug; if not, this "    \
     "workaround (and the matching one for has_initialize) can be removed.")
 #endif
 // Same MSVC workaround as for has_initialize above: an enclosing-namespace

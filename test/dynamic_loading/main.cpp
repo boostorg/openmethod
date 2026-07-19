@@ -68,8 +68,7 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         method_lib.get<const char*(virtual_ptr<Animal>)>("method_call_speak");
     auto method_make_dog =
         method_lib.get<void(unique_virtual_ptr<Animal>&)>("method_make_dog");
-    using meet_fn =
-        void(greeting&, virtual_ptr<Animal>, virtual_ptr<Animal>);
+    using meet_fn = void(greeting&, virtual_ptr<Animal>, virtual_ptr<Animal>);
     auto method_meet = method_lib.get<meet_fn>("method_call_meet");
 
     BOOST_TEST(same_ids(registry_state_id(), method_state_id()));

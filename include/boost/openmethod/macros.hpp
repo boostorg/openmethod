@@ -90,7 +90,7 @@ inline constexpr bool method_not_found = false;
         static_assert(                                                         \
             ::boost::openmethod::detail::method_not_found<T>,                  \
             "BOOST_OPENMETHOD_OVERRIDE: cannot find '" #NAME                   \
-            "' method that accepts the same arguments as the overrider"); \
+            "' method that accepts the same arguments as the overrider");      \
     };                                                                         \
     template<typename... A>                                                    \
     struct boost_openmethod_detail_locate_method_aux<                          \

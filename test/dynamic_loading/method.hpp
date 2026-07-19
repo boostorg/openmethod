@@ -16,8 +16,7 @@ using greeting = std::pair<std::string, std::string>;
 
 // Methods are consolidated across modules at initialize() time, so they need no
 // DLL decoration of their own.
-BOOST_OPENMETHOD(
-    speak, (boost::openmethod::virtual_ptr<Animal>), const char*);
+BOOST_OPENMETHOD(speak, (boost::openmethod::virtual_ptr<Animal>), const char*);
 
 BOOST_OPENMETHOD(
     meet,

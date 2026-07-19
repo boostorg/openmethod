@@ -128,7 +128,6 @@ class vptr_map : public vptr {
         static auto finalize(const std::tuple<Options...>&) -> void {
             st().vptrs.clear();
         }
-
     };
 };
 
