@@ -2163,7 +2163,12 @@ template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
 class method<Id, ReturnType(Parameters...), Registry>
     : public detail::method_base<Registry> {
-    template<auto Function, typename FunctionType>
+    // Deliberately no default for Inline: giving it a default on only one of
+    // this template's two forward declarations in this file (the other is
+    // below, next to override_impl) is accepted by gcc but rejected by clang
+    // ("too few template arguments"), so every use spells out all three
+    // arguments explicitly instead.
+    template<auto Function, typename FunctionType, bool Inline>
     struct override_aux;
 
     // Aliases used in implementation only. Everything extracted from template
@@ -2271,7 +2276,36 @@ class method<Id, ReturnType(Parameters...), Registry>
         boost::mp11::mp_apply<
             detail::tuple,
             boost::mp11::mp_unique<
-                boost::mp11::mp_list<override_aux<Fn, decltype(Fn)>...>>>
+                boost::mp11::mp_list<override_aux<Fn, decltype(Fn), false>...>>>
+            impl;
+    };
+
+    // Like override, but marks every overrider_info registered here as
+    // inline_ = true (see overrider_info in preamble.hpp), making it
+    // eligible for cross-module dedup during augment_methods()
+    // consolidation - used by BOOST_OPENMETHOD_INLINE_OVERRIDE. Only an
+    // overrider defined `inline` can legally have an identical definition
+    // appear in more than one translation unit/module, which is why plain
+    // `override` (above) never sets this.
+    //
+    // inline_ must be baked in as the `Inline` non-type template parameter
+    // of override_aux/override_impl (below), not passed as a runtime
+    // constructor argument to this class: override_aux::impl is a static
+    // template data member whose dynamic initialization is not guaranteed to
+    // happen before this class's own constructor body runs (taking its
+    // address, `(void)&impl;` in override_aux's constructor, does not force
+    // immediate construction) - a runtime assignment made here could run
+    // *before* override_impl's constructor, which would then overwrite it
+    // via its implicit default-construction of the overrider_info base.
+    // Setting it inside override_impl's own constructor, alongside method,
+    // pf, etc., is the only point guaranteed to run exactly once, at the
+    // right time.
+    template<auto... Fn>
+    class inline_override {
+        boost::mp11::mp_apply<
+            detail::tuple,
+            boost::mp11::mp_unique<
+                boost::mp11::mp_list<override_aux<Fn, decltype(Fn), true>...>>>
             impl;
     };
 
@@ -2348,7 +2382,7 @@ class method<Id, ReturnType(Parameters...), Registry>
             Registry>;
     };
 
-    template<auto Function, typename FnReturnType>
+    template<auto Function, typename FnReturnType, bool Inline = false>
     struct override_impl
         : std::conditional_t<
               Registry::has_deferred_static_rtti,
@@ -2359,16 +2393,18 @@ class method<Id, ReturnType(Parameters...), Registry>
         static type_id vp_type_ids[Arity];
     };
 
-    template<auto Function, typename FunctionType>
+    template<auto Function, typename FunctionType, bool Inline>
     struct override_aux;
 
-    template<auto Function, typename FnReturnType, typename... FnParameters>
-    struct override_aux<Function, FnReturnType (*)(FnParameters...)> {
+    template<
+        auto Function, typename FnReturnType, typename... FnParameters,
+        bool Inline>
+    struct override_aux<Function, FnReturnType (*)(FnParameters...), Inline> {
         override_aux() {
             (void)&impl;
         }
 
-        static override_impl<Function, FnReturnType> impl;
+        static override_impl<Function, FnReturnType, Inline> impl;
     };
 };
 
@@ -2385,17 +2421,19 @@ method<Id, ReturnType(Parameters...), Registry>
 
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
-template<auto Function, typename FnReturnType>
+template<auto Function, typename FnReturnType, bool Inline>
 type_id method<Id, ReturnType(Parameters...), Registry>::override_impl<
-    Function, FnReturnType>::vp_type_ids[Arity];
+    Function, FnReturnType, Inline>::vp_type_ids[Arity];
 
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
-template<auto Function, typename FnReturnType, typename... FnParameters>
+template<
+    auto Function, typename FnReturnType, typename... FnParameters,
+    bool Inline>
 typename method<Id, ReturnType(Parameters...), Registry>::
-    template override_impl<Function, FnReturnType>
+    template override_impl<Function, FnReturnType, Inline>
         method<Id, ReturnType(Parameters...), Registry>::override_aux<
-            Function, FnReturnType (*)(FnParameters...)>::impl;
+            Function, FnReturnType (*)(FnParameters...), Inline>::impl;
 
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
@@ -2738,9 +2776,9 @@ auto method<Id, ReturnType(Parameters...), Registry>::
 
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
-template<auto Function, typename FnReturnType>
+template<auto Function, typename FnReturnType, bool Inline>
 method<Id, ReturnType(Parameters...), Registry>::override_impl<
-    Function, FnReturnType>::override_impl(FunctionPointer* p_next) {
+    Function, FnReturnType, Inline>::override_impl(FunctionPointer* p_next) {
     using namespace detail;
 
     // static variable this->method below is zero-initialized but gcc and clang
@@ -2773,6 +2811,12 @@ method<Id, ReturnType(Parameters...), Registry>::override_impl<
 #endif
 
     overrider_info::method = &method::fn;
+    // Baked in as a template parameter (not a runtime constructor argument):
+    // this static object's dynamic initialization is not guaranteed to
+    // happen at any particular point relative to other code (see class
+    // override/inline_override in this file), so Inline must be known here,
+    // at the one place this object's fields are set exactly once.
+    overrider_info::inline_ = Inline;
 
     if constexpr (!Registry::has_deferred_static_rtti) {
         resolve_type_ids();
@@ -2792,9 +2836,9 @@ method<Id, ReturnType(Parameters...), Registry>::override_impl<
 
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
-template<auto Function, typename FnReturnType>
+template<auto Function, typename FnReturnType, bool Inline>
 void method<Id, ReturnType(Parameters...), Registry>::override_impl<
-    Function, FnReturnType>::resolve_type_ids() {
+    Function, FnReturnType, Inline>::resolve_type_ids() {
     using namespace detail;
 
     this->return_type = Registry::rtti::template static_type<

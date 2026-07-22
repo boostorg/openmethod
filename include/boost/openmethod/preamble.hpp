@@ -363,6 +363,15 @@ struct overrider_info : static_list<overrider_info>::static_link {
     void (**next)();
     type_id *vp_begin, *vp_end;
     void (*pf)();
+    // Set by BOOST_OPENMETHOD_INLINE_OVERRIDE (see the Inline template
+    // parameter of override_impl/override_aux and class inline_override in
+    // core.hpp). Only an overrider defined `inline` can legally have an
+    // identical definition appear in more than one translation unit/module
+    // (ODR requires it for a non-template, non-inline function to be defined
+    // exactly once in the program), so augment_methods()'s cross-module
+    // dedup only ever merges two overrider_info entries when both have
+    // inline_ == true.
+    bool inline_ = false;
 };
 
 struct deferred_overrider_info : overrider_info {

@@ -961,28 +961,31 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         }
 
         // Collect overriders from every module copy of this method, deduping
-        // by *logical* identity rather than pointer identity - but only
-        // across DIFFERENT modules. The same overrider, defined in a header
-        // and registered by two or more state-sharing modules (e.g. an exe
-        // and a DLL), appears once per module as a distinct overrider_info
-        // object - different address, and a different `pf` (each module
-        // compiles its own copy of the function) - but they share the same
-        // function type id and the same virtual-parameter type ids. Keeping
-        // every copy would make each dispatch cell they fill ambiguous,
-        // because is_more_specific() reports "not more specific" both ways
-        // for identical vp lists.
+        // by *logical* identity rather than pointer identity - but only for
+        // overriders declared inline_. The same overrider, defined in a
+        // header and registered by two or more state-sharing modules (e.g.
+        // an exe and a DLL), appears once per module as a distinct
+        // overrider_info object - different address, and a different `pf`
+        // (each module compiles its own copy of the function) - but they
+        // share the same function type id and the same virtual-parameter
+        // type ids. Keeping every copy would make each dispatch cell they
+        // fill ambiguous, because is_more_specific() reports "not more
+        // specific" both ways for identical vp lists.
         //
-        // Two overriders registered within the SAME module, however, are
-        // always genuinely distinct - the registration mechanism guarantees
-        // it (BOOST_OPENMETHOD_OVERRIDE keys one explicit specialization per
-        // signature, so writing it twice in one module is a redefinition
-        // error; method<...>::override<Fn> is keyed on the Fn non-type
-        // template argument, so two different functions with the same
-        // signature are two different registrations) - so same-module
-        // entries must never be merged with each other, even if they
-        // happen to share a signature: that is a genuine ambiguity, not a
-        // duplicate. Only compare each module's specs against specs already
-        // collected from EARLIER modules to enforce this.
+        // A NON-inline overrider with the same signature must never be
+        // merged, even if it happens to match: BOOST_OPENMETHOD_OVERRIDE
+        // (non-inline) keys one explicit specialization per signature, so
+        // writing it twice in one translation unit is a redefinition error,
+        // and defining it identically in more than one TU (as required for
+        // it to appear "duplicated" in the first place) is an ODR violation
+        // for a non-inline function - i.e. the situation this dedup exists
+        // to handle can only arise legitimately for `inline` overriders (see
+        // BOOST_OPENMETHOD_INLINE_OVERRIDE, which is the only thing that
+        // sets overrider_info::inline_ = true). Two DIFFERENT overriders
+        // sharing a signature (e.g. registered directly via
+        // method<...>::override<Fn1> and method<...>::override<Fn2>, both
+        // non-inline by default) are always genuinely distinct and must
+        // remain ambiguous.
         std::vector<detail::overrider_info*> all_specs;
         std::size_t module_index = 0;
 
@@ -990,10 +993,12 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
             indent _(tr);
             ++tr << "module " << module_index++ << "\n";
 
-            auto earlier_modules_count = all_specs.size();
-
             for (auto& spec : info->overriders) {
                 auto same = [&](const detail::overrider_info* kept) {
+                    if (!kept->inline_ || !spec.inline_) {
+                        return false;
+                    }
+
                     if (rtti::type_index(kept->type) !=
                         rtti::type_index(spec.type)) {
                         return false;
@@ -1015,9 +1020,7 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
                     return true;
                 };
 
-                if (std::none_of(
-                        all_specs.begin(),
-                        all_specs.begin() + earlier_modules_count, same)) {
+                if (std::none_of(all_specs.begin(), all_specs.end(), same)) {
                     all_specs.push_back(&spec);
                 }
             }
