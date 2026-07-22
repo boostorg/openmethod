@@ -7,23 +7,25 @@
 #define BOOST_OPENMETHOD_TEST_HELPERS_HPP
 
 #include <iostream>
+#include <string>
 
+#include <boost/mp11/list.hpp>
 #include <boost/openmethod/core.hpp>
 #include <boost/openmethod/initialize.hpp>
 
-template<typename Key>
-struct unique final {
-    using category = unique;
+struct unique_category {
+    using category = unique_category;
+};
+
+template<int>
+struct unique final : unique_category {
     template<class Registry>
     struct fn {};
 };
 
 template<int N, class... Policies>
-struct test_registry_ : boost::openmethod::default_registry::with<
-                            unique<test_registry_<N>>, Policies...> {
-    using registry_type = boost::openmethod::default_registry::with<
-        unique<test_registry_<N>>, Policies...>;
-};
+struct test_registry_
+    : boost::openmethod::default_registry::with<unique<N>, Policies...> {};
 
 #define TEST_NS BOOST_PP_CAT(test, __COUNTER__)
 
@@ -49,6 +51,77 @@ struct string_pair : std::pair<std::string, std::string> {
 inline std::ostream& operator<<(std::ostream& os, const string_pair& pair) {
     return os << "(" << pair.first << ", " << pair.second << ")";
 }
+
+namespace animals {
+
+struct Animal {
+    explicit Animal(std::string str) {
+        name = std::move(str);
+    }
+
+    Animal(const Animal&) = delete;
+
+    Animal(Animal&&) = default;
+
+    virtual ~Animal() {
+    }
+
+    std::string name;
+};
+
+struct Property {
+    std::string owner = "Bill";
+};
+
+struct Dog : Property, Animal {
+    using Animal::Animal;
+};
+
+struct Cat : Property, virtual Animal {
+    using Animal::Animal;
+};
+
+} // namespace animals
+
+namespace game {
+
+struct Player {
+    virtual ~Player() {
+    }
+};
+
+struct Warrior : Player {};
+struct Wizard : Player {};
+
+struct Bear : Player {};
+
+struct Object {
+    virtual ~Object() {
+    }
+};
+
+struct Axe : Object {};
+
+template<class VirtualBearPtr>
+auto poke_bear(VirtualBearPtr) {
+    return std::string("growl");
+}
+
+template<class VirtualWarriorPtr, class VirtualAxePtr, class VirtualBearPtr>
+auto fight_bear(VirtualWarriorPtr, VirtualAxePtr, VirtualBearPtr) {
+    return "kill bear";
+}
+
+template<int N>
+struct indirect_test_registry
+    : test_registry_<N>::template with<
+          boost::openmethod::policies::indirect_vptr> {};
+
+template<int N>
+using policy_types =
+    boost::mp11::mp_list<test_registry_<N>, indirect_test_registry<N>>;
+
+} // namespace game
 
 namespace test_matrices {
 

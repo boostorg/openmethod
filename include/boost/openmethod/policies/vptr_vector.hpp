@@ -8,20 +8,11 @@
 
 #include <boost/openmethod/preamble.hpp>
 
+#include <tuple>
 #include <variant>
 #include <vector>
 
 namespace boost::openmethod {
-
-namespace detail {
-
-template<class Registry>
-inline std::vector<vptr_type> vptr_vector_vptrs;
-
-template<class Registry>
-inline std::vector<const vptr_type*> vptr_vector_indirect_vptrs;
-
-} // namespace detail
 
 namespace policies {
 
@@ -52,6 +43,39 @@ struct vptr_vector : vptr {
             typename Registry::template policy<policies::type_hash>;
         static constexpr auto has_type_hash = !std::is_same_v<type_hash, void>;
 
+        // vptr_vector::initialize reads the type_hash policy's state, so that
+        // policy must have been initialized first, i.e. must appear before
+        // vptr_vector in the registry's policy_list (policies are initialized
+        // left to right; see detail::initialize_policies). type_hash aliases
+        // the policy's fn<Registry>, so locate the policy itself in the list.
+        static_assert(
+            !has_type_hash ||
+                boost::mp11::mp_find<
+                    typename Registry::policy_list,
+                    detail::find_first_derived_of<
+                        policies::type_hash,
+                        typename Registry::policy_list>>::value <
+                    boost::mp11::mp_find<
+                        typename Registry::policy_list,
+                        detail::find_first_derived_of<
+                            vptr_vector,
+                            typename Registry::policy_list>>::value,
+            "the type_hash policy must appear before vptr_vector in the "
+            "registry's policy_list");
+
+      public:
+        //! The policy's state: the vector of v-table pointers. Held in the
+        //! registry's shared state (see @ref registry_state).
+        struct state {
+            //! The v-table pointers (pointers to v-table pointers if
+            //! `Registry` contains the @ref indirect_vptr policy), indexed by
+            //! (possibly hashed) type ids.
+            std::conditional_t<
+                Registry::has_indirect_vptr, std::vector<const vptr_type*>,
+                std::vector<vptr_type>>
+                vptrs;
+        };
+
         //! Stores the v-table pointers.
         //!
         //! If `Registry` contains a @ref type_hash policy, its `initialize`
@@ -69,7 +93,7 @@ struct vptr_vector : vptr {
             (void)options;
 
             if constexpr (has_type_hash) {
-                auto [_, max_value] = type_hash::initialize(ctx, options);
+                auto [_, max_value] = type_hash::hash_range();
                 size = max_value + 1;
             } else {
                 size = 0;
@@ -85,11 +109,7 @@ struct vptr_vector : vptr {
                 ++size;
             }
 
-            if constexpr (Registry::has_indirect_vptr) {
-                detail::vptr_vector_indirect_vptrs<Registry>.resize(size);
-            } else {
-                detail::vptr_vector_vptrs<Registry>.resize(size);
-            }
+            st().vptrs.resize(size);
 
             for (auto iter = ctx.classes_begin(); iter != ctx.classes_end();
                  ++iter) {
@@ -104,11 +124,9 @@ struct vptr_vector : vptr {
                     }
 
                     if constexpr (Registry::has_indirect_vptr) {
-                        detail::vptr_vector_indirect_vptrs<Registry>[index] =
-                            &iter->vptr();
+                        st().vptrs[index] = &iter->vptr();
                     } else {
-                        detail::vptr_vector_vptrs<Registry>[index] =
-                            iter->vptr();
+                        st().vptrs[index] = iter->vptr();
                     }
                 }
             }
@@ -141,14 +159,7 @@ struct vptr_vector : vptr {
                 index = std::size_t(dynamic_type);
 
                 if constexpr (Registry::has_runtime_checks) {
-                    std::size_t max_index = 0;
-
-                    if constexpr (Registry::has_indirect_vptr) {
-                        max_index =
-                            detail::vptr_vector_indirect_vptrs<Registry>.size();
-                    } else {
-                        max_index = detail::vptr_vector_vptrs<Registry>.size();
-                    }
+                    std::size_t max_index = st().vptrs.size();
 
                     if (index >= max_index) {
                         if constexpr (Registry::has_error_handler) {
@@ -163,9 +174,9 @@ struct vptr_vector : vptr {
             }
 
             if constexpr (Registry::has_indirect_vptr) {
-                return *detail::vptr_vector_indirect_vptrs<Registry>[index];
+                return *st().vptrs[index];
             } else {
-                return detail::vptr_vector_vptrs<Registry>[index];
+                return st().vptrs[index];
             }
         }
 
@@ -176,13 +187,12 @@ struct vptr_vector : vptr {
         //! @param options Zero or more option objects.
         template<class... Options>
         static auto finalize(const std::tuple<Options...>&) -> void {
-            using namespace policies;
+            st().vptrs.clear();
+        }
 
-            if constexpr (Registry::has_indirect_vptr) {
-                detail::vptr_vector_indirect_vptrs<Registry>.clear();
-            } else {
-                detail::vptr_vector_vptrs<Registry>.clear();
-            }
+      private:
+        static auto& st() {
+            return Registry::template state<vptr_vector>();
         }
     };
 };

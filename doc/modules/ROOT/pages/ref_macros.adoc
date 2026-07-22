@@ -43,4 +43,12 @@ The following macros are for advanced uses of the library.
 | Expands to core `method` specialization.
 | xref:BOOST_OPENMETHOD_REGISTER.adoc[BOOST_OPENMETHOD_REGISTER]
 | Creates a registrar object.
+| xref:BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY.adoc[BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY]
+| Exports the state of `default_registry` from the module that owns it.
+| xref:BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY.adoc[BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY]
+| Imports the state of `default_registry` from the module that owns it.
+| xref:BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY.adoc[BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY]
+| Exports the state of `indirect_registry` from the module that owns it.
+| xref:BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY.adoc[BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY]
+| Imports the state of `indirect_registry` from the module that owns it.
 |===

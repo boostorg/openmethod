@@ -43,8 +43,6 @@ struct ostderr : ostdstream {
     }
 };
 
-inline ostdstream cerr;
-
 inline auto operator<<(ostdstream& os, const char* str) -> ostdstream& {
     if (os.stream) {
         fputs(str, os.stream);

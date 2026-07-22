@@ -10,6 +10,9 @@
 
 #include <limits>
 #include <random>
+#include <tuple>
+#include <type_traits>
+#include <variant>
 #ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4702) // unreachable code
@@ -30,8 +33,16 @@ using uintptr = std::size_t;
 constexpr uintptr uintptr_max = (std::numeric_limits<std::size_t>::max)();
 #endif
 
-template<class Registry>
-std::vector<type_id> fast_perfect_hash_control;
+struct hash_fn {
+    std::size_t mult;
+    std::size_t shift;
+    std::size_t min_value;
+    std::size_t max_value;
+
+    auto operator()(type_id type) const -> std::size_t {
+        return (mult * reinterpret_cast<uintptr>(type)) >> shift;
+    }
+};
 
 } // namespace detail
 
@@ -68,25 +79,44 @@ struct fast_perfect_hash : type_hash {
 
     using errors = std::variant<search_error>;
 
+    //! `state` layout when runtime checks are disabled.
+    struct no_checks {
+        detail::hash_fn fn;
+    };
+
+    //! `state` layout when runtime checks are enabled: adds the table of
+    //! registered type ids used to validate hashed types.
+    struct with_checks : no_checks {
+        std::vector<type_id> control;
+    };
+
     //! A TypeHashFn metafunction.
     //!
     //! @tparam Registry The registry containing this policy
     template<class Registry>
     class fn {
-        static std::size_t mult;
-        static std::size_t shift;
-        static std::size_t min_value;
-        static std::size_t max_value;
+      public:
+        //! The policy's state: the hash factors (@ref no_checks), plus the
+        //! control table if the registry has runtime checks enabled (@ref
+        //! with_checks). Held in the registry's shared state (see @ref
+        //! registry_state).
+        using state = std::conditional_t<
+            Registry::has_runtime_checks, with_checks, no_checks>;
+
+      private:
+        static auto& st() {
+            return Registry::template state<fast_perfect_hash>();
+        }
 
         static void check(std::size_t index, type_id type);
 
         template<class InitializeContext, class... Options>
-        static void initialize(
+        static void initialize_aux(
             const InitializeContext& ctx, std::vector<type_id>& buckets,
             const std::tuple<Options...>& options);
 
       public:
-        //! Find the hash factors
+        //! Finds the hash factors
         //!
         //! Attempts to find suitable values for the multiplication factor `M`
         //! and the shift amount `S` to that do not result in collisions for the
@@ -97,19 +127,26 @@ struct fast_perfect_hash : type_hash {
         //!
         //! @tparam Context An @ref InitializeContext.
         //! @param ctx A Context object.
-        //! @return A pair containing the minimum and maximum hash values.
+        //! @param options A tuple of option objects.
+        //!
+        //! Use @ref hash_range to retrieve the minimum and maximum hash
+        //! values after calling this function.
         template<class Context, class... Options>
-        static auto
-        initialize(const Context& ctx, const std::tuple<Options...>& options) {
+        static auto initialize(
+            const Context& ctx, const std::tuple<Options...>& options) -> void {
             if constexpr (Registry::has_runtime_checks) {
-                initialize(
-                    ctx, detail::fast_perfect_hash_control<Registry>, options);
+                initialize_aux(ctx, st().control, options);
             } else {
                 std::vector<type_id> buckets;
-                initialize(ctx, buckets, options);
+                initialize_aux(ctx, buckets, options);
             }
+        }
 
-            return std::pair{min_value, max_value};
+        //! Returns the hash range
+        //!
+        //! @return A pair containing the minimum and maximum hash values.
+        static auto hash_range() -> std::pair<std::size_t, std::size_t> {
+            return std::pair{st().fn.min_value, st().fn.max_value};
         }
 
         //! Hash a type id
@@ -127,8 +164,7 @@ struct fast_perfect_hash : type_hash {
         //! @return The hash value
         BOOST_FORCEINLINE
         static auto hash(type_id type) -> std::size_t {
-            auto index =
-                (mult * reinterpret_cast<detail::uintptr>(type)) >> shift;
+            auto index = st().fn(type);
 
             if constexpr (Registry::has_runtime_checks) {
                 check(index, type);
@@ -144,26 +180,16 @@ struct fast_perfect_hash : type_hash {
         //! @param options Zero or more option objects.
         template<class... Options>
         static auto finalize(const std::tuple<Options...>&) -> void {
-            detail::fast_perfect_hash_control<Registry>.clear();
+            if constexpr (Registry::has_runtime_checks) {
+                st().control.clear();
+            }
         }
     };
 };
 
 template<class Registry>
-std::size_t fast_perfect_hash::fn<Registry>::mult;
-
-template<class Registry>
-std::size_t fast_perfect_hash::fn<Registry>::shift;
-
-template<class Registry>
-std::size_t fast_perfect_hash::fn<Registry>::min_value;
-
-template<class Registry>
-std::size_t fast_perfect_hash::fn<Registry>::max_value;
-
-template<class Registry>
 template<class InitializeContext, class... Options>
-void fast_perfect_hash::fn<Registry>::initialize(
+void fast_perfect_hash::fn<Registry>::initialize_aux(
     const InitializeContext& ctx, std::vector<type_id>& buckets,
     const std::tuple<Options...>& options) {
     (void)options;
@@ -171,7 +197,10 @@ void fast_perfect_hash::fn<Registry>::initialize(
     const auto N = std::distance(ctx.classes_begin(), ctx.classes_end());
 
     if constexpr (mp11::mp_contains<mp11::mp_list<Options...>, trace>::value) {
-        Registry::output::os << "Finding hash factor for " << N << " types\n";
+        if (std::get<trace>(options).on) {
+            Registry::output::stream()
+                << "Finding hash factor for " << N << " types\n";
+        }
     }
 
     std::default_random_engine rnd(13081963);
@@ -184,11 +213,9 @@ void fast_perfect_hash::fn<Registry>::initialize(
 
     std::uniform_int_distribution<std::size_t> uniform_dist;
 
-    for (std::size_t pass = 0; pass < 4; ++pass, ++M) {
-        shift = 8 * sizeof(type_id) - M;
+    for (std::size_t pass = 0; pass < 5; ++pass, ++M) {
+        st().fn.shift = 8 * sizeof(type_id) - M;
         auto hash_size = 1 << M;
-        min_value = (std::numeric_limits<std::size_t>::max)();
-        max_value = (std::numeric_limits<std::size_t>::min)();
 
         if constexpr (InitializeContext::template has_option<trace>) {
             ctx.tr << "  trying with M = " << M << ", " << hash_size
@@ -198,35 +225,53 @@ void fast_perfect_hash::fn<Registry>::initialize(
         std::size_t attempts = 0;
         buckets.resize(hash_size);
 
-        while (attempts < 100000) {
+        while (attempts < 100'000) {
             std::fill(
                 buckets.begin(), buckets.end(), type_id(detail::uintptr_max));
             ++attempts;
             ++total_attempts;
-            mult = uniform_dist(rnd) | 1;
+            st().fn.mult = uniform_dist(rnd) | 1;
+            // Reset per attempt, not just per pass: a failed attempt (a
+            // collision partway through, below) has already narrowed these
+            // for the type ids it did place, and a fresh `mult` produces an
+            // unrelated distribution - carrying over stale min/max would
+            // contaminate hash_range() and oversize the vptr vector
+            // (vptr_vector sizes itself off max_value).
+            st().fn.min_value = (std::numeric_limits<std::size_t>::max)();
+            st().fn.max_value = (std::numeric_limits<std::size_t>::min)();
 
             for (auto iter = ctx.classes_begin(); iter != ctx.classes_end();
                  ++iter) {
                 for (auto type_iter = iter->type_id_begin();
                      type_iter != iter->type_id_end(); ++type_iter) {
                     auto type = *type_iter;
-                    auto index = (detail::uintptr(type) * mult) >> shift;
-                    min_value = (std::min)(min_value, index);
-                    max_value = (std::max)(max_value, index);
+                    auto index = st().fn(type);
 
+                    // A class can now have more than one class_info entry
+                    // for the same type_id (see augment_classes() in
+                    // initialize.hpp: one per module, kept distinct because
+                    // their static_vptr differs under hidden visibility).
+                    // Re-inserting the *same* type_id into the *same*
+                    // (deterministic) slot is not a real collision - only a
+                    // different type_id landing on an already-occupied slot
+                    // is.
                     if (detail::uintptr(buckets[index]) !=
-                        detail::uintptr_max) {
+                            detail::uintptr_max &&
+                        buckets[index] != type) {
                         goto collision;
                     }
 
+                    st().fn.min_value = (std::min)(st().fn.min_value, index);
+                    st().fn.max_value = (std::max)(st().fn.max_value, index);
                     buckets[index] = type;
                 }
             }
 
             if constexpr (InitializeContext::template has_option<trace>) {
-                ctx.tr << "  found " << mult << " after " << total_attempts
-                       << " attempts; span = [" << min_value << ", "
-                       << max_value << "]\n";
+                ctx.tr << "  found " << st().fn.mult << " after "
+                       << total_attempts << " attempts; span = ["
+                       << st().fn.min_value << ", " << st().fn.max_value
+                       << "]\n";
             }
 
             return;
@@ -248,8 +293,8 @@ void fast_perfect_hash::fn<Registry>::initialize(
 
 template<class Registry>
 void fast_perfect_hash::fn<Registry>::check(std::size_t index, type_id type) {
-    if (index < min_value || index > max_value ||
-        detail::fast_perfect_hash_control<Registry>[index] != type) {
+    if (index < st().fn.min_value || index > st().fn.max_value ||
+        st().control[index] != type) {
 
         if constexpr (Registry::has_error_handler) {
             missing_class error;
@@ -263,8 +308,8 @@ void fast_perfect_hash::fn<Registry>::check(std::size_t index, type_id type) {
 
 template<class Registry, class Stream>
 auto fast_perfect_hash::search_error::write(Stream& os) const -> void {
-    os << "could not find hash factors after " << attempts << "s using "
-       << buckets << " buckets\n";
+    os << "could not find hash factors after " << attempts
+       << " attempts using up to " << buckets << " buckets\n";
 }
 
 } // namespace policies

@@ -7,88 +7,91 @@ message(STATUS "Boost.OpenMethod: building shared library examples")
 
 add_compile_definitions(BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS)
 
-# All targets output to the same directory so that executables can locate shared
-# libraries via boost::dll::program_location().parent_path().
-set(shared_libs_output_dir "${CMAKE_CURRENT_BINARY_DIR}")
-
-# Helper: add a CTest fixture that builds a CMake target, so that `ctest` alone
-# (without a prior `cmake --build`) still works.
-function(openmethod_shared_libs_build_fixture target)
-    add_test(NAME ${target}-build
-        COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}"
-                --target ${target} --config $<CONFIG>)
-    set_tests_properties(${target}-build PROPERTIES FIXTURES_SETUP ${target}-fixture)
-endfunction()
-
 # ------------------------------------------------------------------------------
 # static linking
 
-add_library(boost_openmethod-shared SHARED extensions.cpp)
-target_link_libraries(boost_openmethod-shared Boost::openmethod)
-set_target_properties(boost_openmethod-shared PROPERTIES
-    ENABLE_EXPORTS ON
-    OUTPUT_NAME shared
-    LIBRARY_OUTPUT_DIRECTORY "${shared_libs_output_dir}"
-    RUNTIME_OUTPUT_DIRECTORY "${shared_libs_output_dir}"
-)
+# The shared library owns the registry state (static_extensions.cpp defines
+# BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY); the executable imports it. This
+# keeps the link dependency in the usual direction on Windows: the exe links
+# the library's import library.
+add_library(boost_openmethod-static_shared SHARED static_extensions.cpp)
+target_link_libraries(boost_openmethod-static_shared PRIVATE Boost::openmethod)
 
 add_executable(boost_openmethod-static static_main.cpp)
-target_link_libraries(boost_openmethod-static Boost::openmethod Boost::dll boost_openmethod-shared)
-set_target_properties(boost_openmethod-static PROPERTIES
-    RUNTIME_OUTPUT_DIRECTORY "${shared_libs_output_dir}"
-)
-openmethod_shared_libs_build_fixture(boost_openmethod-static)
-add_test(NAME boost_openmethod-static
-    COMMAND "${shared_libs_output_dir}/boost_openmethod-static")
-set_tests_properties(boost_openmethod-static PROPERTIES
-    FIXTURES_REQUIRED boost_openmethod-static-fixture)
+target_link_libraries(boost_openmethod-static
+    PRIVATE Boost::openmethod boost_openmethod-static_shared)
+# Co-locate the library with the exe so it is found at run time on Windows,
+# where there is no rpath.
+set_target_properties(boost_openmethod-static_shared PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:boost_openmethod-static>
+    RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:boost_openmethod-static>)
+
+add_test(NAME boost_openmethod-static COMMAND boost_openmethod-static)
 
 # ------------------------------------------------------------------------------
 # dynamic loading, direct virtual_ptrs
 
+# The executable owns the registry state (dynamic_main.cpp defines
+# BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY); the runtime-loaded library imports
+# it, so it links against the exe - the reverse of the usual direction. On
+# Windows this needs the exe's import library, generated because of
+# ENABLE_EXPORTS; on other platforms ENABLE_EXPORTS adds -rdynamic (or
+# equivalent).
 add_executable(boost_openmethod-dynamic dynamic_main.cpp)
-set_target_properties(boost_openmethod-dynamic PROPERTIES
-    ENABLE_EXPORTS ON
-    RUNTIME_OUTPUT_DIRECTORY "${shared_libs_output_dir}"
-)
+set_target_properties(boost_openmethod-dynamic PROPERTIES ENABLE_EXPORTS ON)
 target_link_libraries(boost_openmethod-dynamic Boost::openmethod Boost::dll)
-add_dependencies(boost_openmethod-dynamic boost_openmethod-shared)
-if (NOT WIN32)
-    openmethod_shared_libs_build_fixture(boost_openmethod-shared)
-    openmethod_shared_libs_build_fixture(boost_openmethod-dynamic)
-    add_test(NAME boost_openmethod-dynamic
-        COMMAND "${shared_libs_output_dir}/boost_openmethod-dynamic")
-    set_tests_properties(boost_openmethod-dynamic PROPERTIES
-        FIXTURES_REQUIRED "boost_openmethod-shared-fixture;boost_openmethod-dynamic-fixture")
-endif()
+
+add_library(boost_openmethod-shared SHARED extensions.cpp)
+target_link_libraries(boost_openmethod-shared PRIVATE Boost::openmethod boost_openmethod-dynamic)
+# Co-locate the library with the exe on all platforms. On Windows a DLL is a
+# runtime output and already lands next to the exe, but on other platforms a
+# shared library is a *library* output and would stay in this subdirectory,
+# where the test below cannot find it.
+set_target_properties(boost_openmethod-shared PROPERTIES
+    ENABLE_EXPORTS ON
+    LIBRARY_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:boost_openmethod-dynamic>)
+
+# Run from the directory holding the freshly-built exe and its co-located DLL
+# (CMAKE_RUNTIME_OUTPUT_DIRECTORY). dynamic_main.cpp loads the DLL by relative
+# name, which boost::dll resolves against the working directory; without this
+# the test would pick up a stale copy from the source/binary tree.
+add_test(
+    NAME boost_openmethod-dynamic_shared
+    COMMAND boost_openmethod-dynamic
+    WORKING_DIRECTORY $<TARGET_FILE_DIR:boost_openmethod-dynamic>)
 
 # ------------------------------------------------------------------------------
 # dynamic loading, indirect virtual_ptrs
 
-add_library(boost_openmethod-indirect_shared SHARED indirect_extensions.cpp)
-target_compile_definitions(
-    boost_openmethod-indirect_shared PUBLIC BOOST_OPENMETHOD_DEFAULT_REGISTRY=indirect_registry)
-target_link_libraries(boost_openmethod-indirect_shared PRIVATE Boost::openmethod Boost::dll)
-set_target_properties(boost_openmethod-indirect_shared PROPERTIES
-    ENABLE_EXPORTS ON
-    OUTPUT_NAME indirect_shared
-    LIBRARY_OUTPUT_DIRECTORY "${shared_libs_output_dir}"
-    RUNTIME_OUTPUT_DIRECTORY "${shared_libs_output_dir}"
-)
-
+# Same layout as the previous example, with every target compiled with
+# indirect_registry as the default registry. indirect_main.cpp and
+# indirect_extensions.cpp use the BOOST_OPENMETHOD_{EXPORT,IMPORT}_INDIRECT_REGISTRY
+# macro pair accordingly.
 add_executable(boost_openmethod-indirect indirect_main.cpp)
-target_compile_definitions(
-    boost_openmethod-indirect PUBLIC BOOST_OPENMETHOD_DEFAULT_REGISTRY=indirect_registry)
-set_target_properties(boost_openmethod-indirect PROPERTIES
-    ENABLE_EXPORTS ON
-    RUNTIME_OUTPUT_DIRECTORY "${shared_libs_output_dir}"
-)
+target_compile_definitions(boost_openmethod-indirect
+    PRIVATE BOOST_OPENMETHOD_DEFAULT_REGISTRY=indirect_registry)
+set_target_properties(boost_openmethod-indirect PROPERTIES ENABLE_EXPORTS ON)
 target_link_libraries(boost_openmethod-indirect PRIVATE Boost::openmethod Boost::dll)
-add_dependencies(boost_openmethod-indirect boost_openmethod-indirect_shared)
-if (NOT WIN32)
-    openmethod_shared_libs_build_fixture(boost_openmethod-indirect)
-    add_test(NAME boost_openmethod-indirect
-        COMMAND "${shared_libs_output_dir}/boost_openmethod-indirect")
-    set_tests_properties(boost_openmethod-indirect PROPERTIES
-        FIXTURES_REQUIRED boost_openmethod-indirect-fixture)
-endif()
+
+add_library(boost_openmethod-indirect_shared SHARED indirect_extensions.cpp)
+target_compile_definitions(boost_openmethod-indirect_shared
+    PRIVATE BOOST_OPENMETHOD_DEFAULT_REGISTRY=indirect_registry)
+target_link_libraries(boost_openmethod-indirect_shared
+    PRIVATE Boost::openmethod boost_openmethod-indirect)
+set_target_properties(boost_openmethod-indirect_shared PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:boost_openmethod-indirect>
+    RUNTIME_OUTPUT_DIRECTORY $<TARGET_FILE_DIR:boost_openmethod-indirect>)
+
+add_test(
+    NAME boost_openmethod-indirect
+    COMMAND boost_openmethod-indirect
+    WORKING_DIRECTORY $<TARGET_FILE_DIR:boost_openmethod-indirect>)
+
+# NOTE: build the following target (or ALL) when working on this. Just building
+# the executables will *not* build the runtime-loaded libraries.
+add_custom_target(boost_openmethod-shared-all ALL
+    DEPENDS
+        boost_openmethod-static boost_openmethod-static_shared
+        boost_openmethod-dynamic boost_openmethod-shared
+        boost_openmethod-indirect boost_openmethod-indirect_shared
+)

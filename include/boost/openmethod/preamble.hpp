@@ -3,20 +3,30 @@
 
 #include <boost/openmethod/detail/static_list.hpp>
 
+#include <boost/config.hpp>
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/bind.hpp>
+#include <boost/mp11/utility.hpp>
+#include <boost/preprocessor/cat.hpp>
 
 #include <stdlib.h>
 #include <vector>
 #include <cstdint>
 #include <string_view>
+#include <tuple>
 
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable : 4702)
+// 4702: unreachable code. 4251: registry_state<R>::st (dll-exported) has type
+// registry_state_type<R>, which intentionally has no dll-interface; benign for
+// a static member, which is not part of object layout.
+#pragma warning(disable : 4702 4251)
 #endif
 
 namespace boost::openmethod {
+
+// -----------------------------------------------------------------------------
+// word
 
 namespace detail {
 
@@ -37,6 +47,9 @@ union word {
 
 } // namespace detail
 
+// -----------------------------------------------------------------------------
+// public aliases
+
 //! Alias to v-table pointer type.
 //!
 //! `vptr_type` is an alias to the type of a v-table pointer.
@@ -48,6 +61,9 @@ using vptr_type = const detail::word*;
 //! functions. It can be used as an actual data pointer (e.g. to a
 //! `std::type_info` object), or as an opaque integer type.
 using type_id = const void*;
+
+// -----------------------------------------------------------------------------
+// virtual types and traits
 
 //! Decorator for virtual parameters.
 //!
@@ -70,7 +86,7 @@ struct virtual_;
 template<typename T, class Registry>
 struct virtual_traits;
 
-// -----------------------------------------------------------------------------
+// =============================================================================
 // Error handling
 
 //! Base class for all OpenMethod errors.
@@ -96,7 +112,7 @@ struct odr_violation : openmethod_error {
 namespace detail {
 
 template<class Registry>
-struct odr_check {
+struct BOOST_SYMBOL_VISIBLE odr_check {
     static std::size_t count;
     template<class R>
     static std::size_t inc;
@@ -284,23 +300,8 @@ struct final_error : openmethod_error {
 
 namespace detail {
 
-struct empty {};
-
-template<typename Iterator>
-struct range {
-    range(Iterator first, Iterator last) : first(first), last(last) {
-    }
-
-    Iterator first, last;
-
-    auto begin() const -> Iterator {
-        return first;
-    }
-
-    auto end() const -> Iterator {
-        return last;
-    }
-};
+// =============================================================================
+// generic registrars
 
 // -----------------------------------------------------------------------------
 // class info
@@ -311,8 +312,8 @@ struct class_info : static_list<class_info>::static_link {
     type_id *first_base, *last_base;
     bool is_abstract{false};
 
-    auto vptr() const {
-        return static_vptr;
+    auto vptr() const -> const vptr_type& {
+        return *static_vptr;
     }
 
     auto type_id_begin() const {
@@ -363,17 +364,31 @@ struct overrider_info : static_list<overrider_info>::static_link {
     void (**next)();
     type_id *vp_begin, *vp_end;
     void (*pf)();
+    // Set by BOOST_OPENMETHOD_INLINE_OVERRIDE (see the Inline template
+    // parameter of override_impl/override_aux and class inline_override in
+    // core.hpp). Only an overrider defined `inline` can legally have an
+    // identical definition appear in more than one translation unit/module
+    // (ODR requires it for a non-template, non-inline function to be defined
+    // exactly once in the program), so augment_methods()'s cross-module
+    // dedup only ever merges two overrider_info entries when both have
+    // inline_ == true.
+    bool inline_ = false;
 };
 
 struct deferred_overrider_info : overrider_info {
     virtual void resolve_type_ids() = 0;
 };
 
-struct unspecified {};
-
 } // namespace detail
 
+// =============================================================================
+// initialize options
+
 #ifdef __MRDOCS__
+
+namespace detail {
+struct unspecified {};
+} // namespace detail
 
 //! Blueprint for a lightweight output stream (exposition only).
 //!
@@ -395,6 +410,9 @@ struct LightweightOutputStream {
 
 #endif
 
+// -----------------------------------------------------------------------------
+// n2216
+
 //! N2216 ambiguity resolution.
 //!
 //! If `n2216` is present in @ref initialize\'s `Options`, additional steps are
@@ -411,6 +429,9 @@ struct LightweightOutputStream {
 //!   but remains the same throughtout the program, and across different runs of
 //!   the same program.
 struct n2216 {};
+
+// -----------------------------------------------------------------------------
+// trace
 
 //! Enable `initialize` tracing.
 //!
@@ -451,6 +472,9 @@ inline trace trace::from_env() {
     return trace(env && *env++ == '1' && *env++ == 0);
 #endif
 }
+
+// =============================================================================
+// policies
 
 //! Namespace for policies.
 //!
@@ -562,6 +586,9 @@ struct RttiFn {
 
 #endif
 
+// -----------------------------------------------------------------------------
+// rtti
+
 //! Policy for manipulating type information.
 //!
 //! `rtti` policies are responsible for type information acquisition and dynamic
@@ -570,8 +597,8 @@ struct RttiFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `rtti`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref RttiFn
+//! @li derive from @c rtti.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref RttiFn
 //! blueprint.
 struct rtti {
     // Policy category.
@@ -601,6 +628,9 @@ struct rtti {
     };
 };
 
+// -----------------------------------------------------------------------------
+// deferred rtti
+
 //! Policy for deferred type id collection.
 //!
 //! Some custom RTTI systems rely on static constructors to assign type ids.
@@ -609,6 +639,9 @@ struct rtti {
 //! rtti policy from this class - instead of just `rtti` - causes the collection
 //! of type ids to be deferred until the first call to @ref update.
 struct deferred_static_rtti : rtti {};
+
+// -----------------------------------------------------------------------------
+// error handler
 
 #ifdef __MRDOCS__
 //! Blueprint for @ref error_handler metafunctions (exposition only).
@@ -631,13 +664,16 @@ struct ErrorHandlerFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `error_handler`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref
+//! @li derive from @c error_handler.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref
 //! ErrorHandlerFn blueprint.
 struct error_handler {
     // Policy category.
     using category = error_handler;
 };
+
+// -----------------------------------------------------------------------------
+// vptr
 
 #ifdef __MRDOCS__
 
@@ -653,8 +689,14 @@ struct VptrFn {
     //!
     //! @tparam Context A class that conforms to the @ref InitializeContext
     //! blueprint.
-    template<class Context>
-    static auto initialize(const Context& ctx) -> void;
+    //! @tparam Options... Zero or more option types, deduced from the
+    //! function arguments.
+    //! @param ctx A Context object.
+    //! @param options A tuple of option objects.
+    template<class Context, class... Options>
+    static auto
+    initialize(const Context& ctx, const std::tuple<Options...>& options)
+        -> void;
 
     //! Return a *reference* to a v-table pointer for an object.
     //!
@@ -682,8 +724,8 @@ struct VptrFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `vptr`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref
+//! @li derive from @c vptr.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref
 //! VptrFn blueprint.
 struct vptr {
     // Policy category.
@@ -704,6 +746,9 @@ struct indirect_vptr final {
     struct fn {};
 };
 
+// -----------------------------------------------------------------------------
+// type_hash
+
 #ifdef __MRDOCS__
 //! Blueprint for @ref type_hash metafunctions (exposition only).
 //!
@@ -714,10 +759,24 @@ struct TypeHashFn {
     //!
     //! @tparam Context A class that conforms to the @ref InitializeContext
     //! blueprint.
-    //! @return A pair containing the minimum and maximum hash values.
-    template<class Context>
+    //! @tparam Options... Zero or more option types, deduced from the
+    //! function arguments.
+    //! @param ctx A Context object.
+    //! @param options A tuple of option objects.
+    //!
+    //! Use @ref hash_range to retrieve the minimum and maximum hash values
+    //! after calling this function.
+    template<class Context, class... Options>
     static auto
-    initialize(const Context& ctx) -> std::pair<std::size_t, std::size_t>;
+    initialize(const Context& ctx, const std::tuple<Options...>& options)
+        -> void;
+
+    //! Return the range of hash values produced by @ref hash.
+    //!
+    //! Only valid after a call to @ref initialize.
+    //!
+    //! @return A pair containing the minimum and maximum hash values.
+    static auto hash_range() -> std::pair<std::size_t, std::size_t>;
 
     //! Hash a `type_id`.
     //!
@@ -742,8 +801,8 @@ struct TypeHashFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `rtti`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref
+//! @li derive from @c type_hash.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref
 //! TypeHashFn blueprint.
 struct type_hash {
     // Policy category.
@@ -763,6 +822,9 @@ struct OutputFn {
 
 #endif
 
+// -----------------------------------------------------------------------------
+// output
+
 //! Policy for writing diagnostics and trace.
 //!
 //! If an `output` policy is present, the default error handler uses it to write
@@ -772,13 +834,16 @@ struct OutputFn {
 //! @par Requirements
 //!
 //! Classes implementing this policy must:
-//! @li derive from `output`.
-//! @li provide a `fn<Registry>` metafunction that conforms to the @ref
+//! @li derive from @c output.
+//! @li provide a @c fn<Registry> metafunction that conforms to the @ref
 //! OutputFn blueprint.
 struct output {
     // Policy category.
     using category = output;
 };
+
+// -----------------------------------------------------------------------------
+// runtime_checks
 
 //! Policy for post-initialize runtime checks.
 //!
@@ -795,9 +860,83 @@ struct runtime_checks final {
 
 } // namespace policies
 
+// -----------------------------------------------------------------------------
+// registry and policy helpers
+
 namespace detail {
 
 struct registry_base {};
+
+// A minimal tuple. Unlike std::tuple (very expensive to instantiate with
+// MSVC), it has no converting constructors, no comparisons, and no EBO
+// machinery. It is used as a plain holder of heterogeneous objects
+// (policy states, registrars), which are always default-constructed; `get`
+// retrieves an element by type. Elements are held in base classes, so element
+// types must be unique - lists that may contain duplicates are passed through
+// mp_unique first.
+//
+// Measured (MSVC 19.51.36248, /Bt+ front-end time, synthetic
+// BOOST_OPENMETHOD_CLASSES lists): ~11% less compile time at 40 classes
+// (2.68s -> 2.39s, avg of 3 runs), ~7% at 100 classes (10.99s -> 10.22s).
+// This is a constant-factor win that widens with list size, not a fix for
+// superlinear blowups; on this library's own test suite (2-5 classes per
+// list) the effect is within noise.
+template<class T>
+struct tuple_element {
+    T element;
+};
+
+template<class... Ts>
+struct tuple : tuple_element<Ts>... {};
+
+template<class T, class... Ts>
+auto get(tuple<Ts...>& t) -> T& {
+    return static_cast<tuple_element<T>&>(t).element;
+}
+
+// Extracts ::state from T.
+template<class T>
+using policy_state_t = typename T::state;
+
+// Detects whether T has a nested ::state type.
+template<class T>
+using has_policy_state = mp11::mp_valid<policy_state_t, T>;
+
+// Quoted metafunction: maps a policy type P to P::template fn<Registry>.
+template<class Registry>
+struct policy_fn_q {
+    template<class P>
+    using fn = typename P::template fn<Registry>;
+};
+
+template<class Registry>
+struct registry_state_type {
+    static_list<class_info> classes;
+    static_list<method_info> methods;
+    bool initialized;
+    std::vector<word> dispatch_data;
+    // The per-policy `state` objects are held in a detail::tuple, whose
+    // element types must be unique (each is a distinct base class). If two
+    // stateful policies resolve to the same `state` type, raw instantiation
+    // fails with a cryptic "duplicate base type ... invalid" pointing into
+    // library internals. Diagnose it here instead. Do NOT mp_unique this
+    // list to "fix" the error: that would silently alias the two policies
+    // onto one shared state object.
+    using policy_state_list = mp11::mp_transform<
+        policy_state_t,
+        mp11::mp_filter<
+            has_policy_state,
+            mp11::mp_transform_q<
+                policy_fn_q<Registry>, typename Registry::policy_list>>>;
+    static_assert(
+        mp11::mp_size<policy_state_list>::value ==
+            mp11::mp_size<mp11::mp_unique<policy_state_list>>::value,
+        "two or more stateful policies in this registry share the same "
+        "nested `state` type; each stateful policy must define its own "
+        "distinct `state` type (give each its own nested struct)");
+    using policies_type = mp11::mp_apply<detail::tuple, policy_state_list>;
+    policies_type policies;
+};
 
 template<typename T>
 constexpr bool is_registry = std::is_base_of_v<registry_base, T>;
@@ -805,21 +944,34 @@ constexpr bool is_registry = std::is_base_of_v<registry_base, T>;
 template<typename T>
 constexpr bool is_not_void = !std::is_same_v<T, void>;
 
-template<
-    class Registry, class Index,
-    class Size = mp11::mp_size<typename Registry::policy_list>>
-struct get_policy_aux {
-    using type = typename mp11::mp_at<
-        typename Registry::policy_list, Index>::template fn<Registry>;
+template<class Base, class List, typename Default>
+struct find_first_derived_of_aux;
+
+template<class Base, class List, typename Default = void>
+using find_first_derived_of =
+    typename find_first_derived_of_aux<Base, List, Default>::type;
+
+template<class Base, typename Default>
+struct find_first_derived_of_aux<Base, mp11::mp_list<>, Default> {
+    using type = Default;
 };
 
-template<class Registry, class Size>
-struct get_policy_aux<Registry, Size, Size> {
+template<class Base, typename Default, typename First, typename... More>
+struct find_first_derived_of_aux<Base, mp11::mp_list<First, More...>, Default> {
+    using type = std::conditional_t<
+        std::is_base_of_v<Base, First>, First,
+        find_first_derived_of<Base, mp11::mp_list<More...>, Default>>;
+};
+
+template<class Registry, class Policy>
+struct get_policy_aux {
+    using type = typename Policy::template fn<Registry>;
+};
+
+template<class Registry>
+struct get_policy_aux<Registry, void> {
     using type = void;
 };
-
-using class_catalog = detail::static_list<detail::class_info>;
-using method_catalog = detail::static_list<detail::method_info>;
 
 template<class Policies, class...>
 struct with_aux;
@@ -869,6 +1021,61 @@ struct initialize_aux;
 
 } // namespace detail
 
+#define BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(FN)                              \
+    template<typename, class, class...>                                        \
+    struct BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux)) : std::false_type {};    \
+    template<class T, class... Args>                                           \
+    struct BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux))<                         \
+        std::void_t<decltype(T::FN(std::declval<Args>()...))>, T, Args...>     \
+        : std::true_type {};                                                   \
+    template<class T, class... Args>                                           \
+    constexpr bool BOOST_PP_CAT(has_, FN) =                                    \
+        BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux))<void, T, Args...>::value
+
+//! The single shared instance of a registry's state.
+//!
+//! `registry_state` is a thin, function-free class whose only member, `st`,
+//! holds all of a registry's mutable state (of type @ref
+//! detail::registry_state_type). Reach it through `Registry::state()`.
+//!
+//! It is deliberately a *separate* one-member class, rather than
+//! `registry_state_type` itself, because sharing the state across a DLL
+//! boundary on Windows requires exporting and importing a *whole class*:
+//!
+//! @li MSVC honors @c __declspec(dllexport/dllimport) on a class explicit
+//!   instantiation, but NOT on a variable template (clients silently get a
+//!   private copy) nor on a static-data-member instantiation (error C2720).
+//!   So the exported symbol must be a class member reached via whole-class
+//!   instantiation.
+//! @li dllexporting @c registry_state_type directly would also decorate its
+//!   member functions and, transitively, the policies' nested @c state types,
+//!   which MSVC rejects (error C2513).
+//!
+//! A one-member, function-free class is the only shape MSVC will export as a
+//! whole and import via `extern template`. See default_registry.hpp for the
+//! per-registry instantiations.
+//!
+//! For the predefined registries, the export/import pair is emitted by the
+//! {{BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY}} /
+//! {{BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY}} macros (and the analogous
+//! `INDIRECT` pair for @ref indirect_registry). For a custom registry, write
+//! the pair yourself, after the registry's definition:
+//! @code
+//! // in exactly one translation unit of the owning module:
+//! template struct BOOST_SYMBOL_EXPORT
+//!     boost::openmethod::registry_state<my_registry::registry_type>;
+//! // in every client translation unit:
+//! extern template struct BOOST_SYMBOL_IMPORT
+//!     boost::openmethod::registry_state<my_registry::registry_type>;
+//! @endcode
+template<class Registry>
+struct registry_state {
+    static detail::registry_state_type<Registry> st;
+};
+
+template<class Registry>
+detail::registry_state_type<Registry> registry_state<Registry>::st;
+
 //! Methods, classes and policies.
 //!
 //! Methods exist in the context of a registry. Any class used as a method or
@@ -912,28 +1119,93 @@ struct initialize_aux;
 //!
 //! @par Requirements
 //!
-//! @li `Policy` must contain a `category` alias to its root base class. The
+//! @li @c Policy must contain a @c category alias to its root base class. The
 //! registry may contain at most one policy per category.
 //!
-//! @li `Policy` must contain a `fn<Registry>` metafunction.
+//! @li @c Policy must contain a @c fn<Registry> metafunction.
 //!
 //! @see @ref policies
 template<class... Policy>
-class registry : detail::registry_base {
-    static detail::class_catalog classes;
-    static detail::method_catalog methods;
+class registry : public detail::registry_base {
 
+  public:
+    //! List of policies selected in a registry.
+    //!
+    //! `policy_list` is a Boost.Mp11 list containing the policies passed to the
+    //! @ref registry clas template.
+    //!
+    //! @tparam Class A registered class.
+    using policy_list = mp11::mp_list<Policy...>;
+
+    //! Find a policy by category.
+    //!
+    //! `policy` searches for a policy that derives from the specified @ref
+    //! Category. If none is found, it aliases to `void`. Otherwise, it aliases
+    //! to the policy's `fn` metafunction, applied to the registry.
+    //!
+    //! @tparam A policy.
+    template<class Category>
+    using policy = typename detail::get_policy_aux<
+        registry, detail::find_first_derived_of<Category, policy_list>>::type;
+
+  private:
     template<class...>
     friend struct detail::use_class_aux;
     template<typename Name, typename ReturnType, class Registry>
     friend class method;
 
-    static std::vector<detail::word> dispatch_data;
-    static bool initialized;
+    using static_ = registry_state<registry>;
 
   public:
     //! The type of this registry.
+    //!
+    //! `registry_type` is the `registry` specialization itself - for a
+    //! registry defined as a struct deriving from `registry` (like @ref
+    //! default_registry), the base class, not the struct. It is the type on
+    //! which the registry's state is keyed. It appears in the explicit
+    //! instantiation / `extern template` declaration pair that shares a
+    //! custom registry's state across shared libraries:
+    //! `registry_state<my_registry::registry_type>` (see @ref
+    //! registry_state).
     using registry_type = registry;
+
+    //! Return the registry's mutable state.
+    //!
+    //! Everything mutable in a registry - the class and method registration
+    //! lists, the dispatch tables, and the state of every stateful policy -
+    //! is agglomerated in a single variable,
+    //! `registry_state<registry_type>::st`. `state` returns a reference to
+    //! it.
+    //!
+    //! Modules (executables and shared libraries) contributing to the same
+    //! registry must share this one variable; see @ref registry_state and
+    //! {{BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY}}.
+    static auto& state() {
+        return static_::st;
+    }
+
+    //! Return a policy's state.
+    //!
+    //! Returns a reference to the `P::fn<registry_type>::state` object held
+    //! in the registry's state. This is how stateful policies access their
+    //! data members: policies do not keep their own global variables.
+    //!
+    //! @tparam P A stateful policy of this registry, i.e. one whose
+    //! `fn<Registry>` contains a nested `state` type.
+    template<class P>
+    static auto& state() {
+        return detail::get<typename P::template fn<registry>::state>(
+            static_::st.policies);
+    }
+
+    //! Return an address identifying the registry's state.
+    //!
+    //! The address is the same in all the modules of a program if, and only
+    //! if, they share the registry's state. Useful for diagnosing shared
+    //! library setups.
+    static const void* id() {
+        return static_cast<const void*>(&static_::st.classes);
+    }
 
     template<class... Options>
     struct compiler;
@@ -959,30 +1231,7 @@ class registry : detail::registry_base {
     //!
     //! @tparam Class A registered class.
     template<class Class>
-    static vptr_type static_vptr;
-
-    //! List of policies selected in a registry.
-    //!
-    //! `policy_list` is a Boost.Mp11 list containing the policies passed to the
-    //! @ref registry clas template.
-    //!
-    //! @tparam Class A registered class.
-    using policy_list = mp11::mp_list<Policy...>;
-
-    //! Find a policy by category.
-    //!
-    //! `policy` searches for a policy that derives from the specified @ref
-    //! Category. If none is found, it aliases to `void`. Otherwise, it aliases
-    //! to the policy's `fn` metafunction, applied to the registry.
-    //!
-    //! @tparam A policy.
-    template<class Category>
-    using policy = typename detail::get_policy_aux<
-        registry,
-        mp11::mp_find_if_q<
-            policy_list,
-            mp11::mp_bind_front_q<
-                mp11::mp_quote_trait<std::is_base_of>, Category>>>::type;
+    inline static vptr_type static_vptr;
 
     //! Add or replace policies.
     //!
@@ -1041,25 +1290,9 @@ class registry : detail::registry_base {
 };
 
 template<class... Policies>
-detail::class_catalog registry<Policies...>::classes;
-
-template<class... Policies>
-detail::method_catalog registry<Policies...>::methods;
-
-template<class... Policies>
-std::vector<detail::word> registry<Policies...>::dispatch_data;
-
-template<class... Policies>
-bool registry<Policies...>::initialized;
-
-template<class... Policies>
-template<class Class>
-vptr_type registry<Policies...>::static_vptr;
-
-template<class... Policies>
 void registry<Policies...>::require_initialized() {
     if constexpr (registry::has_runtime_checks) {
-        if (!initialized) {
+        if (!static_::st.initialized) {
             if constexpr (registry::has_error_handler) {
                 error_handler::error(not_initialized());
             }
@@ -1091,6 +1324,7 @@ auto final_error::write(Stream& os) const {
     Registry::rtti::type_name(dynamic_type, os);
 }
 
+struct default_registry;
 } // namespace boost::openmethod
 
 #ifdef _MSC_VER

@@ -1,0 +1,150 @@
+// Copyright (c) 2018-2025 Jean-Louis Leroy
+// Distributed under the Boost Software License, Version 1.0.
+// See accompanying file LICENSE_1_0.txt
+// or copy at http://www.boost.org/LICENSE_1_0.txt)
+
+#define BOOST_TEST_MODULE dynamic_loading
+#include <boost/test/unit_test.hpp>
+
+#define INCLUDED_FROM "main.cpp"
+
+// When the build asks for the executable to own the registry state
+// (REGISTRY_IN_EXE), this module exports it and the shared libraries import it.
+#if defined(REGISTRY_IN_EXE)
+#define EXPORT_REGISTRY
+#endif
+
+#include "registry.hpp"
+#include "method.hpp"
+
+#include <boost/openmethod/initialize.hpp>
+#include <boost/dll/shared_library.hpp>
+#include <boost/dll/runtime_symbol_info.hpp>
+#include <boost/filesystem.hpp>
+
+#include <iomanip>
+#include <stdexcept>
+
+using namespace boost::openmethod;
+
+using state_id_fn = const void*();
+
+BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
+
+boost::filesystem::path
+find_lib(const boost::filesystem::path& dir, const char* name_fragment) {
+    for (auto entry : boost::filesystem::directory_iterator(dir)) {
+        auto fname = entry.path().filename().string();
+        if (fname.find(name_fragment) != std::string::npos) {
+            return entry.path();
+        }
+    }
+    throw std::runtime_error(std::string("lib not found: ") + name_fragment);
+}
+
+bool same_ids(const void* id1, const void* id2) {
+    BOOST_TEST_MESSAGE(
+        std::setw(60) << "registry state" << ": " << id1 << " " << id2);
+
+    return id1 == id2;
+}
+
+BOOST_AUTO_TEST_CASE(test_shared_state) {
+    namespace dll = boost::dll;
+
+    // Load all three shared libraries via Boost.DLL.
+    // Use rtld_global for registry and method so their symbols (fn, policy
+    // statics) are visible globally and win over any locally-instantiated
+    // copies when the overrider library is subsequently loaded.
+
+    constexpr auto load_mode = dll::load_mode::rtld_global;
+
+    auto search_dir = boost::dll::program_location().parent_path();
+    BOOST_TEST_MESSAGE("search_dir: " << search_dir);
+    auto method_path = find_lib(search_dir, "test_method");
+    dll::shared_library method_lib(method_path, load_mode);
+    auto method_state_id = method_lib.get<state_id_fn>("method_state_id");
+    auto method_speak =
+        method_lib.get<const char*(virtual_ptr<Animal>)>("method_call_speak");
+    auto method_make_dog =
+        method_lib.get<void(unique_virtual_ptr<Animal>&)>("method_make_dog");
+    using meet_fn = void(greeting&, virtual_ptr<Animal>, virtual_ptr<Animal>);
+    auto method_meet = method_lib.get<meet_fn>("method_call_meet");
+
+    BOOST_TEST(same_ids(registry_state_id(), method_state_id()));
+
+    initialize();
+
+    auto main_dog = make_dog();
+    unique_virtual_ptr<Animal> method_dog;
+    method_make_dog(method_dog);
+    BOOST_TEST(main_dog.vptr() == method_dog.vptr());
+#if defined(_WIN32) || defined(__CYGWIN__)
+    {
+        Animal* p1 = main_dog.get();
+        Animal* p2 = method_dog.get();
+        BOOST_TEST(&typeid(*p1) != &typeid(*p2));
+    }
+#endif
+    BOOST_TEST(method_speak(main_dog) == "?");
+    BOOST_TEST(method_speak(method_dog) == "?");
+    {
+        // Only the Animal,Animal overrider is registered, so it has no next.
+        greeting r;
+        method_meet(r, main_dog, method_dog);
+        BOOST_TEST(r.first == "ignore");
+        BOOST_TEST(r.second == "n/a");
+    }
+
+    dll::shared_library overrider_lib(
+        find_lib(search_dir, "test_overrider"), load_mode);
+    auto overrider_state_id =
+        overrider_lib.get<state_id_fn>("overrider_state_id");
+    auto overrider_speak = overrider_lib.get<const char*(virtual_ptr<Animal>)>(
+        "overrider_call_speak");
+    auto overrider_make_dog =
+        overrider_lib.get<void(unique_virtual_ptr<Animal>&)>(
+            "overrider_make_dog");
+    auto overrider_meet = overrider_lib.get<meet_fn>("overrider_call_meet");
+
+    BOOST_TEST(same_ids(registry_state_id(), overrider_state_id()));
+
+    initialize();
+    unique_virtual_ptr<Animal> overrider_dog;
+    overrider_make_dog(overrider_dog);
+    main_dog = make_dog(); // because its vptr was invalidated by initialize()
+    method_make_dog(method_dog); // ditto
+    BOOST_TEST(main_dog.vptr() == overrider_dog.vptr());
+    BOOST_TEST(std::string(overrider_speak(main_dog)) == "woof");
+    BOOST_TEST(std::string(overrider_speak(method_dog)) == "woof");
+    BOOST_TEST(std::string(overrider_speak(overrider_dog)) == "woof");
+    {
+        // Both args are dogs, so the dynamically-loaded Dog,Dog overrider runs;
+        // its next() resolves to the Animal,Animal overrider in method.cpp,
+        // across the DSO boundary, through the multi-dispatch table.
+        greeting r;
+        overrider_meet(r, main_dog, overrider_dog);
+        BOOST_TEST(r.first == "wag tails");
+        BOOST_TEST(r.second == "ignore");
+    }
+    {
+        greeting r;
+        method_meet(r, main_dog, overrider_dog);
+        BOOST_TEST(r.first == "wag tails");
+        BOOST_TEST(r.second == "ignore");
+    }
+    {
+        // Regression check for cross-module overrider dedup (see
+        // shared_overrider.hpp): the Cat overrider is registered identically
+        // by lib_method and lib_overrider. Without deduping by logical
+        // identity, initialize() would have marked this slot ambiguous and
+        // aborted before reaching this point. This also exercises the
+        // class-dedup fix in augment_classes(): Cat is registered by every
+        // module (registry, method, overrider, exe), so a dropped
+        // class_info would leave one of those modules' static_vptr<Cat>
+        // null, crashing make_cat() or the dispatch below.
+        auto cat = make_cat();
+        BOOST_TEST(std::string(method_speak(cat)) == "meow");
+        BOOST_TEST(std::string(overrider_speak(cat)) == "meow");
+    }
+}

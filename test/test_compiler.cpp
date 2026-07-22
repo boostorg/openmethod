@@ -22,7 +22,7 @@ using overrider = detail::generic_compiler::overrider;
 
 auto operator<<(std::ostream& os, const class_* cls) -> std::ostream& {
     return os
-        << reinterpret_cast<const std::type_info*>(cls->type_ids[0])->name();
+        << reinterpret_cast<const std::type_info*>(cls->ci[0]->type)->name();
 }
 
 std::string empty = "{}";
@@ -430,4 +430,67 @@ BOOST_AUTO_TEST_CASE(test_assign_slots_a1_c1_b1) {
     BOOST_TEST(check(comp[m_B])->slots[0] == 2u);
     BOOST_TEST(get_class<B>(comp)->first_slot == 2u);
     BOOST_TEST(get_class<B>(comp)->vtbl.size() == 1u);
+}
+
+// ============================================================================
+// Test finalize.
+
+BOOST_AUTO_TEST_CASE(test_finalize_clears_vptr_vector) {
+    using test_registry = test_registry_<__COUNTER__>;
+
+    struct A {
+        virtual ~A() = default;
+    };
+    struct B : A {};
+
+    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, test_registry>);
+    (void)method<A, auto(virtual_<A&>)->void, test_registry>::fn;
+
+    initialize<test_registry>();
+
+    auto& vptrs = test_registry::state<policies::vptr_vector>().vptrs;
+    BOOST_TEST(!vptrs.empty());
+
+    // The vptr policy provides a finalize() (portable across MSVC/non-MSVC).
+    static_assert(detail::has_finalize<
+                  test_registry::policy<policies::vptr>, const std::tuple<>&>);
+
+    finalize<test_registry>();
+    BOOST_TEST(vptrs.empty()); // finalize cleared the vector
+}
+
+BOOST_AUTO_TEST_CASE(test_registries_do_not_share_vptr_state) {
+    // Two distinct registries, both using vptr_vector, must each have their own
+    // vptr_vector state; they do not share it.
+    using registry1 = test_registry_<__COUNTER__>;
+    using registry2 = test_registry_<__COUNTER__>;
+
+    static_assert(!std::is_same_v<registry1, registry2>);
+
+    struct A {
+        virtual ~A() = default;
+    };
+    struct B : A {};
+
+    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, registry1>);
+    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, registry2>);
+    (void)method<A, auto(virtual_<A&>)->void, registry1>::fn;
+    (void)method<A, auto(virtual_<A&>)->void, registry2>::fn;
+
+    initialize<registry1>();
+    initialize<registry2>();
+
+    auto& vptrs1 = registry1::state<policies::vptr_vector>().vptrs;
+    auto& vptrs2 = registry2::state<policies::vptr_vector>().vptrs;
+
+    // Distinct state objects.
+    BOOST_TEST(
+        static_cast<const void*>(&vptrs1) != static_cast<const void*>(&vptrs2));
+
+    // Independent: clearing one registry's state leaves the other intact.
+    BOOST_TEST(!vptrs1.empty());
+    BOOST_TEST(!vptrs2.empty());
+    finalize<registry1>();
+    BOOST_TEST(vptrs1.empty());
+    BOOST_TEST(!vptrs2.empty());
 }

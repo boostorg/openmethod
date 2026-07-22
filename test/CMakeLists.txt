@@ -37,7 +37,7 @@ if (BOOST_OPENMETHOD_WARNINGS_AS_ERRORS)
             set(BOOST_OPENMETHOD_TEST_FLAGS "-Wall -Werror")
         endif()
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC" OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT MATCHES "MSVC")
-        set(BOOST_OPENMETHOD_TEST_FLAGS "/W4 /WX /we4265 /wd4251")
+        set(BOOST_OPENMETHOD_TEST_FLAGS "/W4 /WX /we4265")
     endif()
 
     # Print test configuration if running in CI
@@ -53,6 +53,33 @@ if (BOOST_OPENMETHOD_WARNINGS_AS_ERRORS)
     endif()
 endif()
 
+function(boost_openmethod_add_test name)
+    add_test(NAME ${name} COMMAND ${name})
+    if (WIN32)
+        set_property(
+            TEST ${name}
+            PROPERTY ENVIRONMENT_MODIFICATION
+                "PATH=path_list_prepend:$<TARGET_FILE_DIR:Boost::unit_test_framework>")
+    endif()
+endfunction()
+
+# Precompiled headers: most test_*.cpp files just #include <boost/openmethod.hpp>
+# (and friends) before anything else, so a shared PCH avoids re-parsing that
+# (large, mp11-heavy) header once per test executable. A handful of files
+# instead define their own registry and #define BOOST_OPENMETHOD_DEFAULT_REGISTRY
+# *before* the first inclusion of core.hpp (directly or via boost/openmethod.hpp);
+# force-including a PCH that already pulled in core.hpp would defeat that
+# override, so those files are detected (by scanning for the macro) and left
+# without a PCH.
+set(BOOST_OPENMETHOD_TEST_PCH_HEADERS
+    <boost/openmethod.hpp>
+    <boost/openmethod/initialize.hpp>
+    <boost/openmethod/interop/std_shared_ptr.hpp>
+    <boost/openmethod/interop/std_unique_ptr.hpp>
+)
+
+set(boost_openmethod_pch_owner "")
+
 file(GLOB test_cpp_files "test_*.cpp")
 
 foreach(test_cpp ${test_cpp_files})
@@ -60,13 +87,25 @@ foreach(test_cpp ${test_cpp_files})
     set(test_target "boost_openmethod-${test}")
     add_executable(${test_target} EXCLUDE_FROM_ALL ${test_cpp})
     target_link_libraries(${test_target} PRIVATE Boost::openmethod Boost::unit_test_framework)
-    add_test(NAME ${test_target} COMMAND ${test_target})
+    boost_openmethod_add_test(${test_target})
     add_dependencies(tests ${test_target})
+
+    file(READ ${test_cpp} test_cpp_contents)
+    string(FIND "${test_cpp_contents}" "BOOST_OPENMETHOD_DEFAULT_REGISTRY" test_cpp_overrides_registry)
+
+    if (test_cpp_overrides_registry EQUAL -1)
+        if (NOT boost_openmethod_pch_owner)
+            target_precompile_headers(${test_target} PRIVATE ${BOOST_OPENMETHOD_TEST_PCH_HEADERS})
+            set(boost_openmethod_pch_owner ${test_target})
+        else()
+            target_precompile_headers(${test_target} REUSE_FROM ${boost_openmethod_pch_owner})
+        endif()
+    endif()
 endforeach()
 
 add_executable(boost_openmethod-test_mix_release_debug EXCLUDE_FROM_ALL mix_release_debug/main.cpp mix_release_debug/lib.cpp)
 target_link_libraries(boost_openmethod-test_mix_release_debug PRIVATE Boost::openmethod Boost::unit_test_framework)
-add_test(NAME boost_openmethod-test_mix_release_debug COMMAND boost_openmethod-test_mix_release_debug)
+boost_openmethod_add_test(boost_openmethod-test_mix_release_debug)
 add_dependencies(tests boost_openmethod-test_mix_release_debug)
 
 function(openmethod_compile_fail_test testname fail_regex)
@@ -77,6 +116,18 @@ function(openmethod_compile_fail_test testname fail_regex)
         NAME "${test_target}"
         COMMAND "${CMAKE_COMMAND}" --build ${CMAKE_BINARY_DIR} --target "${test_target}" --config $<CONFIG>)
     set_property(TEST "${test_target}" PROPERTY PASS_REGULAR_EXPRESSION "${fail_regex}")
+    # Each of these tests runs `cmake --build` on the shared build tree. With
+    # the Visual Studio generator, concurrent MSBuild invocations race on shared
+    # files (every MSBuild invocation rewrites ZERO_CHECK.tlog/
+    # ZERO_CHECK.lastbuildstate, and the losers abort with MSB3491 before
+    # compiling anything, so the expected diagnostic never appears in the
+    # output). Serialize the compile-fail tests among themselves in that case;
+    # they still run in parallel with the ordinary tests, which do not touch the
+    # build tree. Other generators (Ninja, Makefiles) tolerate concurrent
+    # `cmake --build` invocations, so leave those free to run in parallel.
+    if (CMAKE_GENERATOR MATCHES "Visual Studio")
+        set_property(TEST "${test_target}" PROPERTY RESOURCE_LOCK openmethod_compile_fail)
+    endif()
 endfunction()
 
 openmethod_compile_fail_test(
@@ -104,3 +155,7 @@ openmethod_compile_fail_test(
     compile_fail_repeated_inheritance "repeated inheritance")
 openmethod_compile_fail_test(
     compile_fail_override_method_not_found "cannot find 'speak' method that accepts the same arguments as the overrider")
+
+if (TARGET Boost::dll)
+    add_subdirectory(dynamic_loading)
+endif()

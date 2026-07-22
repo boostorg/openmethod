@@ -47,21 +47,36 @@ struct custom_rtti : boost::openmethod::policies::deferred_static_rtti {
 
         using type_id = boost::openmethod::type_id; // for brevity
 
+        // Types outside the Node hierarchy (e.g. the method<...> class
+        // itself, used internally as the key for cross-module method
+        // consolidation) are not polymorphic and have no `static_type`
+        // member. They still each need a *distinct* id: a shared constant
+        // would make initialize() merge unrelated methods together. The
+        // address of a per-T static gives every non-polymorphic T its own
+        // id, at no runtime cost.
+        template<typename T>
+        static auto non_polymorphic_type_id() -> type_id {
+            static char tag;
+            return &tag;
+        }
+
         template<typename T>
         static auto static_type() {
             if constexpr (is_polymorphic<T>) {
-                return reinterpret_cast<type_id>(T::static_type);
+                return reinterpret_cast<type_id>(
+                    static_cast<std::uintptr_t>(T::static_type));
             } else {
-                return reinterpret_cast<type_id>(0);
+                return non_polymorphic_type_id<T>();
             }
         }
 
         template<typename T>
         static auto dynamic_type(const T& obj) {
             if constexpr (is_polymorphic<T>) {
-                return reinterpret_cast<type_id>(obj.type);
+                return reinterpret_cast<type_id>(
+                    static_cast<std::uintptr_t>(obj.type));
             } else {
-                return reinterpret_cast<type_id>(0);
+                return non_polymorphic_type_id<T>();
             }
         }
     };

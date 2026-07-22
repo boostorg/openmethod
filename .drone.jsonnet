@@ -103,10 +103,27 @@ local windows_pipeline(name, image, environment, arch = "amd64") =
     # executed *zero* openmethod tests. They are consolidated onto Ubuntu 24.04
     # with its default toolchain (gcc-13, clang-18); GCC 11-14 and Clang 13-18
     # already cover the intervening versions.
+    # Split one C++ standard per stage (like the GCC 14 jobs below). Bundling
+    # 17,20,2b x 32,64 into a single stage exceeded Drone's 60-minute step
+    # timeout once the dynamic_loading DLL targets were added.
     linux_pipeline(
-        "Linux 24.04 GCC 13 32/64",
+        "Linux 24.04 GCC 13 32/64 C++17",
         "cppalliance/droneubuntu2404:1",
-        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '17,20,2b', ADDRMD: '32,64' },
+        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '17', ADDRMD: '32,64' },
+        "g++-13-multilib",
+    ),
+
+    linux_pipeline(
+        "Linux 24.04 GCC 13 32/64 C++20",
+        "cppalliance/droneubuntu2404:1",
+        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '20', ADDRMD: '32,64' },
+        "g++-13-multilib",
+    ),
+
+    linux_pipeline(
+        "Linux 24.04 GCC 13 32/64 C++2b",
+        "cppalliance/droneubuntu2404:1",
+        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '2b', ADDRMD: '32,64' },
         "g++-13-multilib",
     ),
 
@@ -132,9 +149,16 @@ local windows_pipeline(name, image, environment, arch = "amd64") =
     ),
 
     linux_pipeline(
-        "Linux 24.04 GCC 13 32/64 UBSAN C++17-20",
+        "Linux 24.04 GCC 13 32/64 UBSAN C++17",
         "cppalliance/droneubuntu2404:1",
-        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '17,20', ADDRMD: '32,64' } + ubsan,
+        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '17', ADDRMD: '32,64' } + ubsan,
+        "g++-13-multilib",
+    ),
+
+    linux_pipeline(
+        "Linux 24.04 GCC 13 32/64 UBSAN C++20",
+        "cppalliance/droneubuntu2404:1",
+        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '20', ADDRMD: '32,64' } + ubsan,
         "g++-13-multilib",
     ),
 
@@ -146,9 +170,16 @@ local windows_pipeline(name, image, environment, arch = "amd64") =
     ),
 
     linux_pipeline(
-        "Linux 24.04 GCC 13 32 ASAN C++17-20",
+        "Linux 24.04 GCC 13 32 ASAN C++17",
         "cppalliance/droneubuntu2404:1",
-        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '17,20', ADDRMD: '32' } + asan,
+        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '17', ADDRMD: '32' } + asan,
+        "g++-13-multilib",
+    ),
+
+    linux_pipeline(
+        "Linux 24.04 GCC 13 32 ASAN C++20",
+        "cppalliance/droneubuntu2404:1",
+        { TOOLSET: 'gcc', COMPILER: 'g++-13', CXXSTD: '20', ADDRMD: '32' } + asan,
         "g++-13-multilib",
     ),
 

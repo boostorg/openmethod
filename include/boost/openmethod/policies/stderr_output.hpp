@@ -9,7 +9,9 @@
 #include <boost/openmethod/preamble.hpp>
 #include <boost/openmethod/detail/ostdstream.hpp>
 
-namespace boost::openmethod::policies {
+namespace boost::openmethod {
+
+namespace policies {
 
 //! @ref Writes to the C standard error stream.
 //!
@@ -18,14 +20,25 @@ struct stderr_output : output {
     //! An OutputFn metafunction.
     template<class Registry>
     struct fn {
-        //! A @ref LightweightOuputStream.
-        static detail::ostderr os;
+      public:
+        //! The policy's state: the output stream object. Held in the
+        //! registry's shared state (see @ref registry_state).
+        struct state {
+            detail::ostderr os;
+        };
+
+        [[deprecated]] inline static detail::ostderr os;
+
+        //! Returns the stream diagnostics are written to.
+        //!
+        //! @return A reference to the policy's output stream.
+        static auto& stream() {
+            return Registry::template state<stderr_output>().os;
+        }
     };
 };
 
-template<class Registry>
-detail::ostderr stderr_output::fn<Registry>::os;
-
-} // namespace boost::openmethod::policies
+} // namespace policies
+} // namespace boost::openmethod
 
 #endif

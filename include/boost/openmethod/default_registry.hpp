@@ -23,9 +23,9 @@ namespace boost::openmethod {
 //! @li @ref policies::std_rtti: Use standard RTTI.
 //! @li @ref policies::fast_perfect_hash: Use a fast perfect hash function to
 //!   map type ids to indices.
-//! @li @ref policies::vptr_vector: Store v-table pointers in a `std::vector`.
+//! @li @ref policies::vptr_vector: Store v-table pointers in a @c std::vector.
 //! @li @ref policies::default_error_handler: Write short diagnostic messages.
-//! @li @ref policies::stderr_output: Write messages to `stderr`.
+//! @li @ref policies::stderr_output: Write messages to @c stderr.
 //!
 //! If
 //! {{BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS}}
@@ -35,10 +35,18 @@ namespace boost::openmethod {
 //! inconsistent use of the macro can cause ODR violations. If defined, it must
 //! be in all the translation units in the program that use `default_registry`,
 //! including those pulled from libraries.
+//!
+//! For a program and its shared libraries to contribute to the same
+//! `default_registry`, its state must be shared across the modules: the
+//! owning module exports it by defining
+//! {{BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY}} in exactly one translation
+//! unit, and every client module imports it by defining
+//! {{BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY}}, in both cases before
+//! including this header.
 struct default_registry
     : registry<
-          policies::std_rtti, policies ::vptr_vector,
-          policies::fast_perfect_hash, policies::default_error_handler,
+          policies::std_rtti, policies::fast_perfect_hash,
+          policies::vptr_vector, policies::default_error_handler,
           policies::stderr_output
 #ifdef BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS
           ,
@@ -46,6 +54,37 @@ struct default_registry
 #endif
           > {
 };
+
+// Share the registry state across modules via an explicit instantiation of
+// registry_state (the one-member wrapper holding the shared `st`): the owning
+// module exports the instantiation definition, clients declare an imported
+// instantiation ("extern template") so they reference the owner's symbol
+// instead of instantiating their own copy. The state lives in
+// registry_state<registry_type> (the registry<...> base class), not
+// registry_state<default_registry>.
+//
+// On Windows the export/import decoration is dllexport/dllimport. On ELF it is
+// visibility("default") on the EXPORT side (BOOST_SYMBOL_EXPORT); the IMPORT
+// side is a plain `extern template` (BOOST_SYMBOL_IMPORT is empty) that
+// suppresses implicit instantiation so the client references the exported
+// symbol. This matters under -fvisibility=hidden: an implicitly instantiated,
+// COMDAT `st` would be internalized to a per-module local symbol and could not
+// be shared; the explicit instantiation definition emits a single strong,
+// default-visibility global that the other modules import. Without the macros
+// (the common case, off Windows) `st` keeps ordinary external linkage and is
+// shared by the dynamic linker, as long as the program is not built with hidden
+// visibility.
+//
+// An explicit instantiation definition may appear only once in the program,
+// so BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY must be compiled in exactly one
+// translation unit of the owning module.
+#if defined(BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY)
+template struct BOOST_SYMBOL_EXPORT
+    registry_state<default_registry::registry_type>;
+#elif defined(BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY)
+extern template struct BOOST_SYMBOL_IMPORT
+    registry_state<default_registry::registry_type>;
+#endif
 
 namespace detail {
 
@@ -58,8 +97,26 @@ static odr_check<default_registry> default_registry_odr_check_instance;
 //! `indirect_registry` is a predefined @ref registry that uses the same
 //! policies as @ref default_registry, plus the @ref indirect_vptr policy.
 //!
+//! `indirect_registry` has its own state, separate from `default_registry`'s.
+//! To share it across shared libraries, use
+//! {{BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY}} and
+//! {{BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY}}.
+//!
 //! @see indirect_vptr.
 struct indirect_registry : default_registry::with<policies::indirect_vptr> {};
+
+// indirect_registry has its own state (its policy list differs from
+// default_registry's), shared across modules with its own macro pair,
+// BOOST_OPENMETHOD_{EXPORT,IMPORT}_INDIRECT_REGISTRY. As with the default
+// registry, the EXPORT macro must be compiled in exactly one translation unit
+// of the owning module.
+#if defined(BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY)
+template struct BOOST_SYMBOL_EXPORT
+    registry_state<indirect_registry::registry_type>;
+#elif defined(BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY)
+extern template struct BOOST_SYMBOL_IMPORT
+    registry_state<indirect_registry::registry_type>;
+#endif
 
 } // namespace boost::openmethod
 

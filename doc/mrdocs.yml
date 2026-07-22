@@ -23,7 +23,7 @@ exclude-symbols:
   - 'boost::openmethod::registry::finalize'
   - 'boost::openmethod::boost_openmethod_bases'
   - 'boost::openmethod::boost_openmethod_registry'
-  - 'boost::openmethod::registry::compiler'
+  - 'boost::openmethod::registry_state::st'
 
 sort-members: false
 # sort-namespace-members-by: location

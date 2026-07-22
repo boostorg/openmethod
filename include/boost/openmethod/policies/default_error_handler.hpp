@@ -11,7 +11,9 @@
 #include <functional>
 #include <variant>
 
-namespace boost::openmethod::policies {
+namespace boost::openmethod {
+
+namespace policies {
 
 //! Calls a std::function with the error.
 //!
@@ -77,6 +79,18 @@ struct default_error_handler : error_handler {
         //! The type of the error handler function object.
         using function_type = std::function<void(const error_variant& error)>;
 
+        //! The policy's state: the error handler function object. Held in
+        //! the registry's shared state (see @ref registry_state).
+        struct state {
+            function_type handler;
+        };
+
+      private:
+        static auto& st() {
+            return Registry::template state<default_error_handler>();
+        }
+
+      public:
         //! Calls a function with the error object, wrapped in an @ref
         //! error_variant.
         //!
@@ -84,6 +98,7 @@ struct default_error_handler : error_handler {
         //! @param error The error object.
         template<class Error>
         static auto error(const Error& error) -> void {
+            auto handler = st().handler ? st().handler : default_handler;
             handler(error_variant(error));
         }
 
@@ -96,7 +111,8 @@ struct default_error_handler : error_handler {
         //! @return The previous function.
         // coverity[auto_causes_copy]
         static auto set(function_type new_handler) -> function_type {
-            return std::exchange(handler, std::move(new_handler));
+            auto prev = std::exchange(st().handler, std::move(new_handler));
+            return prev ? prev : default_handler;
         }
 
         //! The default error handler function.
@@ -109,22 +125,17 @@ struct default_error_handler : error_handler {
             if constexpr (Registry::has_output) {
                 std::visit(
                     [](auto&& error) {
-                        error.template write<Registry>(Registry::output::os);
+                        error.template write<Registry>(
+                            Registry::output::stream());
                     },
                     error);
-                Registry::output::os << "\n";
+                Registry::output::stream() << "\n";
             }
         }
-
-      private:
-        static function_type handler;
     };
 };
 
-template<class Registry>
-typename default_error_handler::fn<Registry>::function_type
-    default_error_handler::fn<Registry>::handler = default_handler;
-
-} // namespace boost::openmethod::policies
+} // namespace policies
+} // namespace boost::openmethod
 
 #endif

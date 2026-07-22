@@ -8,6 +8,7 @@
 
 #include <boost/openmethod/preamble.hpp>
 
+#include <tuple>
 #include <unordered_map>
 
 namespace boost::openmethod {
@@ -33,7 +34,21 @@ class vptr_map : public vptr {
     class fn {
         using Value = std::conditional_t<
             Registry::has_indirect_vptr, const vptr_type*, vptr_type>;
-        static inline typename MapFn::template fn<type_id, Value> vptrs;
+
+      public:
+        //! The policy's state: the map of v-table pointers. Held in the
+        //! registry's shared state (see @ref registry_state).
+        struct state {
+            //! The v-table pointers (pointers to v-table pointers if
+            //! `Registry` contains the @ref indirect_vptr policy), keyed by
+            //! type id.
+            typename MapFn::template fn<type_id, Value> vptrs;
+        };
+
+      private:
+        static auto& st() {
+            return Registry::template state<vptr_map<MapFn>>();
+        }
 
       public:
         //! Stores the v-table pointers.
@@ -45,7 +60,7 @@ class vptr_map : public vptr {
         template<class Context, class... Options>
         static void
         initialize(const Context& ctx, const std::tuple<Options...>&) {
-            decltype(vptrs) new_vptrs;
+            decltype(st().vptrs) new_vptrs;
 
             for (auto iter = ctx.classes_begin(); iter != ctx.classes_end();
                  ++iter) {
@@ -60,7 +75,7 @@ class vptr_map : public vptr {
                 }
             }
 
-            vptrs.swap(new_vptrs);
+            st().vptrs.swap(new_vptrs);
         }
 
         //! Returns a reference to a v-table pointer for an object.
@@ -80,10 +95,10 @@ class vptr_map : public vptr {
         template<class Class>
         static auto dynamic_vptr(const Class& arg) -> const vptr_type& {
             auto type = Registry::rtti::dynamic_type(arg);
-            auto iter = vptrs.find(type);
+            auto iter = st().vptrs.find(type);
 
             if constexpr (Registry::has_runtime_checks) {
-                if (iter == vptrs.end()) {
+                if (iter == st().vptrs.end()) {
                     if constexpr (Registry::has_error_handler) {
                         missing_class error;
                         error.type = type;
@@ -111,7 +126,7 @@ class vptr_map : public vptr {
         //! @param options A tuple of option objects.
         template<class... Options>
         static auto finalize(const std::tuple<Options...>&) -> void {
-            vptrs.clear();
+            st().vptrs.clear();
         }
     };
 };

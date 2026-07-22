@@ -8,6 +8,8 @@
 
 // clang-format off
 
+#include <boost/openmethod/preamble.hpp>
+
 // tag::content[]
 // animals.hpp
 
@@ -17,6 +19,11 @@
 struct Animal { virtual ~Animal() {} };
 struct Herbivore : Animal {};
 struct Carnivore : Animal {};
+
+struct Cow : Herbivore {};
+struct Wolf : Carnivore {};
+
+BOOST_OPENMETHOD_CLASSES(Animal, Herbivore, Cow, Carnivore, Wolf);
 
 BOOST_OPENMETHOD(
     meet, (
