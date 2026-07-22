@@ -914,6 +914,7 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         // break that assumption and silently merge distinct methods; catch
         // it here instead of corrupting slots_strides downstream.
         for (auto info : method.infos) {
+            (void)info; // unused when BOOST_ASSERT compiles out (NDEBUG)
             BOOST_ASSERT(info->arity() == first_info->arity());
         }
         method.vp.reserve(first_info->arity());
