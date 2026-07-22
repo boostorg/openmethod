@@ -961,21 +961,36 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         }
 
         // Collect overriders from every module copy of this method, deduping
-        // by *logical* identity rather than pointer identity. The same
-        // overrider, defined in a header and registered by two or more
-        // state-sharing modules (e.g. an exe and a DLL), appears once per
-        // module as a distinct overrider_info object - different address,
-        // and a different `pf` (each module compiles its own copy of the
-        // function) - but they share the same function type id and the same
-        // virtual-parameter type ids. Keeping every copy would make each
-        // dispatch cell they fill ambiguous, because is_more_specific()
-        // reports "not more specific" both ways for identical vp lists.
+        // by *logical* identity rather than pointer identity - but only
+        // across DIFFERENT modules. The same overrider, defined in a header
+        // and registered by two or more state-sharing modules (e.g. an exe
+        // and a DLL), appears once per module as a distinct overrider_info
+        // object - different address, and a different `pf` (each module
+        // compiles its own copy of the function) - but they share the same
+        // function type id and the same virtual-parameter type ids. Keeping
+        // every copy would make each dispatch cell they fill ambiguous,
+        // because is_more_specific() reports "not more specific" both ways
+        // for identical vp lists.
+        //
+        // Two overriders registered within the SAME module, however, are
+        // always genuinely distinct - the registration mechanism guarantees
+        // it (BOOST_OPENMETHOD_OVERRIDE keys one explicit specialization per
+        // signature, so writing it twice in one module is a redefinition
+        // error; method<...>::override<Fn> is keyed on the Fn non-type
+        // template argument, so two different functions with the same
+        // signature are two different registrations) - so same-module
+        // entries must never be merged with each other, even if they
+        // happen to share a signature: that is a genuine ambiguity, not a
+        // duplicate. Only compare each module's specs against specs already
+        // collected from EARLIER modules to enforce this.
         std::vector<detail::overrider_info*> all_specs;
         std::size_t module_index = 0;
 
         for (auto info : method.infos) {
             indent _(tr);
             ++tr << "module " << module_index++ << "\n";
+
+            auto earlier_modules_count = all_specs.size();
 
             for (auto& spec : info->overriders) {
                 auto same = [&](const detail::overrider_info* kept) {
@@ -1000,7 +1015,9 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
                     return true;
                 };
 
-                if (std::none_of(all_specs.begin(), all_specs.end(), same)) {
+                if (std::none_of(
+                        all_specs.begin(),
+                        all_specs.begin() + earlier_modules_count, same)) {
                     all_specs.push_back(&spec);
                 }
             }
