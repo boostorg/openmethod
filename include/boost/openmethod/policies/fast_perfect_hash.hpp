@@ -127,7 +127,10 @@ struct fast_perfect_hash : type_hash {
         //!
         //! @tparam Context An @ref InitializeContext.
         //! @param ctx A Context object.
-        //! @return A pair containing the minimum and maximum hash values.
+        //! @param options A tuple of option objects.
+        //!
+        //! Use @ref hash_range to retrieve the minimum and maximum hash
+        //! values after calling this function.
         template<class Context, class... Options>
         static auto initialize(
             const Context& ctx, const std::tuple<Options...>& options) -> void {
@@ -237,14 +240,23 @@ void fast_perfect_hash::fn<Registry>::initialize_aux(
                      type_iter != iter->type_id_end(); ++type_iter) {
                     auto type = *type_iter;
                     auto index = st().fn(type);
-                    st().fn.min_value = (std::min)(st().fn.min_value, index);
-                    st().fn.max_value = (std::max)(st().fn.max_value, index);
 
+                    // A class can now have more than one class_info entry
+                    // for the same type_id (see augment_classes() in
+                    // initialize.hpp: one per module, kept distinct because
+                    // their static_vptr differs under hidden visibility).
+                    // Re-inserting the *same* type_id into the *same*
+                    // (deterministic) slot is not a real collision - only a
+                    // different type_id landing on an already-occupied slot
+                    // is.
                     if (detail::uintptr(buckets[index]) !=
-                        detail::uintptr_max) {
+                            detail::uintptr_max &&
+                        buckets[index] != type) {
                         goto collision;
                     }
 
+                    st().fn.min_value = (std::min)(st().fn.min_value, index);
+                    st().fn.max_value = (std::max)(st().fn.max_value, index);
                     buckets[index] = type;
                 }
             }

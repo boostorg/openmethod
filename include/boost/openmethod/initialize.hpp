@@ -608,6 +608,12 @@ auto registry<Policies...>::compiler<Options...>::compile() {
 template<class... Policies>
 template<class... Options>
 void registry<Policies...>::compiler<Options...>::initialize() {
+    // Clear the flag up front: a re-initialize (the documented dlopen/dlclose
+    // flow) that throws part-way through must not leave the flag `true` from
+    // the previous successful initialize, or require_initialized() would
+    // wrongly pass and dispatch would run against half-written tables. Only a
+    // fully successful run sets it true again.
+    registry<Policies...>::static_::st.initialized = false;
     compile();
     install_global_tables();
     registry<Policies...>::static_::st.initialized = true;
@@ -698,16 +704,26 @@ void registry<Policies...>::compiler<Options...>::augment_classes() {
                 rtc = &classes.emplace_back();
             }
 
-            bool new_type_id = true;
+            // Retain one class_info per (type, static_vptr) pair, not per
+            // type. Under hidden visibility a class' type_id can unify
+            // across modules while Registry::static_vptr<Class> does not
+            // (each module has its own COMDAT copy), so the shared class
+            // list legitimately holds several class_info entries for the
+            // same class. write_global_data() patches every retained
+            // entry's static_vptr; dropping the extras on type alone would
+            // leave other modules' static_vptr null. Two entries are true
+            // duplicates only when writing through either has the same
+            // effect.
+            bool duplicate = false;
 
             for (auto ci : rtc->ci) {
-                if (ci->type == cr.type) {
-                    new_type_id = false;
+                if (ci->type == cr.type && ci->static_vptr == cr.static_vptr) {
+                    duplicate = true;
                     break;
                 }
             }
 
-            if (new_type_id) {
+            if (!duplicate) {
                 rtc->ci.push_back(&cr);
             }
         }
@@ -845,10 +861,16 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
     using namespace policies;
     using namespace detail;
 
-    // Resolve deferred type ids first so consolidation keys are correct
+    // Resolve deferred type ids first so consolidation keys are correct.
+    // Overriders must be resolved here too (not only in the per-overrider
+    // loop below) because the cross-module overrider dedup key uses their
+    // type ids.
     if constexpr (has_deferred_static_rtti) {
         for (auto& meth_info : registry::static_::st.methods) {
             static_cast<deferred_method_info&>(meth_info).resolve_type_ids();
+            for (auto& spec : meth_info.overriders) {
+                static_cast<deferred_overrider_info&>(spec).resolve_type_ids();
+            }
         }
     }
 
@@ -883,6 +905,17 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         method.index = method_index++;
         auto first_info = method.infos[0];
         BOOST_ASSERT(first_info);
+        // Every info in method.infos was grouped here because it shares the
+        // same method_type_id (see method_map above). Under a well-behaved
+        // RTTI policy that key is injective per method, so all of them
+        // describe the very same method and must agree on arity. A custom
+        // RTTI policy that returns a shared sentinel id for unregistered
+        // types (e.g. a fixed value for every non-polymorphic type) can
+        // break that assumption and silently merge distinct methods; catch
+        // it here instead of corrupting slots_strides downstream.
+        for (auto info : method.infos) {
+            BOOST_ASSERT(info->arity() == first_info->arity());
+        }
         method.vp.reserve(first_info->arity());
         method.slots.resize(first_info->arity());
 
@@ -926,8 +959,16 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
             }
         }
 
-        // Collect overriders from every module copy of this method.
-        std::unordered_set<const detail::overrider_info*> seen_specs;
+        // Collect overriders from every module copy of this method, deduping
+        // by *logical* identity rather than pointer identity. The same
+        // overrider, defined in a header and registered by two or more
+        // state-sharing modules (e.g. an exe and a DLL), appears once per
+        // module as a distinct overrider_info object - different address,
+        // and a different `pf` (each module compiles its own copy of the
+        // function) - but they share the same function type id and the same
+        // virtual-parameter type ids. Keeping every copy would make each
+        // dispatch cell they fill ambiguous, because is_more_specific()
+        // reports "not more specific" both ways for identical vp lists.
         std::vector<detail::overrider_info*> all_specs;
         std::size_t module_index = 0;
 
@@ -936,9 +977,30 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
             ++tr << "module " << module_index++ << "\n";
 
             for (auto& spec : info->overriders) {
-                if (seen_specs.find(&spec) == seen_specs.end()) {
+                auto same = [&](const detail::overrider_info* kept) {
+                    if (rtti::type_index(kept->type) !=
+                        rtti::type_index(spec.type)) {
+                        return false;
+                    }
+
+                    // Same function type id: confirm the virtual-parameter
+                    // signatures match too, so two genuinely different
+                    // overriders that happen to share a function type id are
+                    // never merged.
+                    auto a = kept->vp_begin, ae = kept->vp_end,
+                         b = spec.vp_begin;
+
+                    for (; a != ae; ++a, ++b) {
+                        if (rtti::type_index(*a) != rtti::type_index(*b)) {
+                            return false;
+                        }
+                    }
+
+                    return true;
+                };
+
+                if (std::none_of(all_specs.begin(), all_specs.end(), same)) {
                     all_specs.push_back(&spec);
-                    seen_specs.insert(&spec);
                 }
             }
         }
@@ -1027,8 +1089,8 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
 
                 if (!vp->is_base_of(overrider.vp[param_index])) {
                     missing_base error;
-                    error.base = overrider.vp[param_index]->ci[0]->type;
-                    error.derived = vp->ci[0]->type;
+                    error.base = vp->ci[0]->type;
+                    error.derived = overrider.vp[param_index]->ci[0]->type;
 
                     if constexpr (has_error_handler) {
                         error_handler::error(error);

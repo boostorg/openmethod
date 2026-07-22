@@ -95,7 +95,7 @@ using boost::openmethod::virtual_;
 
 namespace yorel {
     namespace yomm2 {
-        void update() {
+        inline void update() {
             boost::openmethod::initialize();
         }
     }

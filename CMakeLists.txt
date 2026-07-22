@@ -110,9 +110,9 @@ endif()
 if (NOT BOOST_OPENMETHOD_MRDOCS_BUILD)
     if (BOOST_OPENMETHOD_BUILD_TESTS)
         set(BOOST_OPENMETHOD_UNIT_TEST_LIBRARIES test)
-        if (BOOST_OPENMETHOD_BUILD_EXAMPLES)
-            set(BOOST_OPENMETHOD_EXAMPLE_LIBRARIES dll)
-        endif()
+        # test/dynamic_loading needs Boost::dll regardless of whether the doc
+        # examples are built too, or its tests are silently configured out.
+        set(BOOST_OPENMETHOD_EXAMPLE_LIBRARIES dll)
     endif()
 endif()
 

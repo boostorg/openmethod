@@ -32,3 +32,7 @@ build/
 doc/html/*
 doc/_/*
 cov-int/**
+
+# Personal/developer scratch files, not project content.
+.claude/settings.json
+notes.txt

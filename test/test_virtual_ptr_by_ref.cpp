@@ -40,6 +40,7 @@ BOOST_AUTO_TEST_CASE(test_virtual_ptr_by_ref) {
         Dog dog;
         virtual_ptr<Animal> vptr(dog);
         poke(vptr, os);
+        BOOST_CHECK(os.is_equal("bark"));
     }
 
     {

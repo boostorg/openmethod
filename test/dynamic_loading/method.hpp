@@ -3,6 +3,9 @@
 // See accompanying file LICENSE_1_0.txt
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#ifndef BOOST_OPENMETHOD_TEST_DYNAMIC_LOADING_METHOD_HPP
+#define BOOST_OPENMETHOD_TEST_DYNAMIC_LOADING_METHOD_HPP
+
 #include "registry.hpp"
 #include "classes.hpp"
 
@@ -27,3 +30,5 @@ BOOST_OPENMETHOD(
 inline auto call_speak(boost::openmethod::virtual_ptr<Animal> animal) {
     return speak(animal);
 }
+
+#endif

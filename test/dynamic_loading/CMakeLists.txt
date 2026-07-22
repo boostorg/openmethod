@@ -6,25 +6,38 @@
 if (BUILD_SHARED_LIBS)
     message(STATUS "Building shared library tests")
 else()
+    message(STATUS "Skipping dynamic_loading tests (BUILD_SHARED_LIBS is OFF)")
     return()
 endif()
 
 # Build one set of {registry, method, overrider} shared libraries plus a test
-# executable. Each variant compiles the very same sources but with two knobs:
+# executable. Each variant compiles the very same sources but with three
+# knobs:
 #
-#   owner  - which module owns and exports the single shared registry-state
-#            symbol: "dll" (lib_registry owns it; method/overrider/exe import it)
-#            or "exe" (the executable owns it; all three libraries import it).
-#            In the "exe" case the libraries must link *against* the executable
-#            (reverse linkage); ENABLE_EXPORTS makes the exe produce the import
-#            library / -rdynamic exports needed for that.
-#   ARGN   - extra preprocessor definitions (e.g. the default registry) applied
-#            to every target so all modules agree (ODR).
+#   owner            - which module owns and exports the single shared
+#                       registry-state symbol: "dll" (lib_registry owns it;
+#                       method/overrider/exe import it) or "exe" (the
+#                       executable owns it; all three libraries import it).
+#                       In the "exe" case the libraries must link *against*
+#                       the executable (reverse linkage); ENABLE_EXPORTS makes
+#                       the exe produce the import library / -rdynamic exports
+#                       needed for that.
+#   hidden_visibility - if true, force CXX_VISIBILITY_PRESET hidden on every
+#                       target. classes.hpp marks Animal/Dog/Cat
+#                       BOOST_SYMBOL_VISIBLE, so under this setting their
+#                       type_id unifies across modules while each module's
+#                       Registry::static_vptr<Class> - not covered by that
+#                       attribute - stays a per-module copy: exactly the
+#                       configuration the class-dedup fix in
+#                       augment_classes() (initialize.hpp) targets.
+#   ARGN              - extra preprocessor definitions (e.g. the default
+#                       registry) applied to every target so all modules agree
+#                       (ODR).
 #
 # Targets are suffixed and outputs go to a per-variant directory so that
 # main.cpp, which locates its sibling libraries by filename fragment at runtime,
 # never picks up another variant's libraries.
-function(boost_openmethod_add_dynamic_loading_variant suffix owner)
+function(boost_openmethod_add_dynamic_loading_variant suffix owner hidden_visibility)
     set(extra_defs ${ARGN})
     set(reg  boost_openmethod-dl_test_registry${suffix})
     set(meth boost_openmethod-dl_test_method${suffix})
@@ -76,11 +89,15 @@ function(boost_openmethod_add_dynamic_loading_variant suffix owner)
     # the shared libraries loaded at runtime (e.g. the overrider can resolve
     # symbols from the method/registry/exe, and an exe-owned registry state can
     # be imported by the dlopen'd libraries).
-    # We do NOT force CXX_VISIBILITY_PRESET here: the shared registry-state
-    # symbol carries BOOST_SYMBOL_VISIBLE in the library (see registry_state in
-    # preamble.hpp), so it keeps DEFAULT ELF visibility even under a
-    # hidden-visibility build (as set by BoostRoot.cmake in the super-project),
-    # and cross-DSO state sharing works without any per-target override.
+    # We do NOT force CXX_VISIBILITY_PRESET here except for the hidden_visibility
+    # variant below: the shared registry-state symbol carries BOOST_SYMBOL_VISIBLE
+    # in the library (see registry_state in preamble.hpp), so it keeps DEFAULT ELF
+    # visibility even under a hidden-visibility build (as set by BoostRoot.cmake in
+    # the super-project), and cross-DSO state sharing works without any per-target
+    # override. The hidden_visibility variant exists to reproduce, on a standalone
+    # (non-super-project) build, the configuration where classes.hpp's
+    # BOOST_SYMBOL_VISIBLE classes keep default RTTI visibility while everything
+    # else (including Registry::static_vptr<Class>) is hidden per module.
     foreach(target ${reg} ${meth} ${ovr} ${exe})
         set_target_properties(
             ${target}
@@ -89,6 +106,13 @@ function(boost_openmethod_add_dynamic_loading_variant suffix owner)
                 LIBRARY_OUTPUT_DIRECTORY "${outdir}"
                 ARCHIVE_OUTPUT_DIRECTORY "${outdir}"
                 ENABLE_EXPORTS ON)
+        if (hidden_visibility)
+            set_target_properties(
+                ${target}
+                PROPERTIES
+                    CXX_VISIBILITY_PRESET hidden
+                    VISIBILITY_INLINES_HIDDEN ON)
+        endif()
         if (extra_defs)
             target_compile_definitions(${target} PRIVATE ${extra_defs})
         endif()
@@ -104,11 +128,16 @@ endfunction()
 # Four variants: {registry owned by dll, by exe} x {default, indirect} registry.
 # indirect_registry (default_registry + indirect_vptr) is selected via
 # BOOST_OPENMETHOD_DEFAULT_REGISTRY.
-boost_openmethod_add_dynamic_loading_variant("_default" dll)
+boost_openmethod_add_dynamic_loading_variant("_default" dll OFF)
 boost_openmethod_add_dynamic_loading_variant(
-    "_indirect" dll
+    "_indirect" dll OFF
     BOOST_OPENMETHOD_DEFAULT_REGISTRY=::boost::openmethod::indirect_registry)
-boost_openmethod_add_dynamic_loading_variant("_exereg_default" exe)
+boost_openmethod_add_dynamic_loading_variant("_exereg_default" exe OFF)
 boost_openmethod_add_dynamic_loading_variant(
-    "_exereg_indirect" exe
+    "_exereg_indirect" exe OFF
     BOOST_OPENMETHOD_DEFAULT_REGISTRY=::boost::openmethod::indirect_registry)
+
+# Fifth variant: forces hidden ELF visibility to reproduce, on a standalone
+# build, the class-dedup configuration that augment_classes() must handle
+# correctly (see the function comment above and classes.hpp).
+boost_openmethod_add_dynamic_loading_variant("_hidden_vis" dll ON)

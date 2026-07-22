@@ -29,7 +29,7 @@ using namespace boost::openmethod;
 
 using state_id_fn = const void*();
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog);
+BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
 
 boost::filesystem::path
 find_lib(const boost::filesystem::path& dir, const char* name_fragment) {
@@ -132,5 +132,19 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         method_meet(r, main_dog, overrider_dog);
         BOOST_TEST(r.first == "wag tails");
         BOOST_TEST(r.second == "ignore");
+    }
+    {
+        // Regression check for cross-module overrider dedup (see
+        // shared_overrider.hpp): the Cat overrider is registered identically
+        // by lib_method and lib_overrider. Without deduping by logical
+        // identity, initialize() would have marked this slot ambiguous and
+        // aborted before reaching this point. This also exercises the
+        // class-dedup fix in augment_classes(): Cat is registered by every
+        // module (registry, method, overrider, exe), so a dropped
+        // class_info would leave one of those modules' static_vptr<Cat>
+        // null, crashing make_cat() or the dispatch below.
+        auto cat = make_cat();
+        BOOST_TEST(std::string(method_speak(cat)) == "meow");
+        BOOST_TEST(std::string(overrider_speak(cat)) == "meow");
     }
 }

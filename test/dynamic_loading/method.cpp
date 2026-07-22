@@ -9,6 +9,7 @@
 
 #include "registry.hpp"
 #include "method.hpp"
+#include "shared_overrider.hpp"
 
 #include <boost/openmethod.hpp>
 
@@ -23,7 +24,7 @@
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog);
+BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
 
 BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
     return "?";

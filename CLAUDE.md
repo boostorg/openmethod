@@ -234,17 +234,31 @@ time, not shared via a single symbol, so `BOOST_OPENMETHOD(...)` takes no declsp
 See `doc/modules/ROOT/examples/shared_libs/` and `test/dynamic_loading/` for complete examples.
 
 **Dynamic Loading Test** (`test/dynamic_loading/`): verifies that the registry state is a single
-shared symbol across modules. `get_ids()` (in `registry.hpp`) returns the registry-state address
-(`default_registry::id()`) followed by any stateful-policy `id()`s; `main.cpp`'s `same_ids()`
-asserts these addresses are identical across modules. (Policy state now lives inside
-`registry_state_type`, so in practice the registry-state address is the one shared symbol.) Files:
-- `registry.hpp` — maps `EXPORT_REGISTRY` → the `BOOST_OPENMETHOD_{EXPORT,IMPORT}_{DEFAULT,INDIRECT}_REGISTRY` pair matching the registry under test (indirect iff `BOOST_OPENMETHOD_DEFAULT_REGISTRY` is defined on the command line) before including `default_registry.hpp`; defines `get_ids()`
-- `classes.hpp` — `Animal`/`Dog` definitions + `make_dog`
+shared symbol across modules. `registry_state_id()` (in `registry.hpp`) returns the registry-state
+address (`test_registry::id()`); `main.cpp`'s `same_ids()` compares two such addresses (registry vs.
+method, registry vs. overrider) and asserts they are identical. (Policy state lives inside
+`registry_state_type`, so the registry-state address is the one shared symbol.) Files:
+- `registry.hpp` — maps `EXPORT_REGISTRY` → the `BOOST_OPENMETHOD_{EXPORT,IMPORT}_{DEFAULT,INDIRECT}_REGISTRY` pair matching the registry under test (indirect iff `BOOST_OPENMETHOD_DEFAULT_REGISTRY` is defined on the command line) before including `default_registry.hpp`; defines `registry_state_id()`
+- `classes.hpp` — `Animal`/`Dog`/`Cat` definitions (marked `BOOST_SYMBOL_VISIBLE` so their RTTI stays
+  default-visibility under the hidden-visibility CMake variant below) + `make_dog`/`make_cat`
 - `method.hpp` — declares the `speak`/`meet` methods (no declspec arguments)
+- `shared_overrider.hpp` — one `speak` overrider for `Cat`, included identically by `method.cpp` and
+  `overrider.cpp` to exercise cross-module overrider deduplication (the same overrider registered by
+  two modules must not be treated as ambiguous)
 - `registry.cpp` — compiled with `EXPORT_REGISTRY`; the shared library that owns and exports the registry state
-- `method.cpp` — client (imports the registry state); defines base overriders, exports C entry points
-- `overrider.cpp` — dynamically loaded at runtime; adds a Dog overrider
-- `main.cpp` — links the registry + method libs, loads the overrider lib, checks `same_ids`, calls `initialize()`, tests cross-module dispatch
+- `method.cpp` — client (imports the registry state); defines base overriders (including the shared
+  Cat one), exports C entry points
+- `overrider.cpp` — dynamically loaded at runtime; adds a Dog overrider and the shared Cat overrider
+- `main.cpp` — links the registry lib, dlopens the method and overrider libs, checks `same_ids`, calls
+  `initialize()`, tests cross-module dispatch (including the Cat overrider-dedup and class-dedup
+  regression checks)
+
+CMake builds five variants: `_default`/`_indirect` (dll-owned state) and `_exereg_default`/
+`_exereg_indirect` (exe-owned state), crossed with the default/indirect registry, plus `_hidden_vis`
+(forces `CXX_VISIBILITY_PRESET hidden` on every target to reproduce, on a standalone build, the
+configuration where `augment_classes()`'s class-dedup must key on `(type, static_vptr)` rather than
+`type` alone). b2's Jamfile only builds the dll-owned default/indirect pair; it does not currently
+have a hidden-visibility variant.
 
 ### Custom RTTI
 When `<typeinfo>` is unavailable or insufficient, use static_rtti or implement custom RTTI. See `doc/modules/ROOT/examples/custom_rtti/` and policies in `include/boost/openmethod/policies/`.

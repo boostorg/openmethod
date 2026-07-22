@@ -8,6 +8,7 @@
 #endif
 
 #include "method.hpp"
+#include "shared_overrider.hpp"
 
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <boost/config.hpp>
@@ -28,7 +29,7 @@ BOOST_OPENMETHOD_OVERRIDE(
     return {"wag tails", next_word};
 }
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog);
+BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
 
 extern "C" {
 

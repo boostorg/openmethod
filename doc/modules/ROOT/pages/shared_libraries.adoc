@@ -112,6 +112,12 @@ NOTE: `dlclose` does not necessarily unload the library when using gcc's
 `-rdynamic` option. The library may remain loaded until the program exits, so
 the output of the last `meet` call may still be the same as the previous one.
 
+NOTE: if a shared library installs an error handler (see
+xref:error_handling.adoc[]) via the registry's `error_handler::set`, reset it
+(e.g. to the previous handler) before the library is unloaded. The handler is
+part of the registry's shared state, so it stays installed after `dlclose`;
+calling it afterwards invokes code in the unloaded library.
+
 ### CMake Setup
 
 Since the executable owns the registry state, the shared library must link
@@ -137,6 +143,14 @@ NOTE: `BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY` produces an explicit
 instantiation _definition_, which may appear only once in the program. Define
 it in exactly one translation unit of the owning module; all other translation
 units, in every module, use the `IMPORT` macro.
+
+WARNING: a translation unit that includes the registry headers _without_
+either macro compiles cleanly - it just silently gets its own private copy of
+the registry state instead of an error. That module then stops sharing
+classes, methods and overriders with the rest of the program (symptoms:
+`missing_class` or unexpected `bad_call` errors). Guard against this by
+defining the applicable macro on the command line, or in a project header
+that every translation unit includes before any `boost/openmethod` header.
 
 ## Indirect Vptrs
 
@@ -270,3 +284,11 @@ state from the executable that will load it. Mach-O (macOS) and PE (Windows)
 require every reference to be satisfied at link time: a client library must
 link against the owning module - hence the reverse link in the CMake setup
 above.
+
+WARNING: on Windows, every module that shares a registry must be linked
+against the same dynamic C++ runtime (the `/MD` or `/MDd` family). The
+registry state contains standard containers (`std::vector`, `std::function`,
+etc.) allocated by whichever module runs `initialize`; if a module links the
+static runtime (`/MT`) instead, or links a different runtime version, that
+module's CRT frees memory it did not allocate when the state is destroyed at
+exit, corrupting the heap.

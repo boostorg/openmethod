@@ -679,8 +679,14 @@ struct VptrFn {
     //!
     //! @tparam Context A class that conforms to the @ref InitializeContext
     //! blueprint.
-    template<class Context>
-    static auto initialize(const Context& ctx) -> void;
+    //! @tparam Options... Zero or more option types, deduced from the
+    //! function arguments.
+    //! @param ctx A Context object.
+    //! @param options A tuple of option objects.
+    template<class Context, class... Options>
+    static auto
+    initialize(const Context& ctx, const std::tuple<Options...>& options)
+        -> void;
 
     //! Return a *reference* to a v-table pointer for an object.
     //!
@@ -743,10 +749,24 @@ struct TypeHashFn {
     //!
     //! @tparam Context A class that conforms to the @ref InitializeContext
     //! blueprint.
-    //! @return A pair containing the minimum and maximum hash values.
-    template<class Context>
+    //! @tparam Options... Zero or more option types, deduced from the
+    //! function arguments.
+    //! @param ctx A Context object.
+    //! @param options A tuple of option objects.
+    //!
+    //! Use @ref hash_range to retrieve the minimum and maximum hash values
+    //! after calling this function.
+    template<class Context, class... Options>
     static auto
-    initialize(const Context& ctx) -> std::pair<std::size_t, std::size_t>;
+    initialize(const Context& ctx, const std::tuple<Options...>& options)
+        -> void;
+
+    //! Return the range of hash values produced by @ref hash.
+    //!
+    //! Only valid after a call to @ref initialize.
+    //!
+    //! @return A pair containing the minimum and maximum hash values.
+    static auto hash_range() -> std::pair<std::size_t, std::size_t>;
 
     //! Hash a `type_id`.
     //!
@@ -887,14 +907,26 @@ struct registry_state_type {
     static_list<method_info> methods;
     bool initialized;
     std::vector<word> dispatch_data;
-    using policies_type = mp11::mp_apply<
-        detail::tuple,
-        mp11::mp_transform<
-            policy_state_t,
-            mp11::mp_filter<
-                has_policy_state,
-                mp11::mp_transform_q<
-                    policy_fn_q<Registry>, typename Registry::policy_list>>>>;
+    // The per-policy `state` objects are held in a detail::tuple, whose
+    // element types must be unique (each is a distinct base class). If two
+    // stateful policies resolve to the same `state` type, raw instantiation
+    // fails with a cryptic "duplicate base type ... invalid" pointing into
+    // library internals. Diagnose it here instead. Do NOT mp_unique this
+    // list to "fix" the error: that would silently alias the two policies
+    // onto one shared state object.
+    using policy_state_list = mp11::mp_transform<
+        policy_state_t,
+        mp11::mp_filter<
+            has_policy_state,
+            mp11::mp_transform_q<
+                policy_fn_q<Registry>, typename Registry::policy_list>>>;
+    static_assert(
+        mp11::mp_size<policy_state_list>::value ==
+            mp11::mp_size<mp11::mp_unique<policy_state_list>>::value,
+        "two or more stateful policies in this registry share the same "
+        "nested `state` type; each stateful policy must define its own "
+        "distinct `state` type (give each its own nested struct)");
+    using policies_type = mp11::mp_apply<detail::tuple, policy_state_list>;
     policies_type policies;
 };
 

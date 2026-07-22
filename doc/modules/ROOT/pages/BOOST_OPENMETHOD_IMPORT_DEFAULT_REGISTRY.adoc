@@ -1,0 +1,42 @@
+
+# BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY
+
+Imports the state of cpp:default_registry[] from the module that owns it.
+
+## Synopsis
+
+May be defined by a program before including
+`<boost/openmethod/default_registry.hpp>` (directly, or via
+`<boost/openmethod.hpp>`), in every translation unit of every module that uses
+the registry without owning it.
+
+## Description
+
+All of a registry's mutable state lives in a single variable (see
+cpp:registry_state[]). For a program and its shared libraries to contribute
+classes, methods and overriders to the same `default_registry`, that variable
+must be shared across the modules: the _owning_ module exports it with
+xref:BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY.adoc[BOOST_OPENMETHOD_EXPORT_DEFAULT_REGISTRY],
+and every _client_ module imports it.
+
+`BOOST_OPENMETHOD_IMPORT_DEFAULT_REGISTRY` emits an `extern template`
+declaration of the registry state, decorated with `BOOST_SYMBOL_IMPORT`
+(`__declspec(dllimport)` on Windows, nothing on ELF platforms). The
+declaration suppresses the client's own instantiation of the state, so the
+client references the owner's symbol instead of creating a private copy. The
+same macro pair works on all platforms.
+
+The client module must be linked so that the reference can be resolved: on
+Windows and macOS, by linking against the owning module (for an executable,
+via its import library, generated with `ENABLE_EXPORTS` in CMake); on ELF
+platforms, a dynamically loaded library may also leave the reference for the
+dynamic linker to resolve at load time.
+
+cpp:indirect_registry[] has its own state, controlled by the analogous
+xref:BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY.adoc[BOOST_OPENMETHOD_EXPORT_INDIRECT_REGISTRY]
+and
+xref:BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY.adoc[BOOST_OPENMETHOD_IMPORT_INDIRECT_REGISTRY]
+pair.
+
+See xref:shared_libraries.adoc[Shared Libraries] for a full discussion,
+including the required link setup and how to share custom registries.

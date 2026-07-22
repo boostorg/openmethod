@@ -40,7 +40,7 @@ struct capture_errors {
 
     ~capture_errors() {
         error_handler::set(prev);
-        output::os.clear();
+        output::os.str("");
     }
 
     auto operator()() const {

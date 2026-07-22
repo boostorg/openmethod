@@ -28,7 +28,7 @@ namespace mp11 = boost::mp11;
 #include <boost/dll/alias.hpp>
 #endif
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog);
+BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
 
 extern "C" {
 BOOST_SYMBOL_EXPORT const void* registry_make_dog = (const void*)&make_dog;
