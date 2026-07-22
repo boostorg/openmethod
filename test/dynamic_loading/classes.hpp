@@ -29,11 +29,14 @@ struct BOOST_SYMBOL_VISIBLE Dog : Animal {};
 // that share the registry state.
 struct BOOST_SYMBOL_VISIBLE Cat : Animal {};
 
-static auto make_dog() {
+// [[maybe_unused]]: each TU gets its own copy (internal linkage) via
+// classes.hpp, but not every TU calls both - method.cpp/registry.cpp never
+// call make_cat(), which MSVC's /W4 /WX flags as error C4505 otherwise.
+[[maybe_unused]] static auto make_dog() {
     return boost::openmethod::make_unique_virtual<Dog>();
 }
 
-static auto make_cat() {
+[[maybe_unused]] static auto make_cat() {
     return boost::openmethod::make_unique_virtual<Cat>();
 }
 
