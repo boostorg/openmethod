@@ -17,11 +17,18 @@ endif()
 #   owner            - which module owns and exports the single shared
 #                       registry-state symbol: "dll" (lib_registry owns it;
 #                       method/overrider/exe import it) or "exe" (the
-#                       executable owns it; all three libraries import it).
+#                       executable owns it; method/overrider import it).
 #                       In the "exe" case the libraries must link *against*
 #                       the executable (reverse linkage); ENABLE_EXPORTS makes
 #                       the exe produce the import library / -rdynamic exports
-#                       needed for that.
+#                       needed for that. lib_registry is still built and
+#                       link-configured for reverse linkage in this case (for
+#                       symmetry, and so `tests` fully builds every module),
+#                       but main.cpp only dlopens the method/overrider
+#                       fragments (see below) - lib_registry is never loaded
+#                       into the running process, so the exe-owned state is
+#                       exercised only via lib_method/lib_overrider, not
+#                       lib_registry itself.
 #   hidden_visibility - if true, force CXX_VISIBILITY_PRESET hidden on every
 #                       target. classes.hpp marks Animal/Dog/Cat
 #                       BOOST_SYMBOL_VISIBLE, so under this setting their
@@ -87,8 +94,8 @@ function(boost_openmethod_add_dynamic_loading_variant suffix owner hidden_visibi
     # the shared libraries relative to the test executable at runtime.
     # ENABLE_EXPORTS is required so that symbols from each module are visible to
     # the shared libraries loaded at runtime (e.g. the overrider can resolve
-    # symbols from the method/registry/exe, and an exe-owned registry state can
-    # be imported by the dlopen'd libraries).
+    # symbols from the method/exe, and an exe-owned registry state can be
+    # imported by the dlopen'd method/overrider libraries).
     # We do NOT force CXX_VISIBILITY_PRESET here except for the hidden_visibility
     # variant below: the shared registry-state symbol carries BOOST_SYMBOL_VISIBLE
     # in the library (see registry_state in preamble.hpp), so it keeps DEFAULT ELF

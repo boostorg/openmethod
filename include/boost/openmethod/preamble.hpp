@@ -6,6 +6,7 @@
 #include <boost/config.hpp>
 #include <boost/mp11/algorithm.hpp>
 #include <boost/mp11/bind.hpp>
+#include <boost/mp11/utility.hpp>
 #include <boost/preprocessor/cat.hpp>
 
 #include <stdlib.h>
@@ -893,15 +894,13 @@ auto get(tuple<Ts...>& t) -> T& {
     return static_cast<tuple_element<T>&>(t).element;
 }
 
-// Detects whether T has a nested ::state type.
-template<class T, class = void>
-struct has_policy_state : std::false_type {};
-template<class T>
-struct has_policy_state<T, std::void_t<typename T::state>> : std::true_type {};
-
 // Extracts ::state from T.
 template<class T>
 using policy_state_t = typename T::state;
+
+// Detects whether T has a nested ::state type.
+template<class T>
+using has_policy_state = mp11::mp_valid<policy_state_t, T>;
 
 // Quoted metafunction: maps a policy type P to P::template fn<Registry>.
 template<class Registry>
@@ -964,19 +963,14 @@ struct find_first_derived_of_aux<Base, mp11::mp_list<First, More...>, Default> {
         find_first_derived_of<Base, mp11::mp_list<More...>, Default>>;
 };
 
-template<class Registry, class Policy, class Default>
+template<class Registry, class Policy>
 struct get_policy_aux {
     using type = typename Policy::template fn<Registry>;
 };
 
 template<class Registry>
-struct get_policy_aux<Registry, void, void> {
+struct get_policy_aux<Registry, void> {
     using type = void;
-};
-
-template<class Registry, class Default>
-struct get_policy_aux<Registry, void, Default> {
-    using type = typename Default::template fn<Registry>;
 };
 
 template<class Policies, class...>
@@ -1082,12 +1076,6 @@ struct registry_state {
 template<class Registry>
 detail::registry_state_type<Registry> registry_state<Registry>::st;
 
-namespace detail {
-
-BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(id);
-
-} // namespace detail
-
 //! Methods, classes and policies.
 //!
 //! Methods exist in the context of a registry. Any class used as a method or
@@ -1156,10 +1144,9 @@ class registry : public detail::registry_base {
     //! to the policy's `fn` metafunction, applied to the registry.
     //!
     //! @tparam A policy.
-    template<class Category, typename Default = void>
+    template<class Category>
     using policy = typename detail::get_policy_aux<
-        registry, detail::find_first_derived_of<Category, policy_list>,
-        Default>::type;
+        registry, detail::find_first_derived_of<Category, policy_list>>::type;
 
   private:
     template<class...>

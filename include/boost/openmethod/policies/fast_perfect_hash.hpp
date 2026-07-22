@@ -216,8 +216,6 @@ void fast_perfect_hash::fn<Registry>::initialize_aux(
     for (std::size_t pass = 0; pass < 5; ++pass, ++M) {
         st().fn.shift = 8 * sizeof(type_id) - M;
         auto hash_size = 1 << M;
-        st().fn.min_value = (std::numeric_limits<std::size_t>::max)();
-        st().fn.max_value = (std::numeric_limits<std::size_t>::min)();
 
         if constexpr (InitializeContext::template has_option<trace>) {
             ctx.tr << "  trying with M = " << M << ", " << hash_size
@@ -233,6 +231,14 @@ void fast_perfect_hash::fn<Registry>::initialize_aux(
             ++attempts;
             ++total_attempts;
             st().fn.mult = uniform_dist(rnd) | 1;
+            // Reset per attempt, not just per pass: a failed attempt (a
+            // collision partway through, below) has already narrowed these
+            // for the type ids it did place, and a fresh `mult` produces an
+            // unrelated distribution - carrying over stale min/max would
+            // contaminate hash_range() and oversize the vptr vector
+            // (vptr_vector sizes itself off max_value).
+            st().fn.min_value = (std::numeric_limits<std::size_t>::max)();
+            st().fn.max_value = (std::numeric_limits<std::size_t>::min)();
 
             for (auto iter = ctx.classes_begin(); iter != ctx.classes_end();
                  ++iter) {

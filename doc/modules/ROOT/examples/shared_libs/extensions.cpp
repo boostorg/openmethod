@@ -20,19 +20,18 @@
 // tag::content[]
 
 #include "animals.hpp"
-// end::content[]
 
 using namespace boost::openmethod;
-
-// tag::content[]
 
 BOOST_OPENMETHOD_OVERRIDE(
     meet, (virtual_ptr<Herbivore> a, virtual_ptr<Carnivore> b), std::string) {
     auto p = BOOST_OPENMETHOD_TYPE(
         meet, (virtual_ptr<Animal>, virtual_ptr<Animal>),
         std::string)::next<fn>;
+// end::content[]
     BOOST_ASSERT(p);
     BOOST_ASSERT(p(a, b) == "greet");
+// tag::content[]
     return "run";
 }
 
@@ -47,7 +46,9 @@ BOOST_OPENMETHOD_CLASSES(Tiger, Carnivore);
 
 extern "C" {
 BOOST_SYMBOL_EXPORT auto make_tiger() -> Animal* {
+// end::content[]
     BOOST_ASSERT(default_registry::static_vptr<Carnivore> != nullptr);
+// tag::content[]
     return new Tiger;
 }
 }

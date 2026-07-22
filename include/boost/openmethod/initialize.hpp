@@ -68,31 +68,36 @@ struct aggregate_reports<mp11::mp_list<Reports...>, mp11::mp_list<>, Void> {
     "boost/openmethod: this MSVC version is newer than 19.51, the last "       \
     "one confirmed to need the has_initialize/has_finalize SFINAE "            \
     "workaround below (wrong instantiation of the enclosing "                  \
-    "boost::openmethod::initialize function template during member-call "      \
-    "SFINAE). Check whether this compiler still has the bug.")
+    "boost::openmethod::initialize/finalize function templates during "        \
+    "member-call SFINAE). Check whether this compiler still has the bug; "     \
+    "if not, both workarounds (and this macro) can be removed.")
 #endif
-// Do not probe with a call expression (the generic
-// BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN form): while evaluating
-// decltype(T::initialize(...)) for a T that has no such member, MSVC
-// (19.44 and later, still present in 19.51) wrongly instantiates the body of
-// the enclosing-namespace boost::openmethod::initialize function template
-// (for its auto return type), which re-enters this probe with new types -
-// unbounded recursion. 19.44 stops with C1202/C7752; 19.51 exhausts all
-// memory (C1060) instead. Take the address of a specialization instead: it
-// only involves T's members.
-template<typename, class, class...>
-struct has_initialize_aux : std::false_type {};
-
-template<class T, class... Args>
-struct has_initialize_aux<
-    std::void_t<decltype(&T::template initialize<std::decay_t<Args>...>)>, T,
-    Args...> : std::true_type {};
-
-template<class T, class... Args>
-constexpr bool has_initialize = has_initialize_aux<void, T, Args...>::value;
+// `initialize` and `finalize` are also enclosing-namespace
+// boost::openmethod::initialize/finalize function templates, so probing them
+// with a call expression (the generic BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN
+// form) is unsafe here: while evaluating decltype(T::FN(...)) for a T that
+// has no such member, MSVC (19.44 and later, still present in 19.51) wrongly
+// instantiates the body of the enclosing function template (for its auto
+// return type), which re-enters this probe with new types - unbounded
+// recursion. 19.44 stops with C1202/C7752; 19.51 exhausts all memory
+// (C1060) instead. Take the address of a specialization instead: it only
+// involves T's members.
+#define BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN_MSVC_SAFE(FN)                    \
+    template<typename, class, class...>                                       \
+    struct BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux)) : std::false_type {};   \
+    template<class T, class... Args>                                          \
+    struct BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux))<                        \
+        std::void_t<decltype(&T::template FN<std::decay_t<Args>...>)>, T,     \
+        Args...> : std::true_type {};                                         \
+    template<class T, class... Args>                                          \
+    constexpr bool BOOST_PP_CAT(has_, FN) =                                   \
+        BOOST_PP_CAT(has_, BOOST_PP_CAT(FN, _aux))<void, T, Args...>::value
 #else
-BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(initialize);
+#define BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN_MSVC_SAFE(FN)                    \
+    BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(FN)
 #endif
+
+BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN_MSVC_SAFE(initialize);
 
 // Call initialize on a single policy if it has the function
 template<typename Policy, typename Registry, typename Context, typename Options>
@@ -883,17 +888,14 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
 
     for (auto& info : registry::static_::st.methods) {
         auto key = rtti::type_index(info.method_type_id);
-        method* pm;
+        auto [iter, inserted] = method_map.try_emplace(key, nullptr);
 
-        if (method_map.find(key) == method_map.end()) {
+        if (inserted) {
             methods.emplace_back();
-            pm = &methods.back();
-            method_map[key] = pm;
-        } else {
-            pm = method_map[key];
+            iter->second = &methods.back();
         }
 
-        pm->infos.push_back(&info);
+        iter->second->infos.push_back(&info);
     }
 
     std::size_t method_index = 0;
@@ -1926,32 +1928,9 @@ inline auto initialize(Options&&... options) {
 
 namespace detail {
 
-#ifdef BOOST_MSVC
-#if BOOST_MSVC > 1951
-#pragma message(                                                               \
-    "boost/openmethod: this MSVC version is newer than 19.51, the last "       \
-    "one confirmed to need the has_initialize/has_finalize SFINAE "            \
-    "workaround below (wrong instantiation of the enclosing "                  \
-    "boost::openmethod::finalize function template during member-call "        \
-    "SFINAE). Check whether this compiler still has the bug; if not, this "    \
-    "workaround (and the matching one for has_initialize) can be removed.")
-#endif
-// Same MSVC workaround as for has_initialize above: an enclosing-namespace
-// boost::openmethod::finalize function template exists, so a call-expression
-// probe is unsafe.
-template<typename, class, class...>
-struct has_finalize_aux : std::false_type {};
-
-template<class T, class... Args>
-struct has_finalize_aux<
-    std::void_t<decltype(&T::template finalize<std::decay_t<Args>...>)>, T,
-    Args...> : std::true_type {};
-
-template<class T, class... Args>
-constexpr bool has_finalize = has_finalize_aux<void, T, Args...>::value;
-#else
-BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(finalize);
-#endif
+// See the BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN_MSVC_SAFE definition near
+// has_initialize, above, for why this needs the MSVC-safe form too.
+BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN_MSVC_SAFE(finalize);
 
 // Call finalize on a single policy if it has the function. Mirror of
 // initialize_policy.
@@ -1983,7 +1962,7 @@ struct finalize_policies<Registry, mp11::mp_list<Policies...>> {
 template<class... Policies>
 template<class... Options>
 auto registry<Policies...>::finalize(Options... opts) -> void {
-    std::tuple<Options...> options(opts...); // gcc-8 doesn't like CTAD here
+    std::tuple<Options...> options(opts...);
     detail::finalize_policies<registry>::fn(options);
     static_::st.dispatch_data.clear();
     static_::st.initialized = false;

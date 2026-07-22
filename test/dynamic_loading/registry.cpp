@@ -17,23 +17,7 @@
 #include "registry.hpp"
 #include "classes.hpp"
 
-#include <boost/openmethod/initialize.hpp>
-
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
-#if defined(_WIN32) || defined(__CYGWIN__)
-#include <boost/config.hpp>
-#else
-#include <boost/dll/alias.hpp>
-#endif
-
 BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
-
-extern "C" {
-BOOST_SYMBOL_EXPORT const void* registry_make_dog = (const void*)&make_dog;
-}
-
-void registry_initialize() {
-    boost::openmethod::initialize(trace::from_env());
-}
