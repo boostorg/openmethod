@@ -280,25 +280,27 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
 
 struct BOOST_OPENMETHOD_ID(poke);
 
+// Namespace-scope templates: gcc before 13 does not accept the static member
+// functions of a local class as template arguments (no linkage).
+template<class Registry>
+auto poke_dog(shared_virtual_ptr<Dog, Registry>) -> std::string {
+    return "bark";
+}
+
+template<class Registry>
+auto poke_cat(shared_virtual_ptr<Cat, Registry>) -> std::string {
+    return "hiss";
+}
+
 BOOST_AUTO_TEST_CASE_TEMPLATE(
     weak_virtual_ptr_dispatch, Registry, test_policies) {
     using poke = method<
         BOOST_OPENMETHOD_ID(poke),
         auto(shared_virtual_ptr<Animal, Registry>)->std::string, Registry>;
 
-    struct overriders {
-        static auto poke_dog(shared_virtual_ptr<Dog, Registry>) -> std::string {
-            return "bark";
-        }
-
-        static auto poke_cat(shared_virtual_ptr<Cat, Registry>) -> std::string {
-            return "hiss";
-        }
-    };
-
     BOOST_OPENMETHOD_REGISTER(
         typename poke::template override<
-            overriders::poke_dog, overriders::poke_cat>);
+            poke_dog<Registry>, poke_cat<Registry>>);
 
     init_test<Registry>();
 
