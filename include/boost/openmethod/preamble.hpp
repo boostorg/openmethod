@@ -177,11 +177,9 @@ struct not_initialized : openmethod_error {
 //! include:errors_missing_class_call.cpp#classes;use
 //!
 //! @note With a compiler that supports C++26 reflection, @ref
-//! BOOST_OPENMETHOD_REGISTER_CLASSES registers these classes on its own, and the
-//! examples above no longer report anything. The error remains reachable - for
-//! a class in a namespace the scan does not cover, or in a registry with an
-//! @ref boost::openmethod::policies::explicit_class_registration policy, which
-//! is what the examples use.
+//! BOOST_OPENMETHOD_REGISTER_CLASSES finds these classes on its own. The
+//! examples do not call it, so they report the error under either standard; a
+//! program that does reaches it only for a class the scan does not cover.
 //!
 //! @see [Error Handling](xref:ROOT:error_handling.adoc)
 struct missing_class : openmethod_error {
@@ -220,11 +218,9 @@ struct missing_class : openmethod_error {
 //! include:errors_missing_class_call.cpp#fix
 //!
 //! @note With a compiler that supports C++26 reflection, @ref
-//! BOOST_OPENMETHOD_REGISTER_CLASSES registers these classes on its own, and the
-//! examples above no longer report anything. The error remains reachable - for
-//! a class in a namespace the scan does not cover, or in a registry with an
-//! @ref boost::openmethod::policies::explicit_class_registration policy, which
-//! is what the examples use.
+//! BOOST_OPENMETHOD_REGISTER_CLASSES finds these classes on its own. The
+//! examples do not call it, so they report the error under either standard; a
+//! program that does reaches it only for a class the scan does not cover.
 //!
 //! @see [Error Handling](xref:ROOT:error_handling.adoc)
 struct missing_base : openmethod_error {
@@ -927,27 +923,6 @@ struct runtime_checks final {
     struct fn {};
 };
 
-// -----------------------------------------------------------------------------
-// explicit_class_registration
-
-//! Policy to disable reflection-based class registration.
-//!
-//! When the compiler supports C++26 reflection, the library registers the
-//! classes of virtual parameters, and their base classes, on its own; see @ref
-//! use_classes. If this policy is present, it does not: every class must be
-//! registered with @ref use_classes or @ref BOOST_OPENMETHOD_CLASSES, exactly
-//! as in C++17.
-//!
-//! The policy has no effect if the compiler does not support reflection.
-//!
-//! @see [Registries and Policies](xref:ROOT:registries_and_policies.adoc)
-struct explicit_class_registration final {
-    // Policy category.
-    using category = explicit_class_registration;
-    template<class Registry>
-    struct fn {};
-};
-
 } // namespace policies
 
 // -----------------------------------------------------------------------------
@@ -1396,14 +1371,6 @@ class registry : public detail::registry_base {
     //! `true` if the registry has an indirect_vptr policy.
     static constexpr auto has_indirect_vptr =
         !std::is_same_v<policy<policies::indirect_vptr>, void>;
-
-    //! `true` if the library registers classes by reflection.
-    //!
-    //! `true` if the compiler supports C++26 reflection and the registry does
-    //! not have an @ref policies::explicit_class_registration policy.
-    static constexpr auto has_reflected_class_registration =
-        BOOST_OPENMETHOD_HAS_REFLECTION &&
-        std::is_same_v<policy<policies::explicit_class_registration>, void>;
 };
 
 template<class... Policies>

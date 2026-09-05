@@ -175,19 +175,33 @@ rooted in some general-purpose base contributes only the part of itself that
 takes part in dispatch. As soon as another method does dispatch on that base,
 it is registered, and the inheritance edges through it with it.
 
+The namespaces decide where the *derived* classes are looked for, not which
+bases are recorded. A class between a registered class and a root is registered
+too, wherever it is declared - in a namespace the scan does not enter, or as a
+specialization of a class template, which the scan cannot find on its own - so
+that the inheritance lattice is complete. And each class is recorded with every
+registered class above it, so that a registration stands on its own, whatever
+another one - in another translation unit, over other namespaces - registers
+alongside it.
+
 A scan does not descend into the `std` and `boost` namespaces, so scanning the
 global namespace costs little more than a narrower one would - a method cannot
 dispatch on a class the program never heard of anyway. The exclusion applies to
 recursion only: a namespace *listed* explicitly is always scanned, which is how
 a class in `std` or `boost` gets registered.
 
-Reflection sees only what precedes it, so the macro must come *after* the
-declarations it is meant to find. Putting it at the bottom of the file is the
-simplest way to be sure.
+The scan runs when the registrar the macro declares is instantiated, which
+current compilers do at the end of the translation unit: it sees the whole
+file, wherever the macro sits. The standard promises less. A class or a method
+the scan would select, declared after the macro in the same translation unit,
+makes the program ill-formed, no diagnostic required. So put the macro *after*
+the declarations it is meant to find: at the bottom of the file.
 
 Virtual and multiple inheritance are supported. Unlike
 `BOOST_OPENMETHOD_CLASSES`, which rejects it, repeated inheritance is not an
-error here: an ambiguous base cannot take part in dispatch, so it is left out.
+error here: a class is recorded under the bases it reaches unambiguously
+through public inheritance, and a base it inherits more than once - which no
+reference to it can be converted to - is left out of its list.
 
 Without reflection - in C++17, or in C++26 without the compiler flag that enables
 it - the macro expands to nothing. A file that also calls
@@ -199,26 +213,22 @@ A method is found through any declaration that names its `method` type: the
 alias `BOOST_OPENMETHOD` declares alongside the method, a `using` declaration of
 your own, or any of the method's registrar objects. None of those depends on the
 method having an overrider, so a method declared with `BOOST_OPENMETHOD` is
-always found.
+always found. A method's return type is not a root: a covariant return type is
+registered like any other class, when it derives from a root, or when it is
+listed.
 
-Three situations remain outside the scan's reach, and need a
-`BOOST_OPENMETHOD_CLASSES` of their own:
+Four situations remain outside the scan's reach, and need to be registered by
+other means - listed in the macro, or given a `BOOST_OPENMETHOD_CLASSES` of
+their own:
 
-* a class in a namespace the macro does not scan;
+* a class in a namespace the macro does not scan, unless it sits between a
+  class the scan finds and a root;
+* a specialization of a class template that no method dispatches on, and that
+  no class the scan finds derives from - one used only as an overrider
+  parameter, say. Specializations are not members of a namespace, so the scan
+  does not see them; list it: `BOOST_OPENMETHOD_REGISTER_CLASSES({^^Pet<int>})`;
 * a core API method whose `method<...>` type is spelled out in full at every
   use, with no `using` declaration of its own and no overrider - nothing names
   it;
 * a program that declares no method at all, and uses `virtual_ptr` on its own -
   there is no virtual parameter for the scan to start from.
-
-### Turning It Off
-
-Adding the `policies::explicit_class_registration` policy to a registry stops
-the library from registering anything on its own, in C++26 as in C++17:
-
-[source,c++]
-----
-struct my_registry
-    : boost::openmethod::default_registry::with<
-          boost::openmethod::policies::explicit_class_registration> {};
-----

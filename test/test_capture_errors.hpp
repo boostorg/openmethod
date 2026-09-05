@@ -11,13 +11,6 @@
 // definition, the library include, and `test_registry` itself. Including it
 // first - before anything that pulls in core.hpp - is all a test has to do,
 // and there is no ordering left for a caller to get wrong.
-//
-// A test that is *about* a class the library must not find on its own - one
-// that expects `missing_class` or `missing_base` - defines
-// BOOST_OPENMETHOD_TEST_EXPLICIT_CLASS_REGISTRATION before including this
-// header. The `explicit_class_registration` policy then leaves every
-// registration to the test, exactly as in C++17, instead of letting reflection
-// supply the class the test is withholding.
 struct test_registry;
 #define BOOST_OPENMETHOD_DEFAULT_REGISTRY test_registry
 
@@ -36,15 +29,8 @@ struct capture_output : boost::openmethod::policies::output {
     };
 };
 
-#ifdef BOOST_OPENMETHOD_TEST_EXPLICIT_CLASS_REGISTRATION
-struct test_registry :
-    boost::openmethod::default_registry::with<
-        capture_output,
-        boost::openmethod::policies::explicit_class_registration> {};
-#else
 struct test_registry :
     boost::openmethod::default_registry::with<capture_output> {};
-#endif
 
 template<class Registry>
 struct capture_errors {

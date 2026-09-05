@@ -84,12 +84,16 @@ jobs:
 
       # The suite is the reflection test: BOOST_OPENMETHOD_TEST_CLASSES expands
       # to nothing here, so every class has to be found by the scan that
-      # BOOST_OPENMETHOD_REGISTER_CLASSES starts.
+      # BOOST_OPENMETHOD_REGISTER_CLASSES starts. BUILD_SHARED_LIBS brings in
+      # test/dynamic_loading, where the registrar that scan instantiates - one
+      # inline variable per class, for the whole program - crosses module
+      # boundaries.
       - name: Build and test
         run: |
           cmake -S . -B ../build -G Ninja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DCMAKE_CXX_COMPILER=g++-16 \
+            -DBUILD_SHARED_LIBS=ON \
             -DBOOST_OPENMETHOD_ENABLE_REFLECTION=ON \
             -DBOOST_OPENMETHOD_BUILD_TESTS=ON \
             -DBOOST_OPENMETHOD_WARNINGS_AS_ERRORS=ON \

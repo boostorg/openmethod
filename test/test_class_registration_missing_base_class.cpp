@@ -3,10 +3,6 @@
 // See accompanying file LICENSE_1_0.txt
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
-// This test is *about* a class that is not registered, so the library must not
-// register it by reflection.
-#define BOOST_OPENMETHOD_TEST_EXPLICIT_CLASS_REGISTRATION
-
 #include "test_checked_registry.hpp"
 
 #include <boost/openmethod/initialize.hpp>

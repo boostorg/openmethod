@@ -61,6 +61,4 @@ BOOST_AUTO_TEST_CASE(duplicate_overrider_is_ambiguous) {
     BOOST_TEST(capture().find("ambiguous") != std::string::npos);
 }
 
-// Registers the classes above by reflection, when the compiler supports it.
-// Must come last: reflection sees only what precedes it.
-BOOST_OPENMETHOD_REGISTER_CLASSES();
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

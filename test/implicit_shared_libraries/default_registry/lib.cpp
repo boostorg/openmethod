@@ -11,6 +11,7 @@
 #define OWNS_REGISTRY_STATE
 
 #include "lib.hpp"
+#include "../../test_classes.hpp"
 
 using namespace boost::openmethod;
 
@@ -19,7 +20,7 @@ using namespace boost::openmethod;
 // error on GCC.
 BOOST_OPENMETHOD_INSTANTIATE_REGISTRY(boost::openmethod::default_registry);
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
+BOOST_OPENMETHOD_TEST_CLASSES(Animal, Dog, Cat);
 
 BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
     return "?";
@@ -45,3 +46,5 @@ auto lib_speak(virtual_ptr<Animal> animal) -> const char* {
 auto lib_make_dog() -> unique_virtual_ptr<Animal> {
     return make_unique_virtual<Dog>();
 }
+
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

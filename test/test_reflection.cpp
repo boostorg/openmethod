@@ -10,6 +10,7 @@
 
 #include <sstream>
 #include <string>
+#include <utility>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/initialize.hpp>
@@ -30,6 +31,9 @@ BOOST_AUTO_TEST_CASE(reflection_not_supported) {
 #include <memory>
 
 #include <boost/openmethod/interop/std_shared_ptr.hpp>
+#include <boost/preprocessor/arithmetic/inc.hpp>
+#include <boost/preprocessor/cat.hpp>
+#include <boost/preprocessor/repetition/repeat.hpp>
 #include <boost/openmethod/policies/throw_error_handler.hpp>
 
 using namespace boost::openmethod;
@@ -306,7 +310,9 @@ BOOST_AUTO_TEST_CASE(virtual_and_multiple_inheritance) {
 //
 // `use_classes` rejects an ambiguous base at compile time, because naming one
 // is a mistake in a hand-written list. Here the classes are collected
-// mechanically, and a class that happens to have one must not break the build.
+// mechanically, and a class that happens to have one must not break the build:
+// it is registered under the bases it can be converted to, and the ambiguous
+// one is left out of its list.
 
 namespace repeated_inheritance {
 
@@ -348,15 +354,24 @@ BOOST_AUTO_TEST_CASE(repeated_inheritance_does_not_break_the_scan) {
     BOOST_TEST((registered<Dog, test_registry>(comp)));
     BOOST_TEST((registered<Left, test_registry>(comp)));
     BOOST_TEST((registered<Right, test_registry>(comp)));
-    // Animal is the only registered class Repeated derives from, and it is
-    // ambiguous, so Repeated is left with no base to dispatch under and is not
-    // registered at all.
-    BOOST_TEST((!registered<Repeated, test_registry>(comp)));
+    // Registered, under Left and Right: Animal is ambiguous, and left out.
+    BOOST_TEST((registered<Repeated, test_registry>(comp)));
+
+    auto repeated = comp.class_map.at(
+        test_registry::rtti::type_index(
+            test_registry::rtti::static_type<Repeated>()));
+    BOOST_TEST(repeated->direct_bases.size() == 2u);
 
     Dog dog;
     Left left;
     BOOST_TEST(poke(dog) == "bark");
     BOOST_TEST(poke(left) == "generic");
+
+    // A Repeated cannot be passed as an Animal, but a Left can, and its dynamic
+    // type is what dispatch looks at.
+    Repeated repeated_obj;
+    Left& left_side = repeated_obj;
+    BOOST_TEST(poke(left_side) == "generic");
 }
 
 // =============================================================================
@@ -520,11 +535,12 @@ BOOST_AUTO_TEST_CASE(a_base_another_method_dispatches_on_is_registered) {
 }
 
 // =============================================================================
-// The recorded bases are the direct ones
+// The recorded bases are every registered ancestor
 //
-// Reflection knows a class' direct bases, so the registry records those, not the
-// whole ancestry. `initialize` derives the lattice from them either way; the
-// point is to not ship, instantiate and store what it can work out for itself.
+// Not the direct bases only: `initialize` derives those from the closure of
+// what the records say, and a record that carries the whole ancestry stands on
+// its own, whatever another registration - over other namespaces, in another
+// translation unit - records alongside it.
 
 namespace direct_bases {
 
@@ -553,22 +569,23 @@ BOOST_OPENMETHOD_OVERRIDE(poke, (C&), std::string) {
 BOOST_OPENMETHOD_REGISTER(
     register_classes<{^^direct_bases}, {^^direct_bases::test_registry}>);
 
-BOOST_AUTO_TEST_CASE(recorded_bases_are_direct) {
+BOOST_AUTO_TEST_CASE(recorded_bases_are_every_registered_ancestor) {
     using namespace direct_bases;
 
     auto comp = initialize<test_registry>();
 
     // Each class_info names the class itself, as its own improper base, plus
-    // its direct bases - four entries for the whole chain, not ten.
+    // every registered class above it.
     std::size_t recorded = 0;
 
     for (auto& ci : test_registry::state().classes) {
         recorded += ci.last_base - ci.first_base;
     }
 
-    BOOST_TEST(recorded == 7u); // A: 1, B/C/D: 2 each
+    BOOST_TEST(recorded == 10u); // A: 1, B: 2, C: 3, D: 4
 
-    // The lattice initialize derives from them is still the full chain.
+    // The lattice initialize derives from them is the chain, with the direct
+    // bases worked out.
     auto a = comp.class_map.at(
         test_registry::rtti::type_index(test_registry::rtti::static_type<A>()));
     auto d = comp.class_map.at(
@@ -586,39 +603,6 @@ BOOST_AUTO_TEST_CASE(recorded_bases_are_direct) {
     BOOST_TEST(poke(b) == "A");
     BOOST_TEST(poke(c) == "C");
     BOOST_TEST(poke(d_obj) == "C");
-}
-
-// =============================================================================
-// explicit_class_registration opts out
-
-namespace opted_out {
-
-struct test_registry :
-    test_registry_<
-        __COUNTER__, policies::explicit_class_registration,
-        policies::throw_error_handler> {};
-
-struct Animal {
-    virtual ~Animal() = default;
-};
-
-struct Dog : Animal {};
-
-BOOST_OPENMETHOD(poke, (virtual_<Animal&>), void, test_registry);
-
-BOOST_OPENMETHOD_OVERRIDE(poke, (Dog&), void) {
-}
-
-} // namespace opted_out
-
-BOOST_OPENMETHOD_REGISTER(
-    register_classes<{^^opted_out}, {^^opted_out::test_registry}>);
-
-BOOST_AUTO_TEST_CASE(explicit_class_registration_disables_the_scan) {
-    static_assert(!opted_out::test_registry::has_reflected_class_registration);
-    // Nothing was registered, so initialize cannot resolve the method's
-    // virtual parameter.
-    BOOST_CHECK_THROW(initialize<opted_out::test_registry>(), missing_class);
 }
 
 // =============================================================================
@@ -868,6 +852,10 @@ struct Stray : boost_gate::Animal {};
 
 } // namespace boost::om_reflection_test
 
+// An alias, at global scope, to the very namespace the scan stays out of. The
+// scan does not go through aliases, so this one changes nothing.
+namespace om_reflection_test_alias = boost::om_reflection_test;
+
 // The default scan of `^^::` recurses everywhere except into `std` and
 // `boost`, so it does not reach `Stray`.
 BOOST_OPENMETHOD_REGISTER(register_classes<{^^boost_gate::default_registry_}>);
@@ -945,8 +933,8 @@ struct Animal {
 
 struct Dog : Animal {};
 
-// No registry group, so the classes go to BOOST_OPENMETHOD_DEFAULT_REGISTRY;
-// no namespace group either, so nothing is scanned.
+// No registry group, so the classes go to the default registry; no namespace
+// group either, so the global namespace is scanned, as always.
 BOOST_OPENMETHOD_REGISTER(
     register_classes<{
         ^^default_registry_target::Animal, ^^default_registry_target::Dog}>);
@@ -988,10 +976,10 @@ struct Kennel {
     }
 };
 
-// A class the scope only *names* is registered, but not descended into: Alias
-// adds nothing, and Kennel::Dog is found once. An alias that adds cv-
-// qualification names the same class too, not a second one to give a lattice
-// node, a hash slot and a dispatch table row of its own.
+// An alias to a class the scan declares anyway adds nothing, and is not walked
+// into: Kennel::Dog is found once. An alias that adds cv-qualification names
+// the same class too, not a second one to give a lattice node, a hash slot and
+// a dispatch table row of its own.
 using Alias = Kennel;
 using ConstDog = const Kennel::Dog;
 
@@ -1024,6 +1012,407 @@ BOOST_AUTO_TEST_CASE(classes_nested_in_classes_are_found) {
     BOOST_TEST(poke(dog) == "bark");
     // Puppy is private to Kennel, and reached only as an Animal.
     BOOST_TEST(poke(*Kennel::make_puppy()) == "bark");
+}
+
+// =============================================================================
+// Namespace aliases are not followed
+
+namespace namespace_aliases {
+
+struct test_registry : test_registry_<__COUNTER__> {};
+
+struct Animal {
+    virtual ~Animal() = default;
+};
+
+struct Dog : Animal {};
+
+namespace detail {
+
+// An alias to the enclosing namespace: a scan that followed it would never
+// end.
+namespace up = ::namespace_aliases;
+
+} // namespace detail
+
+BOOST_OPENMETHOD(poke, (virtual_<Animal&>), std::string, test_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (Dog&), std::string) {
+    return "bark";
+}
+
+} // namespace namespace_aliases
+
+BOOST_OPENMETHOD_REGISTER(
+    register_classes<
+        {^^namespace_aliases}, {^^namespace_aliases::test_registry}>);
+
+BOOST_AUTO_TEST_CASE(namespace_aliases_are_not_followed) {
+    using namespace namespace_aliases;
+
+    auto comp = initialize<test_registry>();
+
+    BOOST_TEST((registered<Animal, test_registry>(comp)));
+    BOOST_TEST((registered<Dog, test_registry>(comp)));
+
+    Dog dog;
+    BOOST_TEST(poke(dog) == "bark");
+}
+
+// =============================================================================
+// An alias scanned before the declaration does not hide nested classes
+//
+// `early` is scanned first, and names `Kennel`. That must not stop the scan
+// from walking into `Kennel` when it reaches `late`, which declares it.
+
+namespace alias_first {
+
+struct test_registry : test_registry_<__COUNTER__> {};
+
+namespace late {
+struct Kennel;
+}
+
+namespace early {
+using K = late::Kennel;
+}
+
+namespace late {
+
+struct Animal {
+    virtual ~Animal() = default;
+};
+
+struct Kennel {
+    struct Dog : Animal {};
+};
+
+BOOST_OPENMETHOD(poke, (virtual_<Animal&>), std::string, test_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (Kennel::Dog&), std::string) {
+    return "bark";
+}
+
+} // namespace late
+
+} // namespace alias_first
+
+BOOST_OPENMETHOD_REGISTER(
+    register_classes<
+        {^^alias_first::early, ^^alias_first::late},
+        {^^alias_first::test_registry}>);
+
+BOOST_AUTO_TEST_CASE(an_alias_scanned_first_does_not_hide_nested_classes) {
+    using namespace alias_first;
+
+    auto comp = initialize<test_registry>();
+
+    BOOST_TEST((registered<late::Kennel::Dog, test_registry>(comp)));
+
+    late::Kennel::Dog dog;
+    BOOST_TEST(late::poke(dog) == "bark");
+}
+
+// =============================================================================
+// A class between a registered class and a root is registered wherever it is
+//
+// Two registrations, each scanning its own namespaces - as a library and a
+// plugin would, from their own translation units. The plugin's class derives
+// from a class the plugin's scan never sees. Its record must carry it all the
+// same, and the class must be registered, or the library's overrider for it
+// would not apply to the plugin's class.
+
+namespace split {
+
+struct test_registry : test_registry_<__COUNTER__> {};
+
+namespace core {
+
+struct Animal {
+    virtual ~Animal() = default;
+};
+
+BOOST_OPENMETHOD(poke, (virtual_<Animal&>), std::string, test_registry);
+BOOST_OPENMETHOD(name, (virtual_<Animal&>), std::string, test_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (Animal&), std::string) {
+    return "generic";
+}
+
+BOOST_OPENMETHOD_OVERRIDE(name, (Animal&), std::string) {
+    return "animal";
+}
+
+} // namespace core
+
+namespace lib {
+
+struct Dog : core::Animal {};
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (Dog&), std::string) {
+    return "bark";
+}
+
+} // namespace lib
+
+namespace plugin {
+
+struct Bulldog : lib::Dog {};
+
+// The plugin overrides `name` only. Its registrar is what leads the plugin's
+// scan to the method, and to `Animal` as a root.
+BOOST_OPENMETHOD_OVERRIDE(name, (Bulldog&), std::string) {
+    return "bulldog";
+}
+
+} // namespace plugin
+
+} // namespace split
+
+BOOST_OPENMETHOD_REGISTER(
+    register_classes<{^^split::core, ^^split::lib}, {^^split::test_registry}>);
+BOOST_OPENMETHOD_REGISTER(
+    register_classes<{^^split::plugin}, {^^split::test_registry}>);
+
+BOOST_AUTO_TEST_CASE(a_base_outside_the_scan_is_registered) {
+    using namespace split;
+
+    auto comp = initialize<test_registry>();
+
+    BOOST_TEST((registered<plugin::Bulldog, test_registry>(comp)));
+
+    auto bulldog = comp.class_map.at(
+        test_registry::rtti::type_index(
+            test_registry::rtti::static_type<plugin::Bulldog>()));
+    BOOST_TEST(bulldog->direct_bases.size() == 1u);
+    BOOST_TEST(bulldog->transitive_bases.size() == 2u);
+
+    plugin::Bulldog bulldog_obj;
+    // Dog's overrider, not Animal's: the edge to Dog survived.
+    BOOST_TEST(core::poke(bulldog_obj) == "bark");
+    BOOST_TEST(core::name(bulldog_obj) == "bulldog");
+}
+
+// =============================================================================
+// A method's return type is not a root
+//
+// `stream` returns a class reference, and its overrider a reference to a
+// derived class - a covariant return type, both in a namespace the scan does
+// not enter. Were `std::ostream` a root, `initialize` would want
+// `std::ostringstream` registered as well, and abort. `clone` shows the
+// covariant check still armed when the return classes are in the scan.
+
+namespace return_types {
+
+struct test_registry : test_registry_<__COUNTER__> {};
+
+struct Animal {
+    virtual ~Animal() = default;
+};
+
+struct Dog : Animal {};
+
+BOOST_OPENMETHOD(stream, (virtual_<Animal&>), std::ostream&, test_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(stream, (Dog&), std::ostringstream&) {
+    static std::ostringstream os;
+    return os;
+}
+
+BOOST_OPENMETHOD(clone, (virtual_<Animal&>), Animal*, test_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(clone, (Dog & dog), Dog*) {
+    return &dog;
+}
+
+} // namespace return_types
+
+BOOST_OPENMETHOD_REGISTER(
+    register_classes<{^^return_types}, {^^return_types::test_registry}>);
+
+BOOST_AUTO_TEST_CASE(a_return_type_is_not_a_root) {
+    using namespace return_types;
+
+    auto comp = initialize<test_registry>();
+
+    BOOST_TEST((registered<Animal, test_registry>(comp)));
+    BOOST_TEST((registered<Dog, test_registry>(comp)));
+    BOOST_TEST((!registered<std::ostream, test_registry>(comp)));
+
+    Dog dog;
+    stream(dog) << "bark";
+    BOOST_TEST(static_cast<std::ostringstream&>(stream(dog)).str() == "bark");
+    BOOST_TEST(clone(dog) == &dog);
+}
+
+// =============================================================================
+// A specialization of a class template between a class and a root
+//
+// `members_of` yields the template, not its specializations, so the scan cannot
+// find `Pet<int>` on its own. It is in the base list of `Dog`, and that is how
+// it is registered.
+
+namespace template_bases {
+
+struct test_registry : test_registry_<__COUNTER__> {};
+
+struct Animal {
+    virtual ~Animal() = default;
+};
+
+template<class T>
+struct Pet : Animal {};
+
+struct Dog : Pet<int> {};
+
+BOOST_OPENMETHOD(poke, (virtual_<Animal&>), std::string, test_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (Animal&), std::string) {
+    return "generic";
+}
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (Pet<int>&), std::string) {
+    return "pet";
+}
+
+} // namespace template_bases
+
+BOOST_OPENMETHOD_REGISTER(
+    register_classes<{^^template_bases}, {^^template_bases::test_registry}>);
+
+BOOST_AUTO_TEST_CASE(a_specialization_in_a_base_list_is_registered) {
+    using namespace template_bases;
+
+    auto comp = initialize<test_registry>();
+
+    BOOST_TEST((registered<Pet<int>, test_registry>(comp)));
+    BOOST_TEST((registered<Dog, test_registry>(comp)));
+
+    Dog dog;
+    BOOST_TEST(poke(dog) == "pet");
+}
+
+// =============================================================================
+// An alias to a specialization over an incomplete class
+//
+// Asking whether `Edge` or `NodeBox` is a complete type would instantiate the
+// specialization, which fails: `Node` is never defined. The scan does not ask.
+
+namespace incomplete_aliases {
+
+struct test_registry : test_registry_<__COUNTER__> {};
+
+struct Node;
+
+using Edge = std::pair<Node, Node>;
+
+template<class T>
+struct Box {
+    T value;
+};
+
+using NodeBox = Box<Node>;
+
+struct Animal {
+    virtual ~Animal() = default;
+};
+
+struct Dog : Animal {};
+
+BOOST_OPENMETHOD(poke, (virtual_<Animal&>), std::string, test_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (Dog&), std::string) {
+    return "bark";
+}
+
+} // namespace incomplete_aliases
+
+BOOST_OPENMETHOD_REGISTER(
+    register_classes<
+        {^^incomplete_aliases}, {^^incomplete_aliases::test_registry}>);
+
+BOOST_AUTO_TEST_CASE(an_alias_to_a_specialization_is_not_instantiated) {
+    using namespace incomplete_aliases;
+
+    auto comp = initialize<test_registry>();
+
+    BOOST_TEST((registered<Dog, test_registry>(comp)));
+
+    Dog dog;
+    BOOST_TEST(poke(dog) == "bark");
+}
+
+// =============================================================================
+// Deep and wide hierarchies stay within the compiler's budget
+//
+// A chain of sixty classes, and two hundred classes deriving from one root,
+// under the default -fconstexpr-ops-limit. The cost of the scan and of the
+// records must be linear in the number of classes, give or take the depth.
+
+namespace budget {
+
+struct test_registry : test_registry_<__COUNTER__> {};
+
+struct Animal {
+    virtual ~Animal() = default;
+};
+
+using C0 = Animal;
+
+#define BOOST_OPENMETHOD_TEST_CHAIN_LINK(z, n, _)                              \
+    struct BOOST_PP_CAT(C, BOOST_PP_INC(n)) : BOOST_PP_CAT(C, n) {};
+
+BOOST_PP_REPEAT(60, BOOST_OPENMETHOD_TEST_CHAIN_LINK, _)
+
+#undef BOOST_OPENMETHOD_TEST_CHAIN_LINK
+
+#define BOOST_OPENMETHOD_TEST_WIDE_LEAF(z, n, _)                               \
+    struct BOOST_PP_CAT(W, n) : Animal {};
+
+BOOST_PP_REPEAT(200, BOOST_OPENMETHOD_TEST_WIDE_LEAF, _)
+
+#undef BOOST_OPENMETHOD_TEST_WIDE_LEAF
+
+BOOST_OPENMETHOD(poke, (virtual_<Animal&>), std::string, test_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (Animal&), std::string) {
+    return "generic";
+}
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (C30&), std::string) {
+    return "C30";
+}
+
+BOOST_OPENMETHOD_OVERRIDE(poke, (W199&), std::string) {
+    return "W199";
+}
+
+} // namespace budget
+
+BOOST_OPENMETHOD_REGISTER(
+    register_classes<{^^budget}, {^^budget::test_registry}>);
+
+BOOST_AUTO_TEST_CASE(deep_and_wide_hierarchies_are_within_budget) {
+    using namespace budget;
+
+    auto comp = initialize<test_registry>();
+
+    BOOST_TEST((registered<C60, test_registry>(comp)));
+    BOOST_TEST((registered<W0, test_registry>(comp)));
+    BOOST_TEST((registered<W199, test_registry>(comp)));
+
+    auto c60 = comp.class_map.at(
+        test_registry::rtti::type_index(
+            test_registry::rtti::static_type<C60>()));
+    BOOST_TEST(c60->direct_bases.size() == 1u);
+    BOOST_TEST(c60->transitive_bases.size() == 60u);
+
+    C60 c60_obj;
+    C29 c29;
+    W199 w199;
+    BOOST_TEST(poke(c60_obj) == "C30");
+    BOOST_TEST(poke(c29) == "generic");
+    BOOST_TEST(poke(w199) == "W199");
 }
 
 #endif

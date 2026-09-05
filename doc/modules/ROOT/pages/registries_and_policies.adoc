@@ -92,15 +92,6 @@ is defined, `default_registry` also contains the `runtime_checks` policy. This
 enables extra validations during method dispatch, which can detect missing class
 registrations that could not be caught by `initialize`.
 
-The `explicit_class_registration` policy does the opposite of adding a
-behaviour: it stops the library from registering classes by reflection, so a
-registry that contains it knows only the classes named in
-xref:reference:BOOST_OPENMETHOD_CLASSES.adoc[BOOST_OPENMETHOD_CLASSES] or
-cpp:use_classes[]. It has no effect if the compiler does not support C++26
-reflection. See
-xref:ROOT:basics.adoc#registering_classes_by_reflection[Registering Classes by
-Reflection].
-
 The library provides another predefined registry: cpp:indirect_registry[]. It is
 useful when shared libraries are dynamically loaded at runtime, and add methods
 and overriders across program and shared library boundaries. See the section

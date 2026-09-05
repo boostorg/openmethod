@@ -6,6 +6,8 @@
 #include <boost/openmethod/interop/std_shared_ptr.hpp>
 #include <boost/openmethod/interop/boost_intrusive_ptr.hpp>
 
+#include "test_classes.hpp"
+
 #define BOOST_TEST_MODULE openmethod
 #include <boost/test/unit_test.hpp>
 
@@ -444,6 +446,4 @@ template struct check_illegal_smart_ops<
 template struct check_illegal_smart_ops<
     boost::intrusive_ptr, std::unique_ptr, direct_vector>;
 
-// Registers the classes above by reflection, when the compiler supports it.
-// Must come last: reflection sees only what precedes it.
-BOOST_OPENMETHOD_REGISTER_CLASSES();
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

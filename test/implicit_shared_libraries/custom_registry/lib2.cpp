@@ -17,10 +17,11 @@
 #define LIB_SOURCE
 
 #include "lib.hpp"
+#include "../../test_classes.hpp"
 
 using namespace boost::openmethod;
 
-BOOST_OPENMETHOD_CLASSES(Animal, Cow);
+BOOST_OPENMETHOD_TEST_CLASSES(Animal, Cow);
 
 BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Cow>), const char*) {
     return "moo";
@@ -29,3 +30,5 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Cow>), const char*) {
 auto lib_make_cow() -> unique_virtual_ptr<Animal> {
     return make_unique_virtual<Cow>();
 }
+
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

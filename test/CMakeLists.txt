@@ -94,7 +94,6 @@ foreach(test_cpp ${test_cpp_files})
     set(test_target "boost_openmethod-${test}")
     add_executable(${test_target} EXCLUDE_FROM_ALL ${test_cpp})
     target_link_libraries(${test_target} PRIVATE Boost::openmethod Boost::unit_test_framework)
-    boost_openmethod_enable_reflection(${test_target})
     boost_openmethod_add_test(${test_target})
     add_dependencies(tests ${test_target})
 
@@ -128,7 +127,6 @@ endforeach()
 
 add_executable(boost_openmethod-test_mix_release_debug EXCLUDE_FROM_ALL mix_release_debug/main.cpp mix_release_debug/lib.cpp)
 target_link_libraries(boost_openmethod-test_mix_release_debug PRIVATE Boost::openmethod Boost::unit_test_framework)
-boost_openmethod_enable_reflection(boost_openmethod-test_mix_release_debug)
 boost_openmethod_add_test(boost_openmethod-test_mix_release_debug)
 add_dependencies(tests boost_openmethod-test_mix_release_debug)
 
@@ -160,7 +158,6 @@ set_property(
 function(openmethod_compile_fail_test testname fail_regex)
     set(test_target "boost_openmethod-${testname}")
     add_library(${test_target} STATIC EXCLUDE_FROM_ALL "${testname}.cpp")
-    boost_openmethod_enable_reflection(${test_target})
     target_link_libraries(${test_target} PRIVATE Boost::openmethod)
     add_test(
         NAME "${test_target}"

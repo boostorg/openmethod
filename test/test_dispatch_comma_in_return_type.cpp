@@ -35,6 +35,4 @@ BOOST_AUTO_TEST_CASE(comma_in_return_type) {
     BOOST_CHECK(foo(test) == std::pair(1, 2));
 }
 
-// Registers the classes above by reflection, when the compiler supports it.
-// Must come last: reflection sees only what precedes it.
-BOOST_OPENMETHOD_REGISTER_CLASSES();
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

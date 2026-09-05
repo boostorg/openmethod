@@ -516,11 +516,11 @@ namespace detail {
 template<class Registry, class Entry>
 inline use_class_aux<Registry, Entry> reflected_class_registrar;
 
-// Register every class the scan selected, each with its direct bases, as
-// `reflected_registered_classes` computed them.
+// Register every class the scan selected for `Registry`, each with its
+// registered ancestors, as `reflected_registered_classes` computed them.
 template<class Registry, class... Entries>
-BOOST_FORCEINLINE auto use_reflected_classes(mp11::mp_list<Entries...>*)
-    -> void {
+BOOST_FORCEINLINE auto use_reflected_classes(
+    mp11::mp_list<Registry, Entries...>*) -> void {
     (..., (void)&reflected_class_registrar<Registry, Entries>);
 }
 
@@ -2797,14 +2797,14 @@ struct method_traits_aux;
 template<
     typename Id, typename ReturnType, typename... Parameters, class Registry>
 struct method_traits_aux<method<Id, ReturnType(Parameters...), Registry>> {
-    // The classes the method dispatches on, plus its return type, which is
-    // registered too when it is covariant. Same expression as
-    // `method::resolve_type_ids`.
-    using type = mp11::mp_push_back<
-        mp11::mp_transform_q<
-            mp11::mp_bind_back<virtual_type, Registry>,
-            virtual_types<mp11::mp_list<Parameters...>>>,
-        virtual_type<ReturnType, Registry>>;
+    // The classes the method dispatches on. Not its return type: a covariant
+    // return type is registered when the scan finds it deriving from one of
+    // these, or when it is listed - as in C++17 - not as a root of its own.
+    // A root return type would make `initialize` demand a registration for
+    // the return type of every overrider, `std::ostringstream` included.
+    using type = mp11::mp_transform_q<
+        mp11::mp_bind_back<virtual_type, Registry>,
+        virtual_types<mp11::mp_list<Parameters...>>>;
 };
 
 // Read from reflection, by `substitute`-ing a method into it and taking the
@@ -2977,171 +2977,179 @@ using register_classes_registries =
     typename [: register_classes_registries_info<Groups...>() :];
 // clang-format on
 
-// The classes to register for the argument groups `Groups`, each with its
-// direct bases: the classes the methods of `Registry` dispatch on, the classes
-// the groups list, and the ones a scan of the listed namespaces found that
-// derive from them. Returns `mp_list<mp_list<Class, Class, Base...>, ...>` - the
-// shape `use_class_aux` expects, with the class repeated as its own improper
-// base, as `inheritance_map` produces.
+// True if every listed class is complete. An incomplete one - a forward
+// declaration left in a group by mistake - would otherwise surface as an
+// exception thrown from inside constant evaluation, which names no class.
+template<auto... Groups>
+consteval auto register_classes_classes_are_complete() -> bool {
+    auto types =
+        register_classes_items<Groups...>(register_classes_kind::classes);
+
+    for (auto type : types) {
+        if (!std::meta::is_complete_type(type)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// The scan for the argument groups `Groups`: the listed namespaces - or the
+// global one - for the `method` specializations they name and the classes
+// they declare.
+template<auto... Groups>
+consteval auto reflected_scan_of() -> reflected_scan {
+    auto listed =
+        register_classes_items<Groups...>(register_classes_kind::classes);
+
+    for (auto& type : listed) {
+        type = std::meta::remove_cv(type);
+    }
+
+    return scan_namespaces(
+        register_classes_items<Groups...>(register_classes_kind::namespaces),
+        listed, ^^method);
+}
+
+// Append to `entries` the record `use_class_aux` expects for `type` - the
+// class, itself again as its own improper base, and every registered class
+// above it - if `type` is registered at all: if it is one of `roots`, or
+// reaches one through public inheritance. The classes above it that are
+// registered are the ones that reach a root themselves, less the ones that
+// repeated inheritance makes ambiguous, which `is_dispatchable_base` tells
+// apart.
+//
+// Every registered ancestor is recorded, not only the direct bases.
+// `initialize` derives the direct bases from the closure of what the records
+// say, so a record that carries the whole ancestry stands on its own, whatever
+// another registration - in another translation unit, over other namespaces -
+// records alongside it. Keeping only the nearest ancestors would need the
+// registered set to be the same everywhere, and it is not.
+//
+// An ancestor the scan does not declare - in a namespace it does not enter, a
+// specialization of a class template, a local class - is given a record of its
+// own here, recursively, as nothing else would. A class the scan declares, or
+// finds through an alias, gets its record when its own turn comes. `extra`
+// holds the ones done here, so that each is done once.
+consteval void reflected_class_entries(
+    std::meta::info type, const std::vector<std::meta::info>& roots,
+    const reflected_scan& scan, std::vector<std::meta::info>& extra,
+    std::vector<std::meta::info>& entries) {
+    std::vector<base_record> bases;
+
+    if (!walk_bases(type, roots, bases)) {
+        return;
+    }
+
+    std::vector<std::meta::info> entry;
+    entry.push_back(type);
+    // The class as its own improper base, as `inheritance_map` does.
+    // `initialize` discards it, and `use_class_aux` cannot hold an empty base
+    // array.
+    entry.push_back(type);
+
+    for (std::size_t index = 1; index != bases.size(); ++index) {
+        const auto& base = bases[index];
+
+        if (!base.reaches_root) {
+            continue;
+        }
+
+        if (base.repeated && !is_dispatchable_base(type, base.type)) {
+            continue;
+        }
+
+        entry.push_back(base.type);
+
+        if (!contains(roots, base.type) && !contains(scan.aliased, base.type) &&
+            !scan_declares(base.type, scan.namespaces) &&
+            !contains(extra, base.type)) {
+            extra.push_back(base.type);
+            reflected_class_entries(base.type, roots, scan, extra, entries);
+        }
+    }
+
+    entries.push_back(std::meta::substitute(^^mp11::mp_list, entry));
+}
+
+// The classes to register for the argument groups `Groups`, in each of
+// `Registries`, an `mp_list` of registries. Returns
+// `mp_list<mp_list<Registry, mp_list<Class, Class, Base...>...>...>`: one list
+// per registry, headed by the registry, holding the records `use_class_aux`
+// expects. The scan runs once, for all the registries: only the roots depend on
+// the registry - the classes the groups list, and the classes the registry's
+// methods dispatch on. Registered are the roots, and every class the scan
+// found, or was led to, that derives from one.
 //
 // The work is done here, in reflection, and not with `mp11` over the lists the
 // scan produces. A scan of the global namespace reaches every class in the
 // program that is not in `std` or `boost`, and instantiating a trait once per
 // pair of them costs far more than walking their base classes does.
-template<class Registry, auto... Groups>
+template<class Registries, auto... Groups>
 consteval auto reflected_registered_classes_info() -> std::meta::info {
-    // Partition the groups. Registries take no part here: the caller calls
-    // this function once per registry.
-    auto namespaces =
-        register_classes_items<Groups...>(register_classes_kind::namespaces);
-    auto virtual_classes =
-        register_classes_items<Groups...>(register_classes_kind::classes);
+    auto scan = reflected_scan_of<Groups...>();
+    auto registries = std::meta::template_arguments_of(^^Registries);
+    std::vector<std::meta::info> lists;
 
-    for (auto& type : virtual_classes) {
-        type = std::meta::remove_cv(type);
-    }
+    for (auto registry : registries) {
+        auto roots = scan.listed;
 
-    // With no namespace to start from, scan the global namespace. Listing
-    // classes does not change that: they are extra roots for the scan, not a
-    // way to turn it off.
-    if (namespaces.empty()) {
-        namespaces.push_back(^^::);
-    }
-
-    std::vector<std::meta::info> methods, classes;
-
-    for (auto ns : namespaces) {
-        scan_scope(ns, ^^method, methods, classes);
-    }
-
-    // Add the classes the methods dispatch on.
-
-    for (auto found : methods) {
-        // A method's third template argument is its registry.
-        if (std::meta::template_arguments_of(found)[2] != ^^Registry) {
-            continue;
-        }
-
-        auto list = std::meta::dealias(std::meta::substitute(
-            ^^method_classes,
-            {
-                found}));
-
-        for (auto type : std::meta::template_arguments_of(list)) {
-            // A method's return type is `void` unless it is covariant, and a
-            // virtual parameter may be a smart pointer rather than a class.
-            if (std::meta::is_class_type(type)) {
-                push_unique(virtual_classes, std::meta::remove_cv(type));
-            }
-        }
-    }
-
-    // Those, plus every class the scan found that derives from one of them. A
-    // base class no method dispatches on is left out: no overrider could ever
-    // be selected on it, and it would cost a lattice node, a hash slot and
-    // dispatch table space.
-    auto registered = virtual_classes;
-
-    for (auto found : classes) {
-        std::vector<std::meta::info> bases;
-        collect_dispatchable_bases(found, bases);
-
-        for (auto base : bases) {
-            if (contains(virtual_classes, base)) {
-                push_unique(registered, found);
-                break;
-            }
-        }
-    }
-
-    // Which registered class inherits from which, as a square matrix indexed
-    // by position in `registered`. Walking the base classes once per class and
-    // answering from the matrix afterwards keeps this within the compiler's
-    // budget for constant evaluation: the alternative, re-searching a class'
-    // bases for every pair, is cubic in the number of classes times the depth
-    // of the hierarchy, and exceeds GCC's default -fconstexpr-ops-limit on a
-    // chain of a few dozen.
-    auto count = registered.size();
-    std::vector<char> inherits(count * count, char(0));
-
-    for (auto index = 0u; index != count; ++index) {
-        std::vector<std::meta::info> bases;
-        collect_dispatchable_bases(registered[index], bases);
-
-        for (auto base : bases) {
-            if (base == registered[index]) {
+        for (auto found : scan.methods) {
+            // A method's third template argument is its registry.
+            if (std::meta::template_arguments_of(found)[2] != registry) {
                 continue;
             }
 
-            for (auto other = 0u; other != count; ++other) {
-                if (registered[other] == base) {
-                    inherits[index * count + other] = char(1);
-                    break;
-                }
-            }
-        }
-    }
+            auto list = std::meta::dealias(
+                std::meta::substitute(
+                    ^^method_classes,
+                    {
+                        found}));
+            auto types = std::meta::template_arguments_of(list);
 
-    std::vector<std::meta::info> entries;
-
-    for (auto index = 0u; index != count; ++index) {
-        std::vector<std::meta::info> entry;
-        entry.push_back(registered[index]);
-        // The class as its own improper base, as `inheritance_map` does.
-        // `initialize` discards it, and `use_class_aux` cannot hold an empty
-        // base array.
-        entry.push_back(registered[index]);
-
-        for (auto base = 0u; base != count; ++base) {
-            if (!inherits[index * count + base]) {
-                continue;
-            }
-
-            // Keep only the nearest ancestors - the direct bases of this class
-            // in the lattice the registry will hold. One that another ancestor
-            // also inherits from is reached through that one, and recording it
-            // as well would make `initialize` see an edge that is not there.
-            // Unregistered classes in between are skipped over, which is what
-            // flattens the lattice down to the classes that dispatch.
-            bool hidden = false;
-
-            for (auto between = 0u; between != count; ++between) {
-                if (between != base && inherits[index * count + between] &&
-                    inherits[between * count + base]) {
-                    hidden = true;
-                    break;
-                }
-            }
-
-            if (!hidden) {
-                entry.push_back(registered[base]);
+            for (auto type : types) {
+                push_unique(roots, std::meta::remove_cv(type));
             }
         }
 
-        entries.push_back(std::meta::substitute(^^mp11::mp_list, entry));
+        std::vector<std::meta::info> entries, extra;
+        entries.push_back(registry);
+
+        for (auto root : roots) {
+            // A method written by hand may be declared on a class that this
+            // translation unit never completes. It is registered where it is.
+            if (std::meta::is_complete_type(root)) {
+                reflected_class_entries(root, roots, scan, extra, entries);
+            }
+        }
+
+        for (auto type : scan.declared) {
+            if (!contains(roots, type)) {
+                reflected_class_entries(type, roots, scan, extra, entries);
+            }
+        }
+
+        for (auto type : scan.aliased) {
+            if (!contains(roots, type)) {
+                reflected_class_entries(type, roots, scan, extra, entries);
+            }
+        }
+
+        lists.push_back(std::meta::substitute(^^mp11::mp_list, entries));
     }
 
-    return std::meta::substitute(^^mp11::mp_list, entries);
+    return std::meta::substitute(^^mp11::mp_list, lists);
 }
 
-// `mp_list<mp_list<Class, Class, Base...>, ...>`, ready for `use_class_aux`.
+// `mp_list<mp_list<Registry, mp_list<Class, Class, Base...>...>...>`, ready
+// for `use_reflected_classes`.
 //
 // clang-format off: the formatter predates P2996 and eats the spaces around the
 // splice, leaving `typename[:...:]`.
-template<class Registry, auto... Groups>
+template<class Registries, auto... Groups>
 using reflected_registered_classes =
-    typename [: reflected_registered_classes_info<Registry, Groups...>() :];
+    typename [: reflected_registered_classes_info<Registries, Groups...>() :];
 // clang-format on
-
-// Register the classes the groups select in one registry - unless it opted out
-// of reflection-based registration, in which case the scan does not even run.
-template<class Registry, auto... Groups>
-BOOST_FORCEINLINE auto use_reflected_classes_in() -> void {
-    if constexpr (Registry::has_reflected_class_registration) {
-        using registered = reflected_registered_classes<Registry, Groups...>;
-        use_reflected_classes<Registry>(static_cast<registered*>(nullptr));
-    }
-}
 
 #endif
 
@@ -3166,20 +3174,25 @@ class register_classes {
     static_assert(
         detail::register_classes_groups_are_ordered<Groups...>(),
         "order the groups as namespaces, classes, registries");
+    static_assert(
+        detail::register_classes_classes_are_complete<Groups...>(),
+        "a listed class must be complete");
 
     using found_registries = detail::register_classes_registries<Groups...>;
     using registries = mp11::mp_if<
         mp11::mp_empty<found_registries>,
         mp11::mp_list<BOOST_OPENMETHOD_DEFAULT_REGISTRY>, found_registries>;
 
-    template<class... Registries>
-    static auto use(mp11::mp_list<Registries...>*) -> void {
-        (..., detail::use_reflected_classes_in<Registries, Groups...>());
+    template<class... Lists>
+    static auto use(mp11::mp_list<Lists...>*) -> void {
+        (..., detail::use_reflected_classes(static_cast<Lists*>(nullptr)));
     }
 
   public:
     register_classes() {
-        use(static_cast<registries*>(nullptr));
+        use(static_cast<
+            detail::reflected_registered_classes<registries, Groups...>*>(
+            nullptr));
     }
 };
 
@@ -3191,6 +3204,13 @@ class register_classes {
 
 //! Find the classes taking part in dispatch by reflection, and register them
 //! (C++26 and above).
+//!
+//! @warning Requires C++26 reflection (P2996): a compiler that implements
+//! it, and the flag that turns it on - `-freflection` with GCC 16. Without it
+//! this class template does not exist: `BOOST_OPENMETHOD_HAS_REFLECTION` is 0,
+//! and classes are registered with @ref use_classes or
+//! @ref BOOST_OPENMETHOD_CLASSES. @ref BOOST_OPENMETHOD_REGISTER_CLASSES wraps
+//! this class in a macro that expands to a no-op under C++17.
 //!
 //! `register_classes` is a registrar class that finds the classes taking part
 //! in dispatch by reflection, and adds them to one or more registries. It makes
@@ -3204,15 +3224,18 @@ class register_classes {
 //! @li **Namespaces** to scan: `{^^app, ^^zoo}`, `{\^^::}`.
 //! @li **Classes** to register: `{^^Animal}`. They are registered whether a
 //! method dispatches on them or not, and they are extra roots for the scan,
-//! which registers the classes it finds deriving from them.
+//! which registers the classes it finds deriving from them. A listed class
+//! must be complete.
 //! @li **Registries** to register the classes in: `{^^my_registry}`. Each one
 //! receives the registration. The default is
 //! `BOOST_OPENMETHOD_DEFAULT_REGISTRY`.
 //!
 //! @code
-//! register_classes<^^app, ^^my_registry> register_classes<{^^app, ^^zoo},
-//! {^^r1, ^^r2}> register_classes<{^^Animal, ^^Dog}>
-//! register_classes<^^my_registry> register_classes<>
+//! register_classes<^^app, ^^my_registry>
+//! register_classes<{^^app, ^^zoo}, {^^r1, ^^r2}>
+//! register_classes<{^^Animal, ^^Dog}>
+//! register_classes<^^my_registry>
+//! register_classes<>
 //! @endcode
 //!
 //! A group holding two kinds of reflection is an error, and so is a group out
@@ -3221,24 +3244,36 @@ class register_classes {
 //! registration.
 //!
 //! The scan covers the listed namespaces, the namespaces nested in them, and
-//! the classes nested in the classes it finds, except `std` and `boost`:
+//! the classes nested in the classes it declares, except `std` and `boost`:
 //! walking those would cost a great deal and find nothing, as a method cannot
 //! be declared on a class the program has never heard of. The exclusion applies
 //! to recursion only, so a class in `std` or `boost` is registered by *listing*
-//! the namespace it is in. A class is also found through an alias that names
-//! it, but the scan does not walk *into* an alias: only a class the scanned
-//! scope declares is descended into. The scan finds the methods of each target
-//! registry, collects the classes they dispatch on, and registers those, the
-//! listed classes, and every class in the scanned namespaces that derives from
-//! one of them. A base class that no method dispatches on, and that is not
+//! the namespace it is in. The scan never goes through an alias: a namespace
+//! alias is not entered, and a type alias registers the class it names but is
+//! not walked into. The scan finds the methods of each target registry and
+//! collects the classes they dispatch on; those, and the listed classes, are
+//! the *roots*. It registers the roots, and every class it finds that derives
+//! from one of them. A base class that no method dispatches on, and that is not
 //! listed, is not registered: it could never be selected on.
+//!
+//! A class between a registered class and a root is registered too, wherever
+//! it is declared: in a namespace the scan does not enter, or as a
+//! specialization of a class template, which the scan cannot find on its own.
+//! The namespaces decide where the *derived* classes are looked for, not which
+//! bases are recorded; and each class is recorded with every registered class
+//! above it, so that a registration stands on its own, whatever another one,
+//! in another translation unit, registers alongside it.
 //!
 //! If no namespace is given, the global namespace is scanned - whatever the
 //! other groups hold, and for @ref BOOST_OPENMETHOD_REGISTER_CLASSES too. Name
 //! a namespace to scan only that one.
 //!
-//! Reflection sees only what precedes it, so `register_classes` must come
-//! **after** the declarations it is meant to find - at the bottom of the file.
+//! The scan runs when the registrar is instantiated, which current compilers
+//! do at the end of the translation unit: it sees the whole file, wherever the
+//! registrar sits. The standard promises less. A class or a method the scan
+//! would select, declared after the registrar in the same translation unit,
+//! makes the program ill-formed, no diagnostic required. Put the registrar
+//! **after** the declarations it is meant to find, at the bottom of the file.
 //!
 //! A method is found through any namespace member that names its `method`
 //! specialization: the alias @ref BOOST_OPENMETHOD declares for it, a `using`
@@ -3247,16 +3282,16 @@ class register_classes {
 //! those requires the method to have an overrider. A core interface method
 //! whose `method<...>` type is spelled out in full at every use, with neither a
 //! `using` declaration nor an overrider, is named by nothing and is not found;
-//! its classes must be registered with @ref use_classes.
+//! its classes must be registered with @ref use_classes. A method's return
+//! type is not a root: a covariant return type is registered like any other
+//! class, when it derives from a root, or when it is listed.
 //!
 //! Virtual and multiple inheritance are supported. Unlike @ref use_classes,
-//! which rejects it, repeated inheritance is not an error here: a base a class
-//! inherits more than once cannot be converted to, so it cannot take part in
-//! that class' dispatch, and it is left out of its bases. A class left with no
-//! registered base is not registered at all.
-//!
-//! This class template is available only if the compiler supports C++26
-//! reflection, i.e. if `BOOST_OPENMETHOD_HAS_REFLECTION` is 1.
+//! which rejects it, repeated inheritance is not an error here: a class is
+//! recorded under the bases it reaches unambiguously through public
+//! inheritance, and a base it inherits more than once, which no reference to
+//! it can be converted to, is left out of its list. A class with no registered
+//! class above it is not registered at all.
 //!
 //! @tparam Groups Braced groups of reflections: namespaces, classes,
 //! registries, in that order.

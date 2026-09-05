@@ -16,6 +16,7 @@
 
 #include "registry.hpp"
 #include "method.hpp"
+#include "../test_classes.hpp"
 
 #include <boost/openmethod/initialize.hpp>
 #include <boost/dll/shared_library.hpp>
@@ -29,7 +30,7 @@ using namespace boost::openmethod;
 
 using state_id_fn = const void*();
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
+BOOST_OPENMETHOD_TEST_CLASSES(Animal, Dog, Cat);
 
 boost::filesystem::path find_lib(
     const boost::filesystem::path& dir, const char* name_fragment) {
@@ -148,3 +149,5 @@ BOOST_AUTO_TEST_CASE(test_shared_state) {
         BOOST_TEST(std::string(overrider_speak(cat)) == "meow");
     }
 }
+
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

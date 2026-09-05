@@ -599,6 +599,12 @@ inline constexpr bool method_not_found = false;
 #else
 //! Find the classes taking part in dispatch by reflection, and register them.
 //!
+//! @warning Does its work only with C++26 reflection (P2996): a compiler
+//! that implements it, and the flag that turns it on - `-freflection` with
+//! GCC 16. Without it - in C++17, or in C++26 without the flag - the macro
+//! expands to a no-op, so a file that also calls @ref BOOST_OPENMETHOD_CLASSES
+//! builds under either standard.
+//!
 //! It makes @ref BOOST_OPENMETHOD_CLASSES unnecessary in most cases.
 //!
 //! This macro is a wrapper around @ref boost::openmethod::register_classes; see
@@ -608,8 +614,11 @@ inline constexpr bool method_not_found = false;
 //! the classes to register, and the registries; each group optional, in that
 //! order. With no namespace group, the global namespace is scanned.
 //!
-//! Reflection sees only what precedes it, so this macro must come **after** the
-//! declarations it is meant to find - at the bottom of the file:
+//! The scan sees the whole translation unit on current compilers, but the
+//! standard promises less: a class or a method it would select, declared after
+//! the macro in the same translation unit, makes the program ill-formed, no
+//! diagnostic required. Put the macro **after** the declarations it is meant to
+//! find, at the bottom of the file:
 //!
 //! @code
 //! struct Animal { virtual ~Animal() = default; };
@@ -625,10 +634,6 @@ inline constexpr bool method_not_found = false;
 //!
 //! BOOST_OPENMETHOD_REGISTER_CLASSES(); // registers all four classes
 //! @endcode
-//!
-//! Without reflection - in C++17, or in C++26 without the compiler flag that
-//! enables it - this macro expands to nothing, so a file that also calls
-//! @ref BOOST_OPENMETHOD_CLASSES builds under either standard.
 //!
 //! @param ... Braced groups: namespaces, classes, registries - see above.
 //!

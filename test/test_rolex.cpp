@@ -187,6 +187,4 @@ BOOST_AUTO_TEST_CASE(approve_via_wrapper) {
     BOOST_TEST(call_approve(f, taxi, 10) == true);
 }
 
-// Registers the classes above by reflection, when the compiler supports it.
-// Must come last: reflection sees only what precedes it.
-BOOST_OPENMETHOD_REGISTER_CLASSES();
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

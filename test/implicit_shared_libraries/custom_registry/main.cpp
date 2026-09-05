@@ -10,6 +10,7 @@
 // OWNS_REGISTRY_STATE is not defined here, so registry.hpp (via lib.hpp)
 // declares the state imported: this module uses the state the library owns.
 #include "lib.hpp"
+#include "../../test_classes.hpp"
 
 #include <boost/openmethod/initialize.hpp>
 
@@ -17,7 +18,7 @@
 
 using namespace boost::openmethod;
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat, Cow);
+BOOST_OPENMETHOD_TEST_CLASSES(Animal, Dog, Cat, Cow);
 
 // Registered by the executable; the library knows nothing about it.
 BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Cat>), const char*) {
@@ -61,3 +62,5 @@ BOOST_AUTO_TEST_CASE(shared_registry_state) {
     auto animal = make_unique_virtual<Animal>();
     BOOST_TEST(std::string(lib_speak(animal)) == "?");
 }
+
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

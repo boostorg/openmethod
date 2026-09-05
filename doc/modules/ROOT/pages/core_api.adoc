@@ -90,8 +90,8 @@ BOOST_OPENMETHOD_REGISTER(register_classes<>);
 
 A method declared the way `postfix` is above - an alias for a `method`
 specialization - is found directly, and so is any of its `override` registrars.
-Reflection sees only what precedes it, so this must come after the declarations
-it is meant to find. See
+The registration must come after the declarations it is meant to find, at the
+bottom of the file. See
 xref:ROOT:basics.adoc#registering_classes_by_reflection[Registering Classes by
 Reflection].
 

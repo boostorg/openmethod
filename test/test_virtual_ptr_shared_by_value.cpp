@@ -43,6 +43,4 @@ BOOST_AUTO_TEST_CASE(test_virtual_shared_by_value) {
     }
 }
 
-// Registers the classes above by reflection, when the compiler supports it.
-// Must come last: reflection sees only what precedes it.
-BOOST_OPENMETHOD_REGISTER_CLASSES();
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

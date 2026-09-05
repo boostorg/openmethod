@@ -17,13 +17,32 @@
 //! classes go unregistered, and every test still has to pass.
 //!
 //! Tests that check what happens when a class is *not* registered keep
-//! `BOOST_OPENMETHOD_CLASSES`, and put
-//! `boost::openmethod::policies::explicit_class_registration` in their
-//! registry so that the library leaves the registration to them.
+//! `BOOST_OPENMETHOD_CLASSES`, and do not call
+//! `BOOST_OPENMETHOD_REGISTER_CLASSES`: nothing is registered by reflection
+//! unless that macro - or `register_classes` - is used, so the class they
+//! withhold stays withheld under either standard.
+
+//! Register the classes of the translation unit by reflection, when the
+//! compiler supports it - a no-op otherwise.
+//!
+//! The counterpart of @ref BOOST_OPENMETHOD_TEST_CLASSES: a test lists its
+//! classes with that one, for C++17, and ends with this one, for C++26. Last in
+//! the file, because the standard wants the registrar after the declarations it
+//! selects.
+#define BOOST_OPENMETHOD_TEST_REGISTER_CLASSES(...)                            \
+    BOOST_OPENMETHOD_REGISTER_CLASSES(__VA_ARGS__)
 
 #if BOOST_OPENMETHOD_HAS_REFLECTION
 #define BOOST_OPENMETHOD_TEST_CLASSES(...)
 #else
+// The build asked for reflection, but this translation unit does not have it:
+// it would silently fall back to explicit registration, and the reflection
+// tests - which reduce to a no-op without the feature - would pass without
+// testing anything. CMake defines the symbol alongside the compiler options
+// that enable reflection.
+#ifdef BOOST_OPENMETHOD_EXPECT_REFLECTION
+#error BOOST_OPENMETHOD_EXPECT_REFLECTION is defined, but the compiler does not provide C++26 reflection
+#endif
 #define BOOST_OPENMETHOD_TEST_CLASSES(...) BOOST_OPENMETHOD_CLASSES(__VA_ARGS__)
 #endif
 

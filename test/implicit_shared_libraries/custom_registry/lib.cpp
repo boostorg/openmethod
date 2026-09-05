@@ -14,6 +14,7 @@
 #define LIB_SOURCE
 
 #include "lib.hpp"
+#include "../../test_classes.hpp"
 
 // The export is an explicit instantiation *definition*, so a program may
 // contain only one: it belongs in a .cpp, never in a header, and this is that
@@ -24,7 +25,7 @@ BOOST_OPENMETHOD_INSTANTIATE_REGISTRY(custom_registry);
 
 using namespace boost::openmethod;
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat, Cow);
+BOOST_OPENMETHOD_TEST_CLASSES(Animal, Dog, Cat, Cow);
 
 BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
     return "?";
@@ -45,3 +46,5 @@ auto lib_speak(virtual_ptr<Animal> animal) -> const char* {
 auto lib_make_dog() -> unique_virtual_ptr<Animal> {
     return make_unique_virtual<Dog>();
 }
+
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

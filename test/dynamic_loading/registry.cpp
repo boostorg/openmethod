@@ -16,8 +16,11 @@
 
 #include "registry.hpp"
 #include "classes.hpp"
+#include "../test_classes.hpp"
 
 using namespace boost::openmethod;
 namespace mp11 = boost::mp11;
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
+BOOST_OPENMETHOD_TEST_CLASSES(Animal, Dog, Cat);
+
+BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

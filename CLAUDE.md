@@ -40,6 +40,7 @@ cmake --build .
 - `BOOST_OPENMETHOD_BUILD_TESTS` - Enable tests (default: ON if root project)
 - `BOOST_OPENMETHOD_BUILD_EXAMPLES` - Enable examples (requires tests enabled)
 - `BOOST_OPENMETHOD_WARNINGS_AS_ERRORS` - Treat warnings as errors
+- `BOOST_OPENMETHOD_ENABLE_REFLECTION` - Build the tests and examples with C++26 reflection; probes the compiler for the flags it needs (`-std=c++26 -freflection` on GCC 16) and fails the configure if it has none
 - `BOOST_SRC_DIR` - Path to Boost source directory (default: `../..` or `$BOOST_SRC_DIR` env var)
 
 ### Boost.Build (b2)
@@ -356,8 +357,8 @@ literal `href="#reference:<NAME>.adoc"`.
 
 ### Doc-comment markup traps
 
-MrDocs parses `//!` comments as Markdown plus Doxygen commands, then emits AsciiDoc. Three shapes
-mis-render silently; all three were found by rendering, none by reading the source:
+MrDocs parses `//!` comments as Markdown plus Doxygen commands, then emits AsciiDoc. Four shapes
+mis-render silently; all four were found by rendering, none by reading the source:
 
 - **A line starting with `- ` becomes a list item.** House style uses ` - ` as an em-dash, which is
   fine mid-line but starts a stray bullet at the head of one. Rewrap so the dash never begins a
@@ -367,6 +368,9 @@ mis-render silently; all three were found by rendering, none by reading the sour
 - **An inline `` `^^::` `` loses both carets** and renders as `::`. Escape the first one -
   `` `\^^::` `` - which comes through as `^^::`. Only this spelling is affected; `` `^^app` `` and
   `^^::` inside an `@code` block are fine.
+- **`@attention` is dropped silently**, paragraph and all: no admonition, no text, no warning.
+  MrDocs knows `@note` and `@warning`, which render as NOTE and WARNING blocks wherever they sit in
+  the description - the first paragraph after the brief included. Use one of those.
 
 An `xref:reference:<name>.adoc` path works only for macros, which MrDocs puts at the top level.
 A namespace-scoped symbol lives under `reference/boost/openmethod/`, so link it with
