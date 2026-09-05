@@ -7,6 +7,7 @@
 #include <boost/openmethod/initialize.hpp>
 #include <boost/openmethod/interop/std_shared_ptr.hpp>
 #include <boost/openmethod/interop/std_unique_ptr.hpp>
+#include <boost/openmethod/interop/std_weak_ptr.hpp>
 
 #define BOOST_TEST_MODULE openmethod
 #include <boost/test/unit_test.hpp>
@@ -192,5 +193,37 @@ BOOST_AUTO_TEST_CASE(unique_ptr_examples) {
         // end::unique_by_value_call[]
 
         BOOST_TEST(cout.str() == "bark\nhiss\n");
+    }
+}
+
+BOOST_AUTO_TEST_CASE(weak_ptr_examples) {
+    initialize();
+
+    {
+        using namespace shared_vptr;
+        capture_cout cout;
+
+        // tag::weak_lock[]
+        shared_virtual_ptr<Animal> animal = make_shared_virtual<Dog>();
+        weak_virtual_ptr<Animal> observer = animal;
+
+        std::cout << poke(observer.lock()) << "\n"; // bark
+
+        animal = nullptr;
+        std::cout << std::boolalpha << observer.expired() << "\n"; // true
+        // end::weak_lock[]
+
+        BOOST_TEST(cout.str() == "bark\ntrue\n");
+    }
+
+    {
+        // tag::weak_virtual_ptr_alias[]
+        shared_virtual_ptr<Animal> animal = make_shared_virtual<Dog>();
+        weak_virtual_ptr<Animal> observer = animal;
+        std::weak_ptr<Animal> weak = observer.pointer();
+
+        BOOST_TEST(animal.pointer().use_count() == 1);
+        BOOST_TEST(weak.lock() == animal.pointer());
+        // end::weak_virtual_ptr_alias[]
     }
 }

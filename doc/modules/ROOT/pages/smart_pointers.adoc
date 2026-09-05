@@ -67,6 +67,47 @@ in `<boost/openmethod/interop/std_unique_ptr.hpp>`, and support for
 `<boost/openmethod/interop/boost_intrusive_ptr.hpp>`. `<boost/openmethod.hpp>`
 does not include smart pointer headers, so they must be included explicitly.
 
+[#weak_pointers]
+## Weak Pointers
+
+A `std::weak_ptr` observes an object without keeping it alive. Since the object
+may be gone, there is nothing to dispatch on: a weak pointer cannot be used in a
+virtual parameter, and neither can a `virtual_ptr` to a weak pointer. Still, an
+object that is tracked by weak pointers - in a cache, an observer list, or a
+back pointer - is typically an object that methods will be called on, once a
+weak pointer has been locked.
+
+- cpp:weak_virtual_ptr<Class>[] is an alias for `virtual_ptr<std::weak_ptr<Class>>`
+
+A `weak_virtual_ptr` is a storage facility. It is constructed from a
+`shared_virtual_ptr` (or from a `std::shared_ptr` or a `std::weak_ptr`), and
+it remembers the v-table pointer along with the weak pointer. It cannot be
+dereferenced. Its `lock` function returns a `shared_virtual_ptr`, which can be
+passed to methods. Since the v-table pointer is copied, not looked up, `lock`
+costs no more than `std::weak_ptr::lock`. It returns an empty
+`shared_virtual_ptr` if the object no longer exists.
+
+[source,c++]
+----
+shared_virtual_ptr<Animal> animal = make_shared_virtual<Dog>();
+weak_virtual_ptr<Animal> observer = animal;
+
+std::cout << poke(observer.lock()) << "\n"; // bark
+
+animal = nullptr;
+std::cout << std::boolalpha << observer.expired() << "\n"; // true
+----
+
+Remembering the v-table pointer is safe because a `std::weak_ptr` keeps the
+control block alive: once the object has been destroyed, the weak pointer stays
+expired, and the v-table pointer can never be applied to another object.
+
+A `weak_virtual_ptr` converts to a `weak_virtual_ptr` to a base class, but not
+to a plain or a shared `virtual_ptr`. A cast to a derived class requires the
+object: use `lock`, then `cast`. Support for `std::weak_ptr` is provided in
+`<boost/openmethod/interop/std_weak_ptr.hpp>`, which also includes the
+`std::shared_ptr` header.
+
 Here is a variation of the AST example that uses dynamic allocation and unique
 pointers:
 
