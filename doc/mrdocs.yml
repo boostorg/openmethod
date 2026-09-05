@@ -22,7 +22,6 @@ exclude-symbols:
   - 'boost::openmethod::registry::initialize'
   - 'boost::openmethod::registry::finalize'
   - 'boost::openmethod::boost_openmethod_bases'
-  - 'boost::openmethod::boost_openmethod_registry'
   - 'boost::openmethod::registry_state::st'
 
 # Macros. Only the public macros carry a doc comment, and with

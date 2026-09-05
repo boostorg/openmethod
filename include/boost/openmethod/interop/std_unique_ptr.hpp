@@ -72,7 +72,7 @@ struct virtual_traits<std::unique_ptr<Class>, Registry> {
 //! include:smart_pointers.cpp#unique_virtual_ptr_alias
 //!
 //! @see [Smart Pointers](xref:ROOT:smart_pointers.adoc)
-template<class Class, class Registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY>
+template<class Class, class Registry = registry_affinity<Class>>
 using unique_virtual_ptr = virtual_ptr<std::unique_ptr<Class>, Registry>;
 
 //! Create a new object and return a `unique_virtual_ptr` to it.
@@ -94,9 +94,7 @@ using unique_virtual_ptr = virtual_ptr<std::unique_ptr<Class>, Registry>;
 //! include:smart_pointers.cpp#make_unique_virtual
 //!
 //! @see [Smart Pointers](xref:ROOT:smart_pointers.adoc)
-template<
-    class Class, class Registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY,
-    typename... T>
+template<class Class, class Registry = registry_affinity<Class>, typename... T>
 inline auto make_unique_virtual(T&&... args) {
     return final_virtual_ptr<Registry>(
         std::make_unique<Class>(std::forward<T>(args)...));

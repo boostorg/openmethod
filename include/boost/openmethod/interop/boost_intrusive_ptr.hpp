@@ -129,7 +129,7 @@ struct virtual_traits<const boost::intrusive_ptr<Class>&, Registry> {
 //! include:intrusive_ptr.cpp#boost_intrusive_virtual_ptr_alias
 //!
 //! @see [Smart Pointers](xref:ROOT:smart_pointers.adoc)
-template<class Class, class Registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY>
+template<class Class, class Registry = registry_affinity<Class>>
 using boost_intrusive_virtual_ptr =
     virtual_ptr<boost::intrusive_ptr<Class>, Registry>;
 
@@ -152,9 +152,7 @@ using boost_intrusive_virtual_ptr =
 //! include:intrusive_ptr.cpp#make_boost_intrusive_virtual
 //!
 //! @see [Smart Pointers](xref:ROOT:smart_pointers.adoc)
-template<
-    class Class, class Registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY,
-    typename... T>
+template<class Class, class Registry = registry_affinity<Class>, typename... T>
 inline auto make_boost_intrusive_virtual(T&&... args) {
     return final_virtual_ptr<Registry>(intrusive_ptr<Class>(
         new std::remove_cv_t<Class>(std::forward<T>(args)...)));

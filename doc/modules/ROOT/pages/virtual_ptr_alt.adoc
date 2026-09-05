@@ -108,6 +108,12 @@ v-table for the bases, just like what C++ does for its native vptrs.
 `inplace_vptr_base` and `inplace_vptr_derived` are aliased in `namespace
 boost::openmethod::aliases`.
 
+`inplace_vptr_base` also declares the class's
+xref:ROOT:registries_and_policies.adoc#registries_and_policies[registry affinity],
+as a hidden friend - it is told the registry, and every other construct can then
+find it. A method over such a hierarchy needs no registry argument, and the
+program needs no `BOOST_OPENMETHOD_DEFAULT_REGISTRY` override.
+
 An object that embeds its v-table pointer does not need to be wrapped in a
 `virtual_ptr` - the two fill the same goal, fast access to the v-table
 pointer - and wrapping one is rejected at compile time.

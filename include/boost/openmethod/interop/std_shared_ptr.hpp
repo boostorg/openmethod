@@ -202,7 +202,7 @@ struct virtual_traits<const std::shared_ptr<Class>&, Registry> {
 //! include:smart_pointers.cpp#shared_virtual_ptr_alias
 //!
 //! @see [Smart Pointers](xref:ROOT:smart_pointers.adoc)
-template<class Class, class Registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY>
+template<class Class, class Registry = registry_affinity<Class>>
 using shared_virtual_ptr = virtual_ptr<std::shared_ptr<Class>, Registry>;
 
 //! Create a new object and return a `shared_virtual_ptr` to it.
@@ -224,9 +224,7 @@ using shared_virtual_ptr = virtual_ptr<std::shared_ptr<Class>, Registry>;
 //! include:smart_pointers.cpp#make_shared_virtual
 //!
 //! @see [Smart Pointers](xref:ROOT:smart_pointers.adoc)
-template<
-    class Class, class Registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY,
-    typename... T>
+template<class Class, class Registry = registry_affinity<Class>, typename... T>
 inline auto make_shared_virtual(T&&... args) {
     return final_virtual_ptr<Registry>(
         std::make_shared<Class>(std::forward<T>(args)...));

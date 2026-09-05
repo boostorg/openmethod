@@ -25,16 +25,26 @@ struct enable_forwarder<
 template<class...>
 struct va_args;
 
+// `registry_for` is an alias template, not a typedef, so that the scan for an
+// affinity among the virtual parameters does not run for a declaration that
+// names a registry. `registry` is retained: it is the registry a declaration
+// *names*, which is no longer the same question.
 template<class ReturnType>
 struct va_args<ReturnType> {
     using return_type = ReturnType;
     using registry = macro_default_registry;
+
+    template<class Fn>
+    using registry_for = method_registry<Fn>;
 };
 
 template<class ReturnType, class Registry>
 struct va_args<ReturnType, Registry> {
     using return_type = ReturnType;
     using registry = Registry;
+
+    template<class Fn>
+    using registry_for = Registry;
 };
 
 template<typename...>
@@ -119,7 +129,9 @@ inline constexpr bool method_not_found = false;
         BOOST_OPENMETHOD_ID(ID),                                               \
         ::boost::openmethod::detail::va_args<__VA_ARGS__>::return_type         \
             PARAMETERS,                                                        \
-        ::boost::openmethod::detail::va_args<__VA_ARGS__>::registry>
+        ::boost::openmethod::detail::va_args<__VA_ARGS__>::registry_for<       \
+            ::boost::openmethod::detail::va_args<__VA_ARGS__>::return_type     \
+                PARAMETERS>>
 
 //! Declare a method.
 //!

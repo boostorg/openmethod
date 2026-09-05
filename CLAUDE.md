@@ -484,6 +484,34 @@ rules:
   `missing template arguments` - but a name that *does* resolve would bind to the wrong type
   silently. `::registry` works.
 
+### Registry affinity
+
+A class can name its registry instead of the program naming one for every class: declare
+`auto boost_openmethod_registry(Class*) -> Registry;`, preferably as a hidden friend. The class
+then *declares* an affinity for that registry, inherited by its derived classes, and
+`registry_affinity<T>` reads it back. `virtual_ptr` and the smart pointer aliases default to it,
+and a method declared without a registry argument takes the affinity its virtual parameters agree
+on (`detail::method_registry`, driven by `detail::param_affinity` / `agreed_affinity`).
+
+Every class has an affinity; one that declares none has the *default* affinity. Only a *declared*
+affinity constrains a method, so a method may mix a class that declares one with a class that does
+not - the latter yields. `detail::declared_affinity` maps the default registry to
+`detail::default_affinity` to express that; `registry_affinity` itself is a query and always
+answers.
+
+Two things deliberately do **not** participate, and both are documented as such:
+
+- `use_classes` / `BOOST_OPENMETHOD_CLASSES` still register into
+  `BOOST_OPENMETHOD_DEFAULT_REGISTRY` unless a registry is listed last. Registering a class that
+  has an affinity without naming its registry is a run-time `missing_class`, not a compile error.
+- The `any` and `type_erasure` interop headers are untouched. `virtual_any<A, R>&` contributes no
+  affinity, so a method over one behaves exactly as before.
+
+**A test that selects a registry through an affinity needs no PCH marker.** The scan below exists
+because `BOOST_OPENMETHOD_DEFAULT_REGISTRY` must be defined before `core.hpp` is parsed, and a
+force-included PCH parses it first. An affinity has no such ordering relation to the library
+headers, so those tests can share the PCH - do not add a fourth marker for them.
+
 `test/CMakeLists.txt` withholds the shared PCH from any `test_*.cpp` that overrides the
 registry - a force-included PCH would still precede the `#define`. It detects them by scanning
 for the token `BOOST_OPENMETHOD_DEFAULT_REGISTRY` **or** for an include of a header that

@@ -10,12 +10,14 @@ namespace boost::openmethod {
 
 namespace detail {
 
-void boost_openmethod_registry(...);
 void boost_openmethod_bases(...);
 
+// `inplace_vptr_base` declares the affinity that `registry_affinity` reads
+// back, so the two are the same question. There is deliberately no catch-all
+// here: the one in core.hpp serves both, and a second one returning `void`
+// would shadow it for lookups from this namespace.
 template<class Class>
-using inplace_vptr_registry =
-    decltype(boost_openmethod_registry(std::declval<Class*>()));
+using inplace_vptr_registry = registry_affinity<Class>;
 
 template<class>
 struct update_vptr_bases;
@@ -215,6 +217,14 @@ class inplace_vptr_derived<Class, Base1, Base2, MoreBases...> {
         !detail::is_registry<Base1> && !detail::is_registry<Base2> &&
             (!detail::is_registry<MoreBases> && ...),
         "registry can be specified only for root classes");
+
+    // Without this, a `Base1` that is not an inplace_vptr root would silently
+    // acquire the default registry from the catch-all - before the hook was
+    // unified, `inplace_vptr_registry<Base1>` was `void` and the mistake was a
+    // hard error. The single-base specialization asserts the same thing.
+    static_assert(
+        std::is_base_of_v<detail::inplace_vptr_base_tag, Base1>,
+        "class must inherit from inplace_vptr_base");
 
     friend auto boost_openmethod_registry(Class*)
         -> detail::inplace_vptr_registry<Base1>;
