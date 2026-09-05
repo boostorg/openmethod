@@ -29,6 +29,9 @@ parameters:
 * xref:#std_unique_ptr[`<boost/openmethod/interop/std_unique_ptr.hpp>`] to use
 `std::unique_ptr` in virtual parameters.
 
+* xref:#std_weak_ptr[`<boost/openmethod/interop/std_weak_ptr.hpp>`] to track
+objects with `std::weak_ptr` without losing their v-table pointer.
+
 ## High-level Headers
 
 [#core]
@@ -71,6 +74,14 @@ Provides a `virtual_traits` specialization that makes it possible to use a
 
 Provides a `virtual_traits` specialization that makes it possible to use a
 `std::unique_ptr` in place of a raw pointer or reference in virtual parameters.
+
+[#std_weak_ptr]
+### link:{headers-url}/boost/openmethod/interop/std_weak_ptr.hpp[<boost/openmethod/interop/std_weak_ptr.hpp>]
+
+Provides cpp:weak_virtual_ptr[], a `virtual_ptr` that tracks an object with a
+`std::weak_ptr` and remembers its v-table pointer. It cannot be used in virtual
+parameters; its `lock` function returns a cpp:shared_virtual_ptr[], without a
+hash table lookup.
 
 [#boost_intrusive_ptr]
 ### link:{headers-url}/boost/openmethod/interop/boost_intrusive_ptr.hpp[<boost/openmethod/interop/boost_intrusive_ptr.hpp>]
