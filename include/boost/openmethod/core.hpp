@@ -2128,8 +2128,8 @@ class method<Id, ReturnType(Parameters...), Registry> :
     //! If `Registry` contains an @ref error_handler policy, call its `error`
     //! function with an object of one of the following types:
     //!
-    //! @li @ref no_overrider: No overrider is applicable.
-    //! @li @ref ambiguous_call: More than one overrider is applicable, and
+    //! @li @ref no_overrider. No overrider is applicable.
+    //! @li @ref ambiguous_call. More than one overrider is applicable, and
     //! none is more specialized than all the others.
     //!
     auto operator()(typename BOOST_OPENMETHOD_UNLESS_MRDOCS(detail::)

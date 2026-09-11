@@ -289,7 +289,7 @@ inline constexpr bool method_not_found = false;
 //! include:../examples/rolex/2/roles.hpp#content
 //!
 //! The implementation file supplies the body with
-//! @ref BOOST_OPENMETHOD_DEFINE_OVERRIDER:
+//! @ref BOOST_OPENMETHOD_DEFINE_OVERRIDER, as follows:
 //!
 //! include:../examples/rolex/2/employee.cpp#content
 //!
@@ -514,7 +514,7 @@ inline constexpr bool method_not_found = false;
 //! A translation unit that includes the header adds a more specialized
 //! overrider of its own. That one is defined once, so it uses
 //! @ref BOOST_OPENMETHOD_OVERRIDE; it reaches the header's overrider through
-//! @ref BOOST_OPENMETHOD_OVERRIDER:
+//! @ref BOOST_OPENMETHOD_OVERRIDER, as follows:
 //!
 //! include:../examples/rolex/3/salesman.cpp#content
 //!

@@ -2211,7 +2211,7 @@ void registry<Policies...>::compiler<Options...>::print_slots() {
 //!
 //! @par Errors
 //!
-//! @li @ref missing_class: A class used in a virtual parameter was not
+//! @li @ref missing_class. A class used in a virtual parameter was not
 //! registered.
 //! @li The registry's policies may report additional errors.
 //!

@@ -1299,7 +1299,7 @@ class registry : public detail::registry_base {
     //!
     //! @par Errors
     //!
-    //! @li @ref not_initialized: The registry is not initialized.
+    //! @li @ref not_initialized. The registry is not initialized.
     static void require_initialized();
 
     template<class... Options>

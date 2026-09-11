@@ -20,12 +20,12 @@ namespace boost::openmethod {
 //! `default_registry` is a predefined @ref registry, and the default value of
 //! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY.
 //! It contains the following policies:
-//! @li @ref policies::std_rtti: Use standard RTTI.
-//! @li @ref policies::fast_perfect_hash: Use a fast perfect hash function to
+//! @li @ref policies::std_rtti. Use standard RTTI.
+//! @li @ref policies::fast_perfect_hash. Use a fast perfect hash function to
 //!   map type ids to indices.
-//! @li @ref policies::vptr_vector: Store v-table pointers in a @c std::vector.
-//! @li @ref policies::default_error_handler: Write short diagnostic messages.
-//! @li @ref policies::stderr_output: Write messages to @c stderr.
+//! @li @ref policies::vptr_vector. Store v-table pointers in a @c std::vector.
+//! @li @ref policies::default_error_handler. Write short diagnostic messages.
+//! @li @ref policies::stderr_output. Write messages to @c stderr.
 //!
 //! If @ref BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS
 //! is defined, `default_registry` also includes the @ref runtime_checks policy.
@@ -38,7 +38,7 @@ namespace boost::openmethod {
 //! For a program and its shared libraries to contribute to the same
 //! `default_registry`, its state must be shared across the modules, with
 //! @ref BOOST_OPENMETHOD_IMPORT_REGISTRY, @ref BOOST_OPENMETHOD_EXPORT_REGISTRY
-//! and @ref BOOST_OPENMETHOD_INSTANTIATE_REGISTRY:
+//! and @ref BOOST_OPENMETHOD_INSTANTIATE_REGISTRY, as follows:
 //! @code
 //! // header, every translation unit of a client module:
 //! BOOST_OPENMETHOD_IMPORT_REGISTRY(boost::openmethod::default_registry);
