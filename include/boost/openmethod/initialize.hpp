@@ -124,27 +124,83 @@ struct initialize_policies<Registry, mp11::mp_list<Policies...>> {
     }
 };
 
+// Selects the policies whose state the transaction has to save: those that
+// have a `state`, *and* whose `initialize` will actually be called for this
+// Context and Options - the same test initialize_policy makes, so the two
+// cannot disagree about which policies run.
+template<class Context, class Options>
+struct policy_state_is_volatile_q {
+    template<class PolicyFn>
+    using fn = mp11::mp_bool<
+        has_policy_state<PolicyFn>::value &&
+        has_initialize<PolicyFn, const Context&, const Options&>>;
+};
+
 // Saves the policies' states on construction, and puts them back on
 // destruction unless commit() was called - so a policy's `initialize` that
 // throws, after itself or another policy has already written to shared
 // state, leaves the registry as it was. The registry's mutable state is one
-// variable, registry_state<Registry>::st; its `policies` tuple is copied
-// whole, states of policies without an `initialize` included, since
-// restoring an untouched state is harmless, and simpler than picking. The
-// other members need no saving: initialize() only reads the class and
-// method lists, and write_global_data() replaces dispatch_data at commit
-// time only, after which nothing can throw - on rollback it still holds the
-// previous tables, which the classes' static_vptrs point into. (That is
-// also why a copy could not stand in for it: it would be another buffer.)
-template<class Registry>
+// variable, registry_state<Registry>::st. Its other members need no saving:
+// initialize() only reads the class and method lists, and write_global_data()
+// replaces dispatch_data at commit time only, after which nothing can throw -
+// on rollback it still holds the previous tables, which the classes'
+// static_vptrs point into. (That is also why a copy could not stand in for
+// it: it would be another buffer.)
+//
+// Only the states of the policies that are about to be initialized are saved.
+// Copying the `policies` tuple whole is simpler, but it is not harmless: a
+// state that no `initialize` touches is not derived data this call is about to
+// replace, it is configuration the caller owns. The error handler is the case
+// that bites - it is *called* from inside the window, by design
+// (fast_perfect_hash reports a search failure through it), so a handler that
+// disarms itself with set() before throwing would have that undone on the way
+// out. Saving wide also forces every policy state in the registry to be
+// copyable, including those of policies that have no `initialize` at all -
+// which rules out the std::ostringstream an `output` policy written to the
+// documented state pattern naturally holds - and copies each of them, vectors
+// and all, on every successful initialize().
+template<class Registry, class Context, class Options>
 class registry_state_transaction {
+    using policy_fns = mp11::mp_transform_q<
+        policy_fn_q<Registry>, typename Registry::policy_list>;
+    using saved_states = mp11::mp_transform<
+        policy_state_t,
+        mp11::mp_filter_q<
+            policy_state_is_volatile_q<Context, Options>, policy_fns>>;
+    using saved_type = mp11::mp_apply<detail::tuple, saved_states>;
+
+    static_assert(
+        mp11::mp_all_of<saved_states, std::is_copy_assignable>::value,
+        "the `state` of a policy that defines `initialize` must be copyable: "
+        "initialize() saves it, and puts it back if a policy throws");
+
+    // Element-wise: `saved` holds a subset of the registry's tuple.
+    template<class Tuple>
+    struct each;
+
+    template<class... States>
+    struct each<detail::tuple<States...>> {
+        static void save(detail::tuple<States...>& to) {
+            (...,
+             (detail::get<States>(to) =
+                  detail::get<States>(Registry::state().policies)));
+        }
+
+        static void restore(detail::tuple<States...>& from) {
+            (...,
+             (detail::get<States>(Registry::state().policies) =
+                  std::move(detail::get<States>(from))));
+        }
+    };
+
   public:
-    registry_state_transaction() : saved(Registry::state().policies) {
+    registry_state_transaction() {
+        each<saved_type>::save(saved);
     }
 
     ~registry_state_transaction() {
         if (!committed) {
-            Registry::state().policies = std::move(saved);
+            each<saved_type>::restore(saved);
         }
     }
 
@@ -157,7 +213,7 @@ class registry_state_transaction {
     }
 
   private:
-    typename registry_state_type<Registry>::policies_type saved;
+    saved_type saved;
     bool committed = false;
 };
 
@@ -1878,7 +1934,9 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
 
     ++tr << rflush(4, dispatch_data_size) << " " << gv_iter << " end\n";
 
-    detail::registry_state_transaction<registry> transaction;
+    detail::registry_state_transaction<
+        registry, compiler, std::tuple<Options...>>
+        transaction;
     detail::initialize_policies<registry>::fn(*this, options);
     transaction.commit();
 
@@ -2222,8 +2280,14 @@ void registry<Policies...>::compiler<Options...>::print_slots() {
 //! call: no static v-table pointer, `next` pointer, dispatch table or policy
 //! state is modified. The registry is nonetheless marked as not initialized,
 //! since that state does not reflect the current registrations; `initialize`
-//! must be called again, successfully, before any method is called. Policy
-//! states are restored from a copy, so a policy's `state` must be copyable.
+//! must be called again, successfully, before any method is called.
+//!
+//! Only the policies that define `initialize` have their `state` saved and
+//! restored, so only those states have to be copyable. A state that no
+//! `initialize` writes to is configuration, not derived data, and is left
+//! alone: an @ref error_handler policy is *called* during `initialize`, and a
+//! handler that changes the configuration - installing a different handler
+//! with `set`, say - keeps that change whether the call succeeds or throws.
 //!
 //! @par Example
 //!
