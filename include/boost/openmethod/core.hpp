@@ -29,10 +29,13 @@
 //!
 //! The name of the default registry.
 //!
-//! `BOOST_OPENMETHOD_DEFAULT_REGISTRY` is the default value for the `Registry`
-//! template parameter of @ref boost::openmethod::method,
-//! @ref boost::openmethod::use_classes, @ref boost::openmethod::virtual_ptr,
-//! and all the constructs that take a registry as a template argument.
+//! `BOOST_OPENMETHOD_DEFAULT_REGISTRY` is the registry that a construct taking
+//! one as a template argument uses when neither the construct nor the class it
+//! is about names another: directly, as @ref boost::openmethod::use_classes
+//! does, or as the registry a class has an affinity for when it declares none
+//! - which is what @ref boost::openmethod::method and
+//! @ref boost::openmethod::virtual_ptr default to. See
+//! @ref boost::openmethod::registry_affinity.
 //!
 //! `BOOST_OPENMETHOD_DEFAULT_REGISTRY` can be defined by a program to change
 //! the default registry globally, *before* including
@@ -1045,8 +1048,9 @@ inline auto final_virtual_ptr(Arg&& obj) {
 
 //! Create a `virtual_ptr` for an object of a known exact class.
 //!
-//! This is an overload of `final_virtual_ptr` that uses the default
-//! registry as the `Registry` template parameter.
+//! This is an overload of `final_virtual_ptr` that uses the registry the
+//! object's class has an affinity for - see @ref registry_affinity - as the
+//! `Registry` template parameter.
 //!
 //! @par Example
 //!
@@ -1075,9 +1079,9 @@ inline auto final_virtual_ptr(Arg&& obj) {
 //! "plain" `virtual_ptr` can be constructed from a smart `virtual_ptr`, but not
 //! the other way around.
 //!
-//! The default value for `Registry` can be customized by defining the
-//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY
-//! preprocessor symbol.
+//! `Registry` defaults to the registry `Class` has an affinity for - see
+//! @ref registry_affinity - which is @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY
+//! for a class that declares none.
 //!
 //! @par Requirements
 //!
@@ -2259,82 +2263,6 @@ struct validate_method_parameter<
 };
 } // namespace detail
 
-//! Implement a method
-//!
-//! Methods are created by specializing the `method` class template with an
-//! identifier, a function type and optionally a registry.
-//!
-//! `Id` is a type, typically an incomplete class declaration named after the
-//! method's purpose. It is used to allow different methods with the same
-//! signature.
-//!
-//! `Fn` is a function type, i.e. a type in the form `ReturnType(Parameters...)`.
-//!
-//! `Registry` is an instantiation of class template @ref registry. Methods may
-//! use only classes that have been registered in the same registry as virtual
-//! parameters and arguments. The registry also contains a set of policies that
-//! influence several aspects of the dispatch mechanism - for example, how to
-//! acquire a v-table pointer for an object, how to report errors, whether to
-//! perform sanity checks, etc.
-//!
-//! The default value for `Registry` is @ref default_registry, but it can be
-//! overridden by defining the preprocessor symbol
-//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY, *before* including
-//! `<boost/openmethod/core.hpp>` (or any header that includes it, like
-//! `<boost/openmethod.hpp>`). Setting the symbol afterwards has no effect.
-//!
-//! Specializations of `method` have a single instance: the static member `fn`,
-//! which has an `operator()` that forwards to the appropriate overrider. It is
-//! selected in the same way as overloaded function resolution:
-//!
-//! 1. Form the set of all applicable overriders. An overrider is applicable
-//!    if it can be called with the arguments passed to the method.
-//!
-//! 2. If the set is empty, call the error handler (if present in the
-//!    registry), then terminate the program with `abort`.
-//!
-//! 3. Remove the overriders that are dominated by other overriders in the set.
-//!    Overrider A dominates overrider B if at least one of its virtual formal
-//!    parameters is more specialized than B's, and if none of B's virtual
-//!    parameters is more specialized than A's.
-//!
-//! 4. If the resulting set contains exactly one overrider, call it.
-//!
-//! If a single most specialized overrider does not exist, the program is
-//! terminated via `abort`. If the registry contains an @ref error_handler
-//! policy, its `error` function is called with an object that describes the
-//! error, prior calling `abort`. `error` may prevent termination by throwing an
-//! exception.
-//!
-//! For each virtual argument `arg`, the dispatch mechanism calls
-//! `virtual_traits::peek(arg)` and deduces the v-table pointer from the
-//! `result`, using the first of the following methods that applies:
-//!
-//! 1. If `result` is a `virtual_ptr`, get the pointer to the v-table from it.
-//!
-//! 2. If @ref boost_openmethod_vptr can be called with `result` and a
-//!    `Registry*`, and it returns a `vptr_type`, call it.
-//!
-//! 3. If @ref virtual_traits provides a `vptr` function, call it.
-//!
-//! 4. Call the @ref policies::VptrFn::dynamic_vptr of the registry's `vptr`
-//!    policy.
-//!
-//! @par N2216 Handling of Ambiguous Calls
-//!
-//! If `Registry` was initialized with the @ref n2216 option, ambiguous calls
-//! are not an error. Instead, the following extra steps are taken to select an
-//! overrider:
-//!
-//! 1. If the return type is a registered polymorphic type, remove all the
-//!    overriders that return a less specific type than others.
-//!
-//! 2. If the resulting set contains only one overrider, call it.
-//!
-//! 3. Otherwise, call one of the remaining overriders. Which overrider is
-//!    selected is not specified, but it is the same across calls with the
-//!    same arguments types.
-//!
 namespace detail {
 
 // Every class has an affinity, but only a *declared* one constrains a method.
@@ -2405,6 +2333,81 @@ using method_registry = typename method_registry_aux<Fn>::type;
 
 } // namespace detail
 
+//! Implement a method
+//!
+//! Methods are created by specializing the `method` class template with an
+//! identifier, a function type and optionally a registry.
+//!
+//! `Id` is a type, typically an incomplete class declaration named after the
+//! method's purpose. It is used to allow different methods with the same
+//! signature.
+//!
+//! `Fn` is a function type, i.e. a type in the form `ReturnType(Parameters...)`.
+//!
+//! `Registry` is an instantiation of class template @ref registry. Methods may
+//! use only classes that have been registered in the same registry as virtual
+//! parameters and arguments. The registry also contains a set of policies that
+//! influence several aspects of the dispatch mechanism - for example, how to
+//! acquire a v-table pointer for an object, how to report errors, whether to
+//! perform sanity checks, etc.
+//!
+//! `Registry` defaults to the registry the virtual parameters of `Fn` have an
+//! affinity for - see @ref registry_affinity - and to
+//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY when none of them declares one.
+//! Parameters that declare different registries are an error.
+//!
+//! Specializations of `method` have a single instance: the static member `fn`,
+//! which has an `operator()` that forwards to the appropriate overrider. It is
+//! selected in the same way as overloaded function resolution:
+//!
+//! 1. Form the set of all applicable overriders. An overrider is applicable
+//!    if it can be called with the arguments passed to the method.
+//!
+//! 2. If the set is empty, call the error handler (if present in the
+//!    registry), then terminate the program with `abort`.
+//!
+//! 3. Remove the overriders that are dominated by other overriders in the set.
+//!    Overrider A dominates overrider B if at least one of its virtual formal
+//!    parameters is more specialized than B's, and if none of B's virtual
+//!    parameters is more specialized than A's.
+//!
+//! 4. If the resulting set contains exactly one overrider, call it.
+//!
+//! If a single most specialized overrider does not exist, the program is
+//! terminated via `abort`. If the registry contains an @ref error_handler
+//! policy, its `error` function is called with an object that describes the
+//! error, prior calling `abort`. `error` may prevent termination by throwing an
+//! exception.
+//!
+//! For each virtual argument `arg`, the dispatch mechanism calls
+//! `virtual_traits::peek(arg)` and deduces the v-table pointer from the
+//! `result`, using the first of the following methods that applies:
+//!
+//! 1. If `result` is a `virtual_ptr`, get the pointer to the v-table from it.
+//!
+//! 2. If @ref boost_openmethod_vptr can be called with `result` and a
+//!    `Registry*`, and it returns a `vptr_type`, call it.
+//!
+//! 3. If @ref virtual_traits provides a `vptr` function, call it.
+//!
+//! 4. Call the @ref policies::VptrFn::dynamic_vptr of the registry's `vptr`
+//!    policy.
+//!
+//! @par N2216 Handling of Ambiguous Calls
+//!
+//! If `Registry` was initialized with the @ref n2216 option, ambiguous calls
+//! are not an error. Instead, the following extra steps are taken to select an
+//! overrider:
+//!
+//! 1. If the return type is a registered polymorphic type, remove all the
+//!    overriders that return a less specific type than others.
+//!
+//! 2. If the resulting set contains only one overrider, call it.
+//!
+//! 3. Otherwise, call one of the remaining overriders. Which overrider is
+//!    selected is not specified, but it is the same across calls with the
+//!    same arguments types.
+//!
 //! @tparam Id A type
 //! @tparam Fn A function type
 //! @tparam Registry The registry in which the method is defined. Defaults to

@@ -25,26 +25,25 @@ struct enable_forwarder<
 template<class...>
 struct va_args;
 
-// `registry_for` is an alias template, not a typedef, so that the scan for an
-// affinity among the virtual parameters does not run for a declaration that
-// names a registry. `registry` is retained: it is the registry a declaration
-// *names*, which is no longer the same question.
+// `method_type` names the method rather than yielding a registry for
+// BOOST_OPENMETHOD_TYPE to plug in, so that the macro spells the parameter
+// list once. It is an alias template, so the specialization that omits the
+// registry leaves `method`'s own default to scan the parameters for an
+// affinity, and the one that names a registry never triggers that scan.
 template<class ReturnType>
 struct va_args<ReturnType> {
     using return_type = ReturnType;
-    using registry = macro_default_registry;
 
-    template<class Fn>
-    using registry_for = method_registry<Fn>;
+    template<class Id, class Fn>
+    using method_type = method<Id, Fn>;
 };
 
 template<class ReturnType, class Registry>
 struct va_args<ReturnType, Registry> {
     using return_type = ReturnType;
-    using registry = Registry;
 
-    template<class Fn>
-    using registry_for = Registry;
+    template<class Id, class Fn>
+    using method_type = method<Id, Fn, Registry>;
 };
 
 template<typename...>
@@ -125,13 +124,10 @@ inline constexpr bool method_not_found = false;
 //!
 //! @see [Core API](xref:ROOT:core_api.adoc)
 #define BOOST_OPENMETHOD_TYPE(ID, PARAMETERS, ...)                             \
-    ::boost::openmethod::method<                                               \
+    ::boost::openmethod::detail::va_args<__VA_ARGS__>::method_type<            \
         BOOST_OPENMETHOD_ID(ID),                                               \
         ::boost::openmethod::detail::va_args<__VA_ARGS__>::return_type         \
-            PARAMETERS,                                                        \
-        ::boost::openmethod::detail::va_args<__VA_ARGS__>::registry_for<       \
-            ::boost::openmethod::detail::va_args<__VA_ARGS__>::return_type     \
-                PARAMETERS>>
+            PARAMETERS>
 
 //! Declare a method.
 //!
@@ -187,11 +183,13 @@ inline constexpr bool method_not_found = false;
 //!
 //! @note `ID` must be an *identifier*. Qualified names are not allowed.
 //!
-//! @note The default registry is the value of
-//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY at the point
-//! `<boost/openmethod/core.hpp>` is included, directly or through a header
-//! like `<boost/openmethod.hpp>`. Changing the value of this symbol has no
-//! effect after that point.
+//! @note A declaration that does not name a registry takes the one its virtual
+//! parameters have an affinity for - see
+//! @ref boost::openmethod::registry_affinity - and
+//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY when none of them declares one. That
+//! symbol is read at the point `<boost/openmethod/core.hpp>` is included,
+//! directly or through a header like `<boost/openmethod.hpp>`; changing its
+//! value has no effect after that point.
 //!
 //! @par Example
 //!
@@ -550,10 +548,13 @@ inline constexpr bool method_not_found = false;
 //! This macro is a wrapper around @ref boost::openmethod::use_classes; see its
 //! documentation for more details.
 //!
-//! @note The default registry is the value of
-//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY when `<boost/openmethod/core.hpp>`
-//! is included, directly or through a header like `<boost/openmethod.hpp>`.
-//! Subsequently changing it has no retroactive effect.
+//! @note Unlike a method declaration, this macro does not consult the classes'
+//! registry affinities: without a registry in the list it registers into
+//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY, whatever the classes declare. List
+//! the registry last when they declare one. The symbol is read when
+//! `<boost/openmethod/core.hpp>` is included, directly or through a header
+//! like `<boost/openmethod.hpp>`; subsequently changing it has no retroactive
+//! effect.
 //!
 //! @par Examples
 //!

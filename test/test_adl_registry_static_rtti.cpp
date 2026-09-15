@@ -4,7 +4,7 @@
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // The ADL twin of test_static_rtti.cpp: the same registry, selected by an
-// affinity instead of by BOOST_OPENMETHOD_DEFAULT_REGISTRY. Worth its own test
+// affinity instead of by the default-registry macro. Worth its own test
 // because a `static_rtti` registry has no `vptr` policy, so every `virtual_ptr`
 // has to be created where the exact class is known.
 

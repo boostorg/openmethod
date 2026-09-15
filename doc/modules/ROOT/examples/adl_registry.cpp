@@ -27,7 +27,6 @@ class Animal {
     virtual ~Animal() = default;
 
   private:
-    // Animal - and every class derived from it - belongs to zoo_registry
     friend auto boost_openmethod_registry(Animal*) -> zoo_registry;
 };
 
@@ -40,7 +39,6 @@ class Cat : public Animal {};
 // tag::methods[]
 BOOST_OPENMETHOD_CLASSES(zoo::Animal, zoo::Dog, zoo::Cat, zoo_registry);
 
-// no registry argument: speak follows Animal
 BOOST_OPENMETHOD(speak, (virtual_<const zoo::Animal&>), std::string);
 
 BOOST_OPENMETHOD_OVERRIDE(speak, (const zoo::Dog&), std::string) {
@@ -53,7 +51,6 @@ BOOST_OPENMETHOD_OVERRIDE(speak, (const zoo::Cat&), std::string) {
 // end::methods[]
 
 // tag::virtual_ptr[]
-// ...and so does virtual_ptr
 static_assert(
     std::is_same_v<virtual_ptr<zoo::Dog>, virtual_ptr<zoo::Dog, zoo_registry>>);
 // end::virtual_ptr[]

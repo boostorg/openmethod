@@ -5,7 +5,7 @@
 
 // `inplace_vptr_base` declares the affinity itself, as a hidden friend. Since
 // the hook is now the library's own, a method over such a class needs neither a
-// registry argument nor a BOOST_OPENMETHOD_DEFAULT_REGISTRY override.
+// registry argument nor an override of the default-registry macro.
 
 #include <string>
 

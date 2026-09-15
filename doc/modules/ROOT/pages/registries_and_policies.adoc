@@ -14,9 +14,10 @@ preprocessor symbol
 xref:reference:BOOST_OPENMETHOD_DEFAULT_REGISTRY.adoc[BOOST_OPENMETHOD_DEFAULT_REGISTRY]
 _before_ including `<boost/openmethod/core.hpp>` (or any header that includes
 it, like `<boost/openmethod.hpp>`). The value of the symbol is used as a default
-template parameter for `use_classes`, `method`, `virtual_ptr`, and others. Once
-it has been included, changing `BOOST_OPENMETHOD_DEFAULT_REGISTRY` has no
-effect.
+template parameter for `use_classes`, and for `method` and `virtual_ptr` where
+the classes involved declare no affinity of their own - see <<Registry
+affinity>> below. Once it has been included, changing
+`BOOST_OPENMETHOD_DEFAULT_REGISTRY` has no effect.
 
 For a registry the library provides, that is the whole recipe:
 
@@ -63,9 +64,10 @@ it needs no definition:
 include::example$adl_registry.cpp[tag=affinity]
 ----
 
-The class then _declares_ an affinity for that registry, and everything that
-mentions the class finds it. A method declared without a registry argument takes the
-affinity of its virtual parameters:
+The class then _declares_ an affinity for that registry - and so does every
+class derived from it - and everything that mentions the class finds it. A
+method declared without a registry argument takes the affinity of its virtual
+parameters:
 
 [source,c++]
 ----
