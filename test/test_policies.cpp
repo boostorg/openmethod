@@ -10,6 +10,9 @@
 #include <boost/test/unit_test.hpp>
 
 #include <boost/openmethod.hpp>
+#include <boost/openmethod/policies/minimal_cover_hash.hpp>
+#include <boost/openmethod/policies/minimal_perfect_hash.hpp>
+#include <boost/openmethod/policies/two_level_hash.hpp>
 
 #include "test_util.hpp"
 
@@ -80,3 +83,34 @@ static_assert(!has_initialize<
 static_assert(has_initialize<
               fast_perfect_hash::fn<registry1>,
               registry1::compiler<std::tuple<>>, std::tuple<>>);
+
+// The alternative `type_hash` policies conform to the same blueprint. Each is a
+// class template, so name a specialization; the defaults are what a user who
+// does not tune them gets.
+static_assert(has_initialize<
+              minimal_perfect_hash<>::fn<registry1>,
+              registry1::compiler<std::tuple<>>, std::tuple<>>);
+static_assert(has_initialize<
+              two_level_hash<>::fn<registry1>,
+              registry1::compiler<std::tuple<>>, std::tuple<>>);
+#if BOOST_OPENMETHOD_HAS_PEXT
+static_assert(has_initialize<
+              minimal_cover_hash<>::fn<registry1>,
+              registry1::compiler<std::tuple<>>, std::tuple<>>);
+#endif
+
+// All four are interchangeable: each derives from the `type_hash` category, so
+// `with` replaces whichever one a registry already has, in place, rather than
+// appending a second - which would leave `vptr_vector` reading the wrong state.
+static_assert(std::is_base_of_v<type_hash, fast_perfect_hash>);
+static_assert(std::is_base_of_v<type_hash, minimal_perfect_hash<>>);
+static_assert(std::is_base_of_v<type_hash, two_level_hash<>>);
+static_assert(std::is_base_of_v<type_hash, minimal_cover_hash<>>);
+static_assert(std::is_same_v<
+              default_registry::with<minimal_perfect_hash<>>::policy<type_hash>,
+              minimal_perfect_hash<>::fn<
+                  default_registry::with<minimal_perfect_hash<>>>>);
+static_assert(
+    mp11::mp_size<default_registry::policy_list>::value ==
+    mp11::mp_size<
+        default_registry::with<minimal_perfect_hash<>>::policy_list>::value);

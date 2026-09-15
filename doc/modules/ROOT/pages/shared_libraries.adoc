@@ -229,6 +229,114 @@ against this by putting the applicable macro in a project header that every
 translation unit includes, as in the examples, rather than repeating it in
 individual `.cpp` files.
 
+[#type_ids_across_modules]
+## Type Ids Across Modules
+
+Everything above is about sharing the registry's _state_. There is a second,
+quieter question: where the _type ids_ themselves come from, and how far apart
+they end up. It decides how well the registry's cpp:type_hash[] policy can do
+its job, and it is the one place where `dlopen` behaves differently from
+ordinary linking.
+
+Under cpp:std_rtti[], a type id is `&typeid(X)` - the address of a
+`std::type_info` object. The Itanium ABI requires that identity to be _pointer_
+identity across modules, and the linker delivers it for an implicitly linked
+shared library with a copy relocation: the record is copied into the
+executable's image, and the library's references are redirected to that copy.
+So a program and the libraries it links against present one compact set of type
+ids, however many modules there are.
+
+`dlopen` does not get that. A plugin's own classes are not named by the
+executable, so nothing unifies them; their records stay in the plugin's own
+mapping, which the loader places wherever it likes - and with address-space
+randomization, somewhere different on every run. The distance between a
+program's type ids and its plugin's is routinely measured in terabytes, and it
+moves from run to run.
+
+NOTE: RTTI has to keep default visibility for ids to unify at all. Under
+`-fvisibility=hidden` one class can end up with a different `type_info` object
+in each module; cpp:initialize[] copes - it treats them as several ids for the
+same class - but they are extra ids for the hash to separate. This is why the
+library's own shared-library tests mark their classes `BOOST_SYMBOL_VISIBLE`.
+
+### What it costs
+
+cpp:fast_perfect_hash[], the default, searches for a multiplier `M` and a shift
+`S` such that `(M * x) >> S` is collision-free over the registered type ids. It
+is fast and compact when the ids are evenly spread, and degrades when they are
+not - and a program plus a few `dlopen`{empty}ed modules is as uneven as it
+gets: several tight clusters, very far apart. Two things follow:
+
+* the search gets dramatically more expensive, and on a large enough set it
+  fails - it gives up after half a million attempts and the error handler is
+  called with a `search_error`, which by default terminates the program;
+* cpp:vptr_vector[] sizes its table from the hash's range, so a hash that is
+  working hard costs memory as well as time.
+
+A program that loads plugins and registers more than a few hundred classes is
+the one most likely to meet both.
+
+### The alternatives
+
+Three other cpp:type_hash[] policies trade that away, and a fourth option
+removes the hash from the picture entirely. They are all drop-in: `with`
+replaces a policy with the one of the same category, in place, so the new hash
+still precedes cpp:vptr_vector[] in the list.
+
+[cols="1,3"]
+|===
+| policy | what it does
+
+a| cpp:minimal_perfect_hash[]
+a| One slot per type id, whatever the addresses are, and a search whose cost
+depends only on how many classes there are. The table size can be stated before
+seeing an address. Costs a second dependent load on every dispatch - a
+nanosecond or two per call. **The one to reach for in a plugin host.**
+
+a| cpp:two_level_hash[]
+a| The same idea with the final reduction replaced by a shift. Cheaper per call
+than `minimal_perfect_hash` where the compiler hoists the shift amount out of
+the dispatch loop, at the price of a table that rounds up to a power of two -
+between one and two slots per type id, depending on the class count.
+
+a| cpp:minimal_cover_hash[]
+a| Indexes by the smallest set of bit positions that still separates the type
+ids. As fast per call as the default, and it finds its table deterministically
+in milliseconds. Needs BMI2, for **every** translation unit of the program -
+see its documentation before choosing it.
+
+a| cpp:vptr_map[]
+a| Not a hash at all: a map keyed on the type id, so there is no table to size
+and no search to fail. Slower per dispatch than any of the above, and the only
+option that asks nothing of the type ids.
+|===
+
+Switching is one declaration. The registry is then a custom registry, so it
+needs the treatment in <<custom_registries>> to be shared across modules:
+
+[source,c++]
+----
+struct plugin_registry :
+    boost::openmethod::default_registry::with<
+        boost::openmethod::policies::minimal_perfect_hash<>> {};
+----
+
+`vptr_map` replaces the `vptr` policy rather than the hash, and the hash is then
+dead weight, so drop it:
+
+[source,c++]
+----
+struct plugin_registry :
+    boost::openmethod::default_registry::with<
+        boost::openmethod::policies::vptr_map<>>::without<
+        boost::openmethod::policies::type_hash> {};
+----
+
+TIP: none of this arises until a module registers classes of its own. A plugin
+that only adds _overriders_ for classes the program already registered
+contributes no new type ids, and the default policies are as good there as
+anywhere.
+
 ## Indirect Vptrs
 
 `initialize` rebuilds the v-tables in the registry. This invalidates all the
@@ -272,6 +380,7 @@ The shared library it loads includes the same header, so it uses
 `indirect_registry` too and imports the state. The complete example is in the
 `indirect_vptr` directory.
 
+[#custom_registries]
 ## Custom Registries
 
 A custom registry is shared exactly the same way - name it instead of

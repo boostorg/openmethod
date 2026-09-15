@@ -13,25 +13,22 @@
 #include <tuple>
 #include <type_traits>
 #include <variant>
+
 #ifdef _MSC_VER
 #pragma warning(push)
-#pragma warning(disable : 4702) // unreachable code
+// 4702: unreachable code. The `abort()` after a call to the error handler is
+// there for a handler that returns - the default one prints and returns - but a
+// handler that is [[noreturn]], like throw_error_handler, makes it dead code,
+// and MSVC diagnoses that. Same reason as in preamble.hpp and core.hpp.
+#pragma warning(disable : 4702)
 #endif
 
 namespace boost::openmethod {
 
 namespace detail {
 
-#if defined(UINTPTR_MAX)
-using uintptr = std::uintptr_t;
-constexpr uintptr uintptr_max = UINTPTR_MAX;
-#else
-static_assert(
-    sizeof(std::size_t) == sizeof(void*),
-    "This implementation requires that size_t and void* have the same size.");
-using uintptr = std::size_t;
-constexpr uintptr uintptr_max = (std::numeric_limits<std::size_t>::max)();
-#endif
+// detail::uintptr and detail::uintptr_max are in preamble.hpp: every
+// `type_hash` policy needs them, not just this one.
 
 struct hash_fn {
     std::size_t mult;
@@ -319,5 +316,9 @@ auto fast_perfect_hash::search_error::write(Stream& os) const -> void {
 
 } // namespace policies
 } // namespace boost::openmethod
+
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #endif

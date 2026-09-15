@@ -176,6 +176,24 @@ using the cpp:with[] and cpp:without[] nested templates. For example,
 struct indirect_registry : default_registry::with<policies::indirect_vptr> {};
 ----
 
+cpp:with[] replaces the policy of the same _category_ where it already stands,
+and appends only when the registry has no policy of that category yet. That is
+what makes a policy swap a one-liner: `default_registry::with<
+policies::minimal_perfect_hash<>>` puts the new hash exactly where
+`fast_perfect_hash` was, still ahead of `vptr_vector`, so the ordering rule above
+is not something a caller has to think about.
+
+The library ships four `type_hash` policies. `fast_perfect_hash` is the default
+and the right choice for almost every program. The others exist for the case it
+handles least well - type ids spread over several far-apart address ranges, which
+is what a program that `dlopen`{empty}s class-registering modules has:
+cpp:minimal_perfect_hash[] spends one slot per type id whatever the addresses
+are, cpp:two_level_hash[] trades a sawtooth table size for a shorter dispatch
+sequence, and cpp:minimal_cover_hash[] indexes by a minimal cover of the ids'
+bits but needs BMI2. Each policy's own page has the details;
+xref:shared_libraries.adoc#type_ids_across_modules[Type Ids Across Modules]
+explains the situation they address and when to pick which.
+
 Policies are implemented as unary
 https://www.boost.org/doc/libs/latest/libs/mp11/doc/html/mp11.html[Boost.MP11
 quoted metafunctions]. A policy is an ordinary class that contains a nested

@@ -5,7 +5,10 @@
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/initialize.hpp>
+#include <boost/openmethod/policies/minimal_cover_hash.hpp>
+#include <boost/openmethod/policies/minimal_perfect_hash.hpp>
 #include <boost/openmethod/policies/throw_error_handler.hpp>
+#include <boost/openmethod/policies/two_level_hash.hpp>
 #include <boost/openmethod/policies/vptr_map.hpp>
 
 #include <stdexcept>
@@ -118,6 +121,75 @@ BOOST_OPENMETHOD_OVERRIDE(
 
 } // namespace fast_perfect_hash_demo
 
+namespace minimal_perfect_hash_demo {
+
+// tag::minimal_perfect_hash[]
+// One slot per type id, whatever the addresses are. Swapping the hash is all it
+// takes: `with` replaces the policy of the same category, in place, so
+// `vptr_vector` still comes after it.
+struct compact_registry :
+    default_registry::with<policies::minimal_perfect_hash<>> {};
+// end::minimal_perfect_hash[]
+
+BOOST_OPENMETHOD_CLASSES(Animal, Cat, Dog, compact_registry);
+
+BOOST_OPENMETHOD(
+    trick, (virtual_ptr<Animal, compact_registry>), std::string,
+    compact_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(
+    trick, (virtual_ptr<Dog, compact_registry>), std::string) {
+    return "spin";
+}
+
+} // namespace minimal_perfect_hash_demo
+
+namespace two_level_hash_demo {
+
+// tag::two_level_hash[]
+struct two_level_registry :
+    default_registry::with<policies::two_level_hash<>> {};
+// end::two_level_hash[]
+
+BOOST_OPENMETHOD_CLASSES(Animal, Cat, Dog, two_level_registry);
+
+BOOST_OPENMETHOD(
+    trick, (virtual_ptr<Animal, two_level_registry>), std::string,
+    two_level_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(
+    trick, (virtual_ptr<Dog, two_level_registry>), std::string) {
+    return "spin";
+}
+
+} // namespace two_level_hash_demo
+
+#if BOOST_OPENMETHOD_HAS_PEXT
+
+namespace minimal_cover_hash_demo {
+
+// tag::minimal_cover_hash[]
+// Needs BMI2, for every translation unit of the program - hence the guard.
+#if BOOST_OPENMETHOD_HAS_PEXT
+struct cover_registry :
+    default_registry::with<policies::minimal_cover_hash<>> {};
+#endif
+// end::minimal_cover_hash[]
+
+BOOST_OPENMETHOD_CLASSES(Animal, Cat, Dog, cover_registry);
+
+BOOST_OPENMETHOD(
+    trick, (virtual_ptr<Animal, cover_registry>), std::string, cover_registry);
+
+BOOST_OPENMETHOD_OVERRIDE(
+    trick, (virtual_ptr<Dog, cover_registry>), std::string) {
+    return "spin";
+}
+
+} // namespace minimal_cover_hash_demo
+
+#endif
+
 namespace stderr_output_demo {
 
 // tag::stderr_output[]
@@ -225,6 +297,35 @@ BOOST_AUTO_TEST_CASE(rtti_and_storage) {
         BOOST_TEST(
             trick(virtual_ptr<Animal, hashed_registry>(snoopy)) == "spin");
     }
+
+    {
+        using namespace minimal_perfect_hash_demo;
+        initialize<compact_registry>();
+
+        Dog snoopy;
+        BOOST_TEST(
+            trick(virtual_ptr<Animal, compact_registry>(snoopy)) == "spin");
+    }
+
+    {
+        using namespace two_level_hash_demo;
+        initialize<two_level_registry>();
+
+        Dog snoopy;
+        BOOST_TEST(
+            trick(virtual_ptr<Animal, two_level_registry>(snoopy)) == "spin");
+    }
+
+#if BOOST_OPENMETHOD_HAS_PEXT
+    {
+        using namespace minimal_cover_hash_demo;
+        initialize<cover_registry>();
+
+        Dog snoopy;
+        BOOST_TEST(
+            trick(virtual_ptr<Animal, cover_registry>(snoopy)) == "spin");
+    }
+#endif
 
     {
         using namespace stderr_output_demo;

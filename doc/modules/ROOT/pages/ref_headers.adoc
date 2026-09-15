@@ -166,6 +166,24 @@ exceptions.
 Provides an implementation of the `vptr` policy that stores the v-table pointers
 in a map (by default a `std::map`) indexed by type ids.
 
+### link:{headers-url}/boost/openmethod/policies/minimal_perfect_hash.hpp[<boost/openmethod/policies/minimal_perfect_hash.hpp>]
+
+Provides an implementation of the `type_hash` policy that spends one slot per
+type id whatever the type ids are, by hash and displace.
+
+### link:{headers-url}/boost/openmethod/policies/two_level_hash.hpp[<boost/openmethod/policies/two_level_hash.hpp>]
+
+Provides an implementation of the `type_hash` policy that indexes a power-of-two
+table with a per-bucket multiplier.
+
+### link:{headers-url}/boost/openmethod/policies/minimal_cover_hash.hpp[<boost/openmethod/policies/minimal_cover_hash.hpp>]
+
+Provides an implementation of the `type_hash` policy that indexes by the
+smallest set of bit positions that separates the type ids, extracted with
+BMI2{apos}s `pext`. Requires that instruction; see
+xref:shared_libraries.adoc#type_ids_across_modules[Type Ids Across Modules] for
+when to prefer each of the three.
+
 ## Headers Included by Other Headers
 
 These are the library's foundations. Every other header includes them, and a

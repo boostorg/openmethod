@@ -78,9 +78,30 @@ alias unit_test_framework
         /boost/test//boost_unit_test_framework/<warnings-as-errors>off
     ;
 
-for local src in [ glob test_*.cpp ]
+local bmi2-sources =
+    test_dispatch_minimal_cover_hash.cpp
+    test_hash_policies.cpp
+    ;
+
+for local src in [ glob test_*.cpp : $(bmi2-sources) ]
 {
   run $(src) unit_test_framework ;
+}
+
+# minimal_cover_hash dispatches with BMI2's pext, and because `hash` is inlined
+# into every call the instruction has to be enabled for the whole translation
+# unit - so the sources that name the policy are declared on their own, rather
+# than through the glob above. Where the probe fails - ARM, or a compiler that
+# will not take the flag - BOOST_OPENMETHOD_HAS_PEXT is 0 and the policy drops
+# out of both files, so nothing here is conditional on the outcome except the
+# flag itself.
+for local src in $(bmi2-sources)
+{
+  run $(src) unit_test_framework
+    : : :
+      [ check-target-builds /boost/openmethod/config//has_bmi2
+          "BMI2 pext" : <cxxflags>-mbmi2 ]
+    ;
 }
 
 run mix_release_debug/main.cpp mix_release_debug/lib.cpp unit_test_framework ;

@@ -1,0 +1,8 @@
+poke snoopy: bark
+poke hector: bark and bite
+hector meets sylvester: chase
+sylvester meets hector: run
+hector meets snoopy: wag tail
+hector meets flipper: ignore
+
+EXIT STATUS: 0

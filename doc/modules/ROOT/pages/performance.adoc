@@ -75,6 +75,13 @@ correct vtable. Then it stores a pointer to it in the `virtual_ptr` object,
 along with a pointer to the object.footnote:[This is how Go and Rust implement
 dynamic dispatch.]
 
+The cost of that lookup belongs to the registry's cpp:type_hash[] policy, which
+is cpp:fast_perfect_hash[] here as everywhere `default_registry` is used - a
+multiply, a shift and a load. The alternatives in
+xref:shared_libraries.adoc#type_ids_across_modules[Type Ids Across Modules] buy
+a smaller or more predictable table and pay for it on this path, so the figures
+below are the best case rather than the only one.
+
 If we already have a `virtual_ptr`:
 
 [source,c++]

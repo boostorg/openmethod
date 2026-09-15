@@ -17,3 +17,10 @@ project /boost/openmethod/config ;
 
 obj has_reflection : has_reflection.cpp : <cxxflags>-freflection ;
 explicit has_reflection ;
+
+# The other probe: BMI2's pext, which only policies/minimal_cover_hash.hpp
+# needs. Probing beats naming an architecture - a <architecture>x86 conditional
+# does not match every toolset spelling, and a compiler that rejects -mbmi2
+# outright would take the directory down with it.
+obj has_bmi2 : has_bmi2.cpp : <cxxflags>-mbmi2 <include>../include ;
+explicit has_bmi2 ;

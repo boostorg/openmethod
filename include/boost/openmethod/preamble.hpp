@@ -13,6 +13,7 @@
 #include <stdlib.h>
 #include <vector>
 #include <cstdint>
+#include <limits>
 #include <string_view>
 #include <tuple>
 
@@ -25,6 +26,26 @@
 #endif
 
 namespace boost::openmethod {
+
+// -----------------------------------------------------------------------------
+// uintptr
+
+namespace detail {
+
+// The unsigned integer a type_id can be reinterpreted as. Every `type_hash`
+// policy needs it, so it lives here rather than in any one of them.
+#if defined(UINTPTR_MAX)
+using uintptr = std::uintptr_t;
+constexpr uintptr uintptr_max = UINTPTR_MAX;
+#else
+static_assert(
+    sizeof(std::size_t) == sizeof(void*),
+    "This implementation requires that size_t and void* have the same size.");
+using uintptr = std::size_t;
+constexpr uintptr uintptr_max = (std::numeric_limits<std::size_t>::max)();
+#endif
+
+} // namespace detail
 
 // -----------------------------------------------------------------------------
 // word
