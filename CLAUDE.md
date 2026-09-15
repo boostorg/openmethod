@@ -92,7 +92,9 @@ the license header:
 `MATCHES "//[ \t]*expected-error:[ \t]*([^\r\n]+)"`, and hands it to
 `openmethod_compile_fail_test` as the test's `PASS_REGULAR_EXPRESSION`. Adding a test is dropping
 in a file - no build-file edit. A file with no marker is a configure-time `FATAL_ERROR`, so a
-silently unchecked test cannot slip through. The glob has no `CONFIGURE_DEPENDS` (matching the
+silently unchecked test cannot slip through. So is a marker containing a `;`:
+`PASS_REGULAR_EXPRESSION` is a CMake list, so the `;` would split the regex into two alternatives
+and the test would pass on either half. Write `.*` in its place. The glob has no `CONFIGURE_DEPENDS` (matching the
 `test_*.cpp` glob above it), so a new file needs a manual re-run of `cmake`.
 
 Where the expected wording differs across compilers, match the common substring and say why in a

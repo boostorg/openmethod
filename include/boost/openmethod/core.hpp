@@ -137,6 +137,9 @@ using macro_default_registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY;
 template<typename...>
 constexpr bool false_t = false; // workaround before CWG2518/P2593R1
 
+template<class>
+struct virtual_ptr_access;
+
 } // namespace detail
 
 namespace detail {
@@ -955,6 +958,26 @@ inline auto unbox_vptr(const vptr_type* vpp) {
 
 inline vptr_type null_vptr = nullptr;
 
+// Access to the parts of a `virtual_ptr`, for the classes that carry a
+// v-table pointer of their own and exchange it with one: copy it from a
+// `virtual_ptr`, hand it back later. The pointer is the boxed one - under
+// `indirect_vptr`, the address of the cell that `initialize()` rewrites, which
+// the public `vptr()` unboxes away - and constructing with a given v-table
+// pointer skips the lookup, which no public constructor does.
+template<class VirtualPtr>
+struct virtual_ptr_access {
+    using boxed_vptr_type = decltype(VirtualPtr::vp);
+
+    static auto boxed_vptr(const VirtualPtr& ptr) -> boxed_vptr_type {
+        return ptr.vp;
+    }
+
+    template<class Arg>
+    static auto make(Arg&& obj, boxed_vptr_type vp) -> VirtualPtr {
+        return VirtualPtr(std::forward<Arg>(obj), vp);
+    }
+};
+
 } // namespace detail
 
 //! Create a `virtual_ptr` for an object of a known exact class.
@@ -1100,6 +1123,8 @@ class virtual_ptr {
 #ifndef __MRDOCS__
     template<class, class, typename>
     friend class virtual_ptr;
+    template<class>
+    friend struct detail::virtual_ptr_access;
     template<class, typename Arg>
     friend auto final_virtual_ptr(Arg&& obj);
 #endif
@@ -1458,6 +1483,8 @@ class virtual_ptr<
 #ifndef __MRDOCS__
     template<class, class, typename>
     friend class virtual_ptr;
+    template<class>
+    friend struct detail::virtual_ptr_access;
     template<class, typename Arg>
     friend auto final_virtual_ptr(Arg&& obj);
 #endif

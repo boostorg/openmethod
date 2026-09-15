@@ -13,6 +13,7 @@
 #include <boost/openmethod/interop/boost_intrusive_ptr.hpp>
 #include <boost/openmethod/interop/std_shared_ptr.hpp>
 #include <boost/openmethod/interop/std_unique_ptr.hpp>
+#include <boost/openmethod/interop/std_weak_ptr.hpp>
 #include <boost/openmethod/initialize.hpp>
 
 #include <boost/smart_ptr/intrusive_ref_counter.hpp>
@@ -59,6 +60,11 @@ static_assert(std::is_same_v<
               boost_intrusive_virtual_ptr<Dog>,
               virtual_ptr<boost::intrusive_ptr<Dog>, zoo_registry>>);
 
+// weak_virtual_ptr is not a virtual_ptr, but it defaults its registry the
+// same way, so it converts to and from the shared_virtual_ptr of its class
+static_assert(
+    std::is_same_v<weak_virtual_ptr<Dog>, weak_virtual_ptr<Dog, zoo_registry>>);
+
 BOOST_OPENMETHOD_CLASSES(Animal, Dog, zoo_registry);
 
 BOOST_OPENMETHOD(name, (shared_virtual_ptr<Animal>), std::string);
@@ -76,4 +82,9 @@ BOOST_AUTO_TEST_CASE(factories_need_no_registry_argument) {
 
     auto owned = make_unique_virtual<Dog>();
     static_assert(std::is_same_v<decltype(owned), unique_virtual_ptr<Dog>>);
+
+    weak_virtual_ptr<Animal> observer = dog;
+    static_assert(
+        std::is_same_v<decltype(observer.lock()), shared_virtual_ptr<Animal>>);
+    BOOST_TEST(name(observer.lock()) == "dog");
 }
