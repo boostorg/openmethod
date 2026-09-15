@@ -192,7 +192,14 @@ foreach(compile_fail_cpp ${compile_fail_cpp_files})
         message(FATAL_ERROR
             "${testname}.cpp has no `// expected-error: <regex>` comment")
     endif()
-    openmethod_compile_fail_test(${testname} "${CMAKE_MATCH_1}")
+    set(fail_regex "${CMAKE_MATCH_1}")
+    # PASS_REGULAR_EXPRESSION is a list: a `;` would split the regex into
+    # alternatives, and the test would pass on either half.
+    if (fail_regex MATCHES ";")
+        message(FATAL_ERROR
+            "${testname}.cpp: the expected-error regex contains a `;`; use `.*`")
+    endif()
+    openmethod_compile_fail_test(${testname} "${fail_regex}")
 endforeach()
 
 if (TARGET Boost::dll)

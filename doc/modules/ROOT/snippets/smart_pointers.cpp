@@ -217,13 +217,13 @@ BOOST_AUTO_TEST_CASE(weak_ptr_examples) {
     }
 
     {
-        // tag::weak_virtual_ptr_alias[]
+        // tag::weak_pointer[]
         shared_virtual_ptr<Animal> animal = make_shared_virtual<Dog>();
         weak_virtual_ptr<Animal> observer = animal;
         std::weak_ptr<Animal> weak = observer.pointer();
 
         BOOST_TEST(animal.pointer().use_count() == 1);
         BOOST_TEST(weak.lock() == animal.pointer());
-        // end::weak_virtual_ptr_alias[]
+        // end::weak_pointer[]
     }
 }

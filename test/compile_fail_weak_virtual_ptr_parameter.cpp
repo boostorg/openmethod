@@ -4,7 +4,8 @@
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // Expected diagnostic, as a CMake regex (see CMakeLists.txt).
-// expected-error: a weak pointer cannot be a virtual parameter; call lock\(\) first
+// A `;` would split the regex into two alternatives (see CMakeLists.txt).
+// expected-error: a weak pointer cannot be a virtual parameter.*call lock\(\) first
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/interop/std_weak_ptr.hpp>
@@ -17,7 +18,7 @@ struct Animal {
 };
 struct Cat : Animal {};
 
-BOOST_OPENMETHOD(poke, (weak_virtual_ptr<Animal>), void);
+BOOST_OPENMETHOD(poke, (virtual_<weak_virtual_ptr<Animal>>), void);
 
 BOOST_OPENMETHOD_OVERRIDE(poke, (weak_virtual_ptr<Cat>), void) {
 }
