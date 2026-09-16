@@ -81,9 +81,14 @@ using type_id = const void*;
 //! - @ref virtual_traits must be specialized for `T`.
 //!
 //! @tparam T A class.
+//! @tparam Registry The registry the parameter belongs to. Defaults to the
+//! registry `T`\'s class declares an affinity for - see
+//! @ref boost::openmethod::registry_affinity - and, when it declares none, to
+//! `void`, which leaves the choice to the method. The default is supplied in
+//! `<boost/openmethod/core.hpp>`, where the affinity is known.
 //!
 //! @see [Virtual Pointer Alternatives](xref:ROOT:virtual_ptr_alt.adoc)
-template<typename T>
+template<typename T, class Registry>
 struct virtual_;
 
 template<typename T, class Registry>

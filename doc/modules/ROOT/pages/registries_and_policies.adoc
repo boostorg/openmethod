@@ -122,13 +122,37 @@ registry, as it always has. Declaring one too late is an error - not at the
 mention, where nothing is wrong yet, but where the class is complete and its
 affinity matters: a virtual parameter of a method, or a class registration.
 
-WARNING: A declared affinity does not reach
-xref:reference:BOOST_OPENMETHOD_CLASSES.adoc[BOOST_OPENMETHOD_CLASSES], which
-still registers into `BOOST_OPENMETHOD_DEFAULT_REGISTRY` unless a registry is
-listed last. Registering a class that declares an affinity, without naming its registry,
-puts the class in one registry and its methods in another - and that shows up as
-a `missing_class` error at run time, not as a compile error. List the registry:
-`BOOST_OPENMETHOD_CLASSES(Animal, Dog, zoo_registry)`.
+A virtual parameter either _carries_ a registry or _adopts_ the method's. A
+`virtual_ptr` always carries one: it is a type in its own right, and names a
+registry whether or not its class declares an affinity. A `virtual_` carries
+the registry its class declares, and adopts when the class declares none -
+which is
+what lets a method mix a class that has an affinity with one that has not.
+Either can be spelled: `virtual_<const Animal&, zoo_registry>` and
+`virtual_ptr<Animal, zoo_registry>` carry `zoo_registry` whatever `Animal`
+declares.
+
+A method that names a registry requires every parameter that carries one to
+carry that one; the parameters that adopt go along. A method that names none
+requires the carriers to agree, and takes their registry - or
+`BOOST_OPENMETHOD_DEFAULT_REGISTRY` if no parameter carries one.
+
+xref:reference:BOOST_OPENMETHOD_CLASSES.adoc[BOOST_OPENMETHOD_CLASSES] follows
+the affinities too, and is stricter, because a class list has no parameter to
+adopt from and no spelling of its own to disambiguate with. Listing a registry
+settles it, and then a class that declares nothing goes along while one that
+declares another registry is an error. Listing none, the classes must be
+unanimous: all declaring the same registry, or none declaring one - in which
+case they are registered into `BOOST_OPENMETHOD_DEFAULT_REGISTRY`. Mixing a
+class that declares an affinity with one that does not is an error, where the
+same mixture in a method's parameter list is fine.
+
+NOTE: The C++26 registrar
+xref:reference:BOOST_OPENMETHOD_REGISTER_CLASSES.adoc[BOOST_OPENMETHOD_REGISTER_CLASSES]
+does not follow affinities: it registers into
+`BOOST_OPENMETHOD_DEFAULT_REGISTRY` unless its groups name a registry. Its
+groups may name a namespace, whose classes are only known during the scan that
+the choice of registry feeds.
 
 A registry has a collection of _policies_. Each policy belongs to a policy
 category. A registry may contain at most one policy of each category. Policies

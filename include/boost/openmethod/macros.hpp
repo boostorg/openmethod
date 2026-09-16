@@ -590,10 +590,12 @@ inline constexpr bool method_not_found = false;
 //! This macro is a wrapper around @ref boost::openmethod::use_classes; see its
 //! documentation for more details.
 //!
-//! @note Unlike a method declaration, this macro does not consult the classes'
-//! registry affinities: without a registry in the list it registers into
-//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY, whatever the classes declare. List
-//! the registry last when they declare one. The symbol is read when
+//! @note Without a registry in the list, the classes decide: they must be
+//! unanimous - all declaring an affinity for the same registry, or none
+//! declaring one, in which case they are registered into
+//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY. A registry listed last wins, and
+//! then a class that declares another one is an error. See
+//! @ref boost::openmethod::registry_affinity. The macro symbol is read when
 //! `<boost/openmethod/core.hpp>` is included, directly or through a header
 //! like `<boost/openmethod.hpp>`; subsequently changing it has no retroactive
 //! effect.

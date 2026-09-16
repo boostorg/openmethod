@@ -490,25 +490,42 @@ rules:
 
 ### Registry affinity
 
-A class can name its registry instead of the program naming one for every class: declare
-`auto boost_openmethod_registry(Class*) -> Registry;`, preferably as a hidden friend. The class
-then *declares* an affinity for that registry, inherited by its derived classes, and
-`registry_affinity<T>` reads it back. `virtual_ptr` and the smart pointer aliases default to it,
-and a method declared without a registry argument takes the affinity its virtual parameters agree
-on (`detail::method_registry`, driven by `detail::param_affinity` / `agreed_affinity`).
+A class can name its registry instead of the program naming one for every class. Two spellings,
+looked up in this order: a member typedef `boost_openmethod_registry`
+(`detail::member_affinity` - ordinary member lookup, so inherited, hidden by a derived class's
+own, ambiguous between two bases that disagree) and an ADL overload
+`auto boost_openmethod_registry(Class*) -> Registry;`, preferably a hidden friend.
+`inplace_vptr_base` provides the typedef. The class then *declares* an affinity for that registry,
+inherited by its derived classes, and `registry_affinity<T>` reads it back. `virtual_ptr` and the
+smart pointer aliases default to it.
 
-Every class has an affinity; one that declares none has the *default* affinity. Only a *declared*
-affinity constrains a method, so a method may mix a class that declares one with a class that does
-not - the latter yields. The catch-all `boost_openmethod_registry(...)` returns the sentinel
-`detail::default_affinity`, not a registry, so an affinity declared for the default registry
-itself still counts as declared; `detail::registry_affinity_aux<T>::declared` is the raw answer
-(sentinel or registry) and `registry_affinity<T>` the query, which always answers a registry. A
-`virtual_ptr` parameter contributes its *class's* affinity, never the registry it spells; a
-spelled registry must agree with the class (`validate_method_parameter`, all three shapes).
+**The sentinel is `void`.** The catch-all `boost_openmethod_registry(...)` returns it, so an
+affinity declared for the default registry itself still counts as declared.
+`detail::registry_affinity_aux<T>::declared` is the raw answer (registry or `void`), and
+`registry_affinity<T>` is the query, which maps `void` to `BOOST_OPENMETHOD_DEFAULT_REGISTRY` and
+so always answers a registry. `using boost_openmethod_registry = void;` therefore means "declares
+nothing". `void` rather than a dedicated struct because the sentinel appears in every
+`virtual_<T, ...>` of every `method<...>`, and mangled names are long enough already.
 
-Two spellings, looked up in this order: a member typedef `boost_openmethod_registry`
-(`detail::member_registry_aux` - ordinary member lookup, so inherited, hidden by a derived class's
-own, ambiguous between two bases) and the ADL overload. `inplace_vptr_base` provides the typedef.
+**Every virtual parameter carries a registry, or adopts.** `virtual_` takes a registry parameter
+of its own - declared in `preamble.hpp`, defaulted in `core.hpp` where the affinity machinery
+exists, since C++ merges default template arguments across declarations:
+
+| | carries |
+|---|---|
+| `virtual_<T>` | its class's declared affinity; **adopts** if the class declares none |
+| `virtual_<T, S>` | `S` |
+| `virtual_ptr<C>` | `C`'s affinity, else the macro default |
+| `virtual_ptr<C, S>` | `S` |
+
+`virtual_ptr` never adopts - it is a type in its own right and names a registry whether or not the
+class declares an affinity. `virtual_` can, because it appears only in a method signature, and
+that is what lets a method mix a class that has an affinity with one that has not.
+`detail::param_registry` says what a parameter carries - **what it carries, never its class's
+affinity**: a spelled `virtual_ptr<B, a_registry>` decides the method's registry even though `B`
+declares nothing. `detail::agreed_registry` folds them, adopters abstaining. A method that names a
+registry requires every carrier to carry that one (`validate_method_parameter`, all four shapes);
+one that names none takes what the carriers agree on, or the macro default.
 
 **The answer is memoized, so every question carries a `Question` tag.** A class mentioned before
 it is complete - `virtual_ptr<Node>` as a member of `Node`, or through a forward declaration - is
@@ -526,13 +543,19 @@ Anchoring goes through `virtual_traits` (`detail::virtual_type<T, macro_default_
 a bare `element_type` probe: a polymorphic class may define `element_type` and must keep its own
 affinity.
 
-Two things deliberately do **not** participate, and both are documented as such:
+**`use_classes` follows the affinities too, and is stricter than a method**, because a class list
+has no parameter to adopt from and no spelling of its own to disambiguate with. A registry listed
+last wins - a class declaring another is an error, one declaring none goes along. Without one, the
+classes must be unanimous: all declaring the same registry, or none declaring one (then the macro
+default). Mixing a declaring class with a non-declaring one is an error, where the same mixture
+among a method's parameters is fine. `detail::class_list_registry` decides; `unanimous_registry`
+is the strict fold, deliberately *not* `agreed_registry`.
 
-- `use_classes` / `BOOST_OPENMETHOD_CLASSES` still register into
-  `BOOST_OPENMETHOD_DEFAULT_REGISTRY` unless a registry is listed last. Registering a class that
-  has an affinity without naming its registry is a run-time `missing_class`, not a compile error.
-- The `any` and `type_erasure` interop headers are untouched. `virtual_any<A, R>&` contributes no
-  affinity, so a method over one behaves exactly as before.
+One thing deliberately does **not** participate, and is documented as such: the `any` and
+`type_erasure` interop headers are untouched, and `virtual_any<A, R>&` contributes no affinity, so
+a method over one behaves exactly as before. The C++26 `register_classes` also still defaults to
+the macro - its groups may name a namespace, whose classes are only known during the scan that the
+choice of registry feeds.
 
 **A test that selects a registry through an affinity needs no PCH marker.** The scan below exists
 because `BOOST_OPENMETHOD_DEFAULT_REGISTRY` must be defined before `core.hpp` is parsed, and a

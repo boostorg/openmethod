@@ -144,11 +144,6 @@ constexpr bool false_t = false; // workaround before CWG2518/P2593R1
 
 namespace detail {
 
-// What the catch-all below returns: the absence of a declaration. Not a
-// registry, so that an affinity declared for the default registry itself is
-// still a *declared* one, and constrains a method like any other.
-struct default_affinity {};
-
 template<typename T>
 struct registry_affinity_aux;
 
@@ -202,7 +197,7 @@ struct registry_affinity_aux;
 //!
 //! @see @ref registry_affinity
 //! @see [Registries and Policies](xref:ROOT:registries_and_policies.adoc)
-auto boost_openmethod_registry(...) -> detail::default_affinity;
+auto boost_openmethod_registry(...) -> void;
 
 //! The registry a class has an affinity for.
 //!
@@ -232,6 +227,18 @@ auto boost_openmethod_registry(...) -> detail::default_affinity;
 template<typename T>
 using registry_affinity = typename detail::registry_affinity_aux<T>::type;
 
+//! @see @ref virtual_ for documentation.
+//!
+//! The default for `Registry` is supplied here rather than on the declaration
+//! in `preamble.hpp`, which comes before the affinity machinery; C++ merges
+//! default template arguments across declarations. `::declared` is the
+//! registry the class declares, or `void` when it declares none - which is
+//! exactly "carries a registry, or leaves the choice to the method".
+template<
+    typename T,
+    class Registry = typename detail::registry_affinity_aux<T>::declared>
+struct virtual_;
+
 template<
     class Class, class Registry = registry_affinity<Class>,
     typename = detail::sfinae>
@@ -245,16 +252,17 @@ namespace detail {
 template<typename...>
 struct extract_registry;
 
+// `registry` is the registry the list *names*, or `void` when it names none -
+// which `class_list_registry` below then works out from the classes.
 template<>
 struct extract_registry<> {
-    using registry = BOOST_OPENMETHOD_DEFAULT_REGISTRY;
+    using registry = void;
     using others = mp11::mp_list<>;
 };
 
 template<typename Type>
 struct extract_registry<Type> {
-    using registry = std::conditional_t<
-        is_registry<Type>, Type, BOOST_OPENMETHOD_DEFAULT_REGISTRY>;
+    using registry = std::conditional_t<is_registry<Type>, Type, void>;
     using others = std::conditional_t<
         is_registry<Type>, mp11::mp_list<>, mp11::mp_list<Type>>;
 };
@@ -266,6 +274,75 @@ struct extract_registry<Type1, Type2, MoreTypes...> {
     using others = mp11::mp_push_front<
         typename extract_registry<Type2, MoreTypes...>::others, Type1>;
 };
+
+// The registry a class list belongs to when it names none: the one every class
+// declares an affinity for. Unanimity, not the give-and-take a method's
+// parameters get - a `virtual_` parameter over a class that declares nothing
+// adopts the method's registry, but a class list has no other parameter to
+// adopt from, and no spelling of its own to disambiguate with. Mixing a class
+// that declares an affinity with one that does not is therefore an error, and
+// the program says which registry it means by listing it.
+template<class List>
+struct first_or_void {
+    using type = void;
+};
+
+template<class First, class... Rest>
+struct first_or_void<mp11::mp_list<First, Rest...>> {
+    using type = First;
+};
+
+template<class... Classes>
+struct unanimous_registry {
+    using declared = mp11::mp_unique<
+        mp11::mp_list<typename registry_affinity_aux<Classes>::declared...>>;
+
+    static_assert(
+        mp11::mp_size<declared>::value <= 1,
+        "the classes carry conflicting registry affinities - list the registry "
+        "to say which one is meant");
+
+    using found = typename first_or_void<declared>::type;
+    using type = std::conditional_t<
+        std::is_same_v<found, void>, macro_default_registry, found>;
+};
+
+// A registry listed explicitly wins, and a class that declares nothing goes
+// along with it; one that declares another registry does not.
+template<class Registry, class... Classes>
+struct classes_agree_with {
+    static_assert(
+        ((std::is_same_v<
+              typename registry_affinity_aux<Classes>::declared, void> ||
+          std::is_same_v<
+              typename registry_affinity_aux<Classes>::declared, Registry>) &&
+         ...),
+        "registry mismatch: a class declares an affinity for another registry");
+    static constexpr bool value = true;
+};
+
+template<class Named, class Others, typename = void>
+struct pick_class_registry;
+
+template<class Named, class... Classes>
+struct pick_class_registry<
+    Named, mp11::mp_list<Classes...>,
+    std::enable_if_t<!std::is_same_v<Named, void>>> {
+    static_assert(classes_agree_with<Named, Classes...>::value);
+    using type = Named;
+};
+
+template<class Named, class... Classes>
+struct pick_class_registry<
+    Named, mp11::mp_list<Classes...>,
+    std::enable_if_t<std::is_same_v<Named, void>>> {
+    using type = typename unanimous_registry<Classes...>::type;
+};
+
+template<class... Classes>
+using class_list_registry = typename pick_class_registry<
+    typename extract_registry<Classes...>::registry,
+    typename extract_registry<Classes...>::others>::type;
 
 template<class Registry, class... Class>
 struct init_type_ids;
@@ -332,16 +409,16 @@ auto optimal_cast(B&& obj) -> decltype(auto) {
 template<typename T>
 struct is_virtual : std::false_type {};
 
-template<typename T>
-struct is_virtual<virtual_<T>> : std::true_type {};
+template<typename T, class Registry>
+struct is_virtual<virtual_<T, Registry>> : std::true_type {};
 
 template<typename T>
 struct remove_virtual_aux {
     using type = T;
 };
 
-template<typename T>
-struct remove_virtual_aux<virtual_<T>> {
+template<typename T, class Registry>
+struct remove_virtual_aux<virtual_<T, Registry>> {
     using type = T;
 };
 
@@ -386,7 +463,7 @@ struct rechecked;
 // a class mention `virtual_ptr` of itself.
 template<class Class, class Question, typename = void>
 struct member_affinity {
-    using type = default_affinity;
+    using type = void;
 };
 
 template<class Class, class Question>
@@ -411,7 +488,7 @@ struct adl_affinity {
         "cannot tell which registry this class belongs to: "
         "boost_openmethod_registry is ambiguous or inaccessible for it - "
         "declare one for the class itself");
-    using type = default_affinity;
+    using type = void;
 };
 
 template<class Class, class Question>
@@ -422,15 +499,14 @@ struct adl_affinity<
         std::declval<Class*>()))>;
 };
 
-// What the class says: a registry, or `default_affinity` when it says nothing.
+// What the class says: a registry, or `void` when it says nothing.
 template<class Class, class Question>
 struct declared_affinity_aux {
     // conditional_t picks the struct, so the ADL path is not instantiated
     // when the typedef answers: its ambiguity diagnosis would fire for a class
     // whose typedef settles what two base classes dispute.
     using type = typename std::conditional_t<
-        std::is_same_v<
-            typename member_affinity<Class, Question>::type, default_affinity>,
+        std::is_same_v<typename member_affinity<Class, Question>::type, void>,
         adl_affinity<Class, Question>, member_affinity<Class, Question>>::type;
 };
 
@@ -465,12 +541,11 @@ struct registry_affinity_aux {
     using declared = declared_affinity<anchor>;
 
     static_assert(
-        std::is_same_v<declared, default_affinity> || is_registry<declared>,
+        std::is_same_v<declared, void> || is_registry<declared>,
         "boost_openmethod_registry must return a registry");
 
     using type = std::conditional_t<
-        std::is_same_v<declared, default_affinity>, macro_default_registry,
-        declared>;
+        std::is_same_v<declared, void>, macro_default_registry, declared>;
 };
 
 // The answer above is remembered for the rest of the translation unit, and a
@@ -519,8 +594,8 @@ struct StripVirtualDecorator {
 //! Provides a nested `type` equal to `T`.
 //!
 //! @tparam T A type.
-template<typename T>
-struct StripVirtualDecorator<virtual_<T>> {
+template<typename T, class Registry>
+struct StripVirtualDecorator<virtual_<T, Registry>> {
     //! Same as `T`.
     using type = T;
 };
@@ -698,8 +773,7 @@ using use_classes_tuple_type = boost::mp11::mp_apply<
     detail::tuple,
     boost::mp11::mp_transform_q<
         boost::mp11::mp_bind_front<
-            detail::use_class_aux,
-            typename detail::extract_registry<Classes...>::registry>,
+            detail::use_class_aux, detail::class_list_registry<Classes...>>,
         boost::mp11::mp_apply<
             detail::inheritance_map,
             boost::mp11::mp_unique<
@@ -727,6 +801,16 @@ using use_classes_tuple_type = boost::mp11::mp_apply<
 //!
 //! Virtual and multiple inheritance are supported, with the exclusion of
 //! repeated inheritance.
+//!
+//! The registry is the one listed last, if the last argument is a registry. In
+//! that case a class that declares an affinity for another registry is an
+//! error, while a class that declares none goes along. Without a registry in
+//! the list, the classes decide, and must be unanimous: all declaring the same
+//! registry, or none declaring one, in which case they are registered into
+//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY. Mixing a class that declares an
+//! affinity with one that does not is an error - unlike a method's parameter
+//! list, where a `virtual_` over a class that declares none adopts the
+//! registry the other parameters carry. See @ref registry_affinity.
 //!
 //! @see [Core API](xref:ROOT:core_api.adoc)
 //! @see [Registries and Policies](xref:ROOT:registries_and_policies.adoc)
@@ -2093,8 +2177,9 @@ struct select_overrider_virtual_type_aux {
     using type = void;
 };
 
-template<typename P, typename Q, class Registry>
-struct select_overrider_virtual_type_aux<virtual_<P>, Q, Registry> {
+template<typename P, class ParamRegistry, typename Q, class Registry>
+struct select_overrider_virtual_type_aux<
+    virtual_<P, ParamRegistry>, Q, Registry> {
     using type = virtual_type<Q, Registry>;
 };
 
@@ -2173,8 +2258,9 @@ struct parameter_traits {
     }
 };
 
-template<typename T, class Registry>
-struct parameter_traits<virtual_<T>, Registry> : virtual_traits<T, Registry> {};
+template<typename T, class ParamRegistry, class Registry>
+struct parameter_traits<virtual_<T, ParamRegistry>, Registry> :
+    virtual_traits<T, Registry> {};
 
 template<class Class, class Registry>
 struct parameter_traits<virtual_ptr<Class, Registry, void>, Registry> :
@@ -2187,14 +2273,15 @@ struct parameter_traits<const virtual_ptr<Class, Registry, void>&, Registry> :
 template<typename T, class Registry, typename = void>
 struct validate_method_parameter : std::true_type {};
 
-template<typename T, class Registry, typename U>
-struct validate_method_parameter<virtual_<T>, Registry, U> : std::false_type {
+template<typename T, class ParamRegistry, class Registry, typename U>
+struct validate_method_parameter<virtual_<T, ParamRegistry>, Registry, U> :
+    std::false_type {
     static_assert(false_t<T>, "virtual_traits not specialized for type");
 };
 
-template<typename T, class Registry>
+template<typename T, class ParamRegistry, class Registry>
 struct validate_method_parameter<
-    virtual_<T>, Registry,
+    virtual_<T, ParamRegistry>, Registry,
     std::void_t<typename virtual_traits<T, Registry>::virtual_type>> :
     std::bool_constant<
         has_vptr_fn<virtual_type<T, Registry>, Registry> ||
@@ -2208,14 +2295,14 @@ struct validate_method_parameter<
     // the checkpoints where its affinity is asked again.
     static_assert(check_affinity<virtual_type<T, Registry>>::value);
 
-    // And a method that names a registry may not contradict it.
+    // `ParamRegistry` is what the parameter carries: the registry spelled on
+    // it, or the one its class declares an affinity for, or `void` when the
+    // class declares none - in which case the parameter adopts the method's.
+    // A carrier must agree with the method.
     static_assert(
-        std::is_same_v<
-            typename registry_affinity_aux<T>::declared, default_affinity> ||
-            std::is_same_v<
-                typename registry_affinity_aux<T>::declared, Registry>,
-        "registry mismatch: the class declares an affinity for another "
-        "registry");
+        std::is_same_v<ParamRegistry, void> ||
+            std::is_same_v<ParamRegistry, Registry>,
+        "registry mismatch: the parameter belongs to another registry");
 };
 
 // A `virtual_ptr` parameter, in any of its three shapes, must name the
@@ -2265,53 +2352,51 @@ struct validate_method_parameter<
 
 namespace detail {
 
-// Every class has an affinity, but only a *declared* one constrains a method.
-// A class that never declared `boost_openmethod_registry` has the default
-// affinity, and yields to a parameter that declares one - which is what lets a
-// method mix the two. A `virtual_ptr` parameter contributes its class's
-// affinity, not the registry it names: the class decides, and a registry
-// spelled on the parameter has to agree with it (validate_method_parameter).
+// What a virtual parameter carries: a registry, or `void` when it leaves the
+// choice to the method. `virtual_ptr` always carries one - it is a type of its
+// own, and names a registry whether or not the class declares an affinity.
+// `virtual_<T>` carries what its class declares, and adopts when the class
+// declares nothing, which is what lets a method mix the two.
 template<typename Parameter>
-struct param_affinity {
-    using type = default_affinity;
+struct param_registry {
+    using type = void;
 };
 
-template<typename T>
-struct param_affinity<virtual_<T>> {
-    using type = typename registry_affinity_aux<T>::declared;
-};
-
-template<class Class, class Registry>
-struct param_affinity<virtual_ptr<Class, Registry, void>> {
-    using type = typename registry_affinity_aux<Class>::declared;
+template<typename T, class Registry>
+struct param_registry<virtual_<T, Registry>> {
+    using type = Registry;
 };
 
 template<class Class, class Registry>
-struct param_affinity<virtual_ptr<Class, Registry, void>&> {
-    using type = typename registry_affinity_aux<Class>::declared;
+struct param_registry<virtual_ptr<Class, Registry, void>> {
+    using type = Registry;
 };
 
 template<class Class, class Registry>
-struct param_affinity<const virtual_ptr<Class, Registry, void>&> {
-    using type = typename registry_affinity_aux<Class>::declared;
+struct param_registry<virtual_ptr<Class, Registry, void>&> {
+    using type = Registry;
 };
 
-// The first affinity in the parameter list wins; every other one must agree.
+template<class Class, class Registry>
+struct param_registry<const virtual_ptr<Class, Registry, void>&> {
+    using type = Registry;
+};
+
+// The carriers must agree; the parameters that adopt do not vote.
 template<typename...>
-struct agreed_affinity {
-    using type = default_affinity;
+struct agreed_registry {
+    using type = void;
 };
 
-template<typename Affinity, typename... More>
-struct agreed_affinity<Affinity, More...> {
-    using rest = typename agreed_affinity<More...>::type;
+template<typename Carried, typename... More>
+struct agreed_registry<Carried, More...> {
+    using rest = typename agreed_registry<More...>::type;
     static_assert(
-        std::is_same_v<Affinity, default_affinity> ||
-            std::is_same_v<rest, default_affinity> ||
-            std::is_same_v<Affinity, rest>,
-        "virtual parameters have conflicting registry affinities");
-    using type = std::conditional_t<
-        std::is_same_v<Affinity, default_affinity>, rest, Affinity>;
+        std::is_same_v<Carried, void> || std::is_same_v<rest, void> ||
+            std::is_same_v<Carried, rest>,
+        "virtual parameters carry conflicting registries");
+    using type =
+        std::conditional_t<std::is_same_v<Carried, void>, rest, Carried>;
 };
 
 // The registry a method takes when its declaration does not name one.
@@ -2322,10 +2407,10 @@ struct method_registry_aux {
 
 template<typename ReturnType, typename... Parameters>
 struct method_registry_aux<ReturnType(Parameters...)> {
-    using found = typename agreed_affinity<
-        typename param_affinity<Parameters>::type...>::type;
+    using found = typename agreed_registry<
+        typename param_registry<Parameters>::type...>::type;
     using type = std::conditional_t<
-        std::is_same_v<found, default_affinity>, macro_default_registry, found>;
+        std::is_same_v<found, void>, macro_default_registry, found>;
 };
 
 template<typename Fn>
@@ -2985,11 +3070,12 @@ struct validate_overrider_parameter<
 template<class T>
 struct validate_overrider_parameter<T, T, void> : std::true_type {};
 
-template<class T1, class T2>
-struct validate_overrider_parameter<virtual_<T1>, T2, void> : std::true_type {};
+template<class T1, class R1, class T2>
+struct validate_overrider_parameter<virtual_<T1, R1>, T2, void> :
+    std::true_type {};
 
-template<class T1, class T2>
-struct validate_overrider_parameter<virtual_<T1>, virtual_<T2>, void> :
+template<class T1, class R1, class T2, class R2>
+struct validate_overrider_parameter<virtual_<T1, R1>, virtual_<T2, R2>, void> :
     std::false_type {
     static_assert(false_t<T1, T2>, "virtual_<> is not allowed in overriders");
 };

@@ -4,7 +4,7 @@
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 // Expected diagnostic, as a CMake regex (see CMakeLists.txt).
-// expected-error: conflicting registry affinities
+// expected-error: carry conflicting registries
 
 #include <string>
 

@@ -109,7 +109,33 @@ static_assert(std::is_same_v<virtual_ptr<Dog>, virtual_ptr<Dog, zoo_registry>>);
 static_assert(
     std::is_same_v<virtual_ptr<Widget>, virtual_ptr<Widget, default_registry>>);
 
-BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat, zoo_registry);
+// The list names no registry: the classes agree on `zoo_registry`, so that is
+// where they are registered. Listing it would say the same thing.
+BOOST_OPENMETHOD_CLASSES(Animal, Dog, Cat);
+
+namespace {
+
+template<class... Classes>
+using picked = detail::class_list_registry<Classes...>;
+
+// Every class declares the same registry - directly, or by inheriting the
+// declaration.
+static_assert(std::is_same_v<picked<Animal, Dog, Cat>, zoo_registry>);
+static_assert(std::is_same_v<picked<Animal>, zoo_registry>);
+
+// None declares one.
+static_assert(std::is_same_v<picked<Widget>, default_registry>);
+static_assert(std::is_same_v<picked<>, default_registry>);
+
+// A registry listed explicitly wins, and a class that declares nothing goes
+// along with it. A class that declares another does not - see
+// compile_fail_classes_declared_mismatch.cpp - and neither does a list that
+// mixes the two, see compile_fail_classes_mixed_affinities.cpp.
+static_assert(
+    std::is_same_v<picked<Animal, Dog, Widget, zoo_registry>, zoo_registry>);
+static_assert(std::is_same_v<picked<Widget, kennel_registry>, kennel_registry>);
+
+} // namespace
 
 // Neither declaration names a registry; both land in `zoo_registry`.
 BOOST_OPENMETHOD(speak, (virtual_<const Animal&>), std::string);

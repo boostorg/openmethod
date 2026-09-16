@@ -75,13 +75,65 @@ static_assert(
 static_assert(std::is_same_v<
               scan<void(int, virtual_<const Animal&>, char*)>, zoo_registry>);
 
-// A registry spelled on a `virtual_ptr` parameter is not the class's affinity:
-// Widget declares none, so the method lands in the default registry - where
-// the parameter then contradicts it, see
-// compile_fail_adl_registry_parameter_registry.cpp.
+// A registry spelled on a parameter is what that parameter carries, whatever
+// its class declares - so it decides the method's registry on its own.
+static_assert(std::is_same_v<
+              scan<void(virtual_ptr<Widget, other_registry>)>, other_registry>);
 static_assert(
     std::is_same_v<
-        scan<void(virtual_ptr<Widget, other_registry>)>, default_registry>);
+        scan<void(virtual_<const Widget&, other_registry>)>, other_registry>);
+static_assert(std::is_same_v<
+              scan<void(virtual_<const Animal&, default_registry>)>,
+              default_registry>);
+
+// Two carriers that disagree are an error; see
+// compile_fail_method_conflicting_carriers.cpp.
+
+// The whole rule, in one place: every virtual parameter either *carries* a
+// registry - the one spelled on it, or the one its class declares - or
+// *adopts*, which only a `virtual_` over a class that declares nothing does.
+// `virtual_ptr` never adopts: it is a type of its own, and names a registry
+// whether or not the class declares an affinity.
+
+// Carriers.
+static_assert(
+    std::is_same_v<scan<void(virtual_<const Animal&>)>, zoo_registry>);
+static_assert(std::is_same_v<scan<void(virtual_ptr<Animal>)>, zoo_registry>);
+static_assert(std::is_same_v<
+              scan<void(virtual_<const Widget&, zoo_registry>)>, zoo_registry>);
+static_assert(std::is_same_v<
+              scan<void(virtual_ptr<Widget, zoo_registry>)>, zoo_registry>);
+static_assert(
+    std::is_same_v<scan<void(virtual_ptr<Widget>)>, default_registry>);
+
+// The only adopter, alone: nothing carries, so the macro default.
+static_assert(
+    std::is_same_v<scan<void(virtual_<const Widget&>)>, default_registry>);
+
+// An adopter and a carrier: the carrier decides, whichever order.
+static_assert(std::is_same_v<
+              scan<void(virtual_<const Widget&>, virtual_ptr<Animal>)>,
+              zoo_registry>);
+static_assert(std::is_same_v<
+              scan<void(virtual_ptr<Animal>, virtual_<const Widget&>)>,
+              zoo_registry>);
+static_assert(std::is_same_v<
+              scan<void(virtual_<const Widget&>, virtual_ptr<Widget>)>,
+              default_registry>);
+
+// Two carriers that agree, in either shape.
+static_assert(
+    std::is_same_v<
+        scan<void(virtual_<const Animal&>, virtual_ptr<Dog>)>, zoo_registry>);
+static_assert(
+    std::is_same_v<
+        scan<void(virtual_ptr<Widget, zoo_registry>, virtual_<const Animal&>)>,
+        zoo_registry>);
+
+// Two adopters: still the macro default.
+static_assert(std::is_same_v<
+              scan<void(virtual_<const Widget&>, virtual_<const Widget&>)>,
+              default_registry>);
 
 // An affinity declared for the default registry itself is declared all the
 // same: it constrains, see compile_fail_adl_registry_pinned_default.cpp.
@@ -93,9 +145,13 @@ struct Pinned {
 static_assert(
     std::is_same_v<
         detail::registry_affinity_aux<Pinned>::declared, default_registry>);
+
+// A class that declares nothing carries nothing: `void`, the sentinel that
+// makes a `virtual_` parameter adopt the method's registry.
+static_assert(
+    std::is_same_v<detail::registry_affinity_aux<Widget>::declared, void>);
 static_assert(std::is_same_v<
-              detail::registry_affinity_aux<Widget>::declared,
-              detail::default_affinity>);
+              detail::param_registry<virtual_<const Widget&>>::type, void>);
 
 // A registry named on the declaration wins, and the parameters are not
 // consulted at all - the form that predates this feature.
