@@ -94,35 +94,36 @@ constexpr bool te_pass_through =
 // placeholder of the parameter, so methods and overriders agree on a
 // single registered root per Concept.
 
-template<class C, typename T, class Registry>
+template<class C, typename T, class ParamRegistry, class Registry>
 struct validate_method_parameter<
-    virtual_<const boost::type_erasure::any<C, T>&>, Registry, void> :
+    virtual_<const boost::type_erasure::any<C, T>&, ParamRegistry>, Registry,
+    void> : std::true_type {};
+
+template<class C, typename T, class ParamRegistry, class Registry>
+struct validate_method_parameter<
+    virtual_<boost::type_erasure::any<C, T>&, ParamRegistry>, Registry, void> :
     std::true_type {};
 
-template<class C, typename T, class Registry>
+template<class C, typename T, class ParamRegistry, class Registry>
 struct validate_method_parameter<
-    virtual_<boost::type_erasure::any<C, T>&>, Registry, void> :
+    virtual_<boost::type_erasure::any<C, T>&&, ParamRegistry>, Registry, void> :
     std::true_type {};
 
-template<class C, typename T, class Registry>
+template<class C, typename T, class ParamRegistry, class Registry>
 struct validate_method_parameter<
-    virtual_<boost::type_erasure::any<C, T>&&>, Registry, void> :
+    virtual_<boost::type_erasure::any<C, T&>, ParamRegistry>, Registry, void> :
     std::true_type {};
 
-template<class C, typename T, class Registry>
+template<class C, typename T, class ParamRegistry, class Registry>
 struct validate_method_parameter<
-    virtual_<boost::type_erasure::any<C, T&>>, Registry, void> :
-    std::true_type {};
+    virtual_<boost::type_erasure::any<C, const T&>, ParamRegistry>, Registry,
+    void> : std::true_type {};
 
-template<class C, typename T, class Registry>
+template<class C, class ParamRegistry, class Registry>
 struct validate_method_parameter<
-    virtual_<boost::type_erasure::any<C, const T&>>, Registry, void> :
-    std::true_type {};
-
-template<class C, class Registry>
-struct validate_method_parameter<
-    virtual_<boost::type_erasure::any<C, boost::type_erasure::_self>>, Registry,
-    void> : std::false_type {
+    virtual_<
+        boost::type_erasure::any<C, boost::type_erasure::_self>, ParamRegistry>,
+    Registry, void> : std::false_type {
     static_assert(
         false_t<C>, "an owning type_erasure::any must be passed by reference");
 };

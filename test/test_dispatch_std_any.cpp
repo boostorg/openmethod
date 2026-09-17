@@ -32,6 +32,18 @@ static_assert(
     detail::has_vptr<
         virtual_traits<const std::any&, default_registry>, const std::any&>);
 
+// A registry spelled on the parameter names the same parameter as the default
+// one, in each of the three forms.
+static_assert(detail::validate_method_parameter<
+              virtual_<const std::any&, default_registry>, default_registry,
+              void>::value);
+static_assert(
+    detail::validate_method_parameter<
+        virtual_<std::any&, default_registry>, default_registry, void>::value);
+static_assert(
+    detail::validate_method_parameter<
+        virtual_<std::any&&, default_registry>, default_registry, void>::value);
+
 MAKE_CLASSES();
 
 BOOST_OPENMETHOD(name, (virtual_<const std::any&>), std::string);

@@ -30,6 +30,24 @@ using erased_cref = te::any<Concept, const te::_self&>;
 static_assert(detail::has_vptr<
               virtual_traits<const erased&, default_registry>, const erased&>);
 
+// A registry spelled on the parameter names the same parameter as the default
+// one, for the owning any by reference and for the any references.
+static_assert(detail::validate_method_parameter<
+              virtual_<const erased&, default_registry>, default_registry,
+              void>::value);
+static_assert(
+    detail::validate_method_parameter<
+        virtual_<erased&, default_registry>, default_registry, void>::value);
+static_assert(
+    detail::validate_method_parameter<
+        virtual_<erased&&, default_registry>, default_registry, void>::value);
+static_assert(
+    detail::validate_method_parameter<
+        virtual_<erased_ref, default_registry>, default_registry, void>::value);
+static_assert(detail::validate_method_parameter<
+              virtual_<erased_cref, default_registry>, default_registry,
+              void>::value);
+
 #define MAKE_CLASSES()                                                         \
     struct Dog {                                                               \
         std::string name;                                                      \
