@@ -347,7 +347,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     weak_virtual_ptr_non_polymorphic, Registry, test_policies) {
     // The v-table pointer is copied from the shared_virtual_ptr, so the class
     // need not be polymorphic; only the vptr lookup would require that.
-    BOOST_OPENMETHOD_REGISTER(use_classes<NonPolymorphic, Registry>);
+    //
+    // Function-local static: registers on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<NonPolymorphic, Registry> BOOST_OPENMETHOD_GENSYM;
     init_test<Registry>();
 
     auto shared = make_shared_virtual<NonPolymorphic, Registry>();
@@ -398,9 +402,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
             ->std::string,
         Registry>;
 
-    BOOST_OPENMETHOD_REGISTER(
-        typename observe::template override<
-            observe_dog<Registry>, observe_cat<Registry>>);
+    // Function-local static: registers on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static typename observe::template override<
+        observe_dog<Registry>, observe_cat<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
 
     init_test<Registry>();
 
@@ -424,9 +431,12 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         BOOST_OPENMETHOD_ID(poke),
         auto(shared_virtual_ptr<Animal, Registry>)->std::string, Registry>;
 
-    BOOST_OPENMETHOD_REGISTER(
-        typename poke::template override<
-            poke_dog<Registry>, poke_cat<Registry>>);
+    // Function-local static: registers on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static
+        typename poke::template override<poke_dog<Registry>, poke_cat<Registry>>
+            BOOST_OPENMETHOD_GENSYM;
 
     init_test<Registry>();
 

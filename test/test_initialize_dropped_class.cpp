@@ -186,9 +186,12 @@ auto entry_for() {
 
 BOOST_AUTO_TEST_CASE_TEMPLATE(
     dropped_class_does_not_keep_its_vptr, Registry, registries<__COUNTER__>) {
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Dog, Cat, Registry>);
-    BOOST_OPENMETHOD_REGISTER(
-        typename speak<Registry>::template override<speak_animal<Registry>>);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<Animal, Dog, Cat, Registry> BOOST_OPENMETHOD_GENSYM;
+    static typename speak<Registry>::template override<speak_animal<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
 
     decltype(entry_for<Registry, Tiger>()) tiger_entry;
 

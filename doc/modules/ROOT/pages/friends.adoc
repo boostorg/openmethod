@@ -47,3 +47,37 @@ include::{example}/6/main.cpp[tag=payroll]
 Note, however, that this makes all the overriders of _any_ `pay` method, with
 any signature, in the current namespace, friends of `Payroll`. Unfortunately,
 C++ does not currently allow partial specialization of friend declarations.
+
+[#member-overriders]
+
+When `Payroll` is a class we control, there is a simpler alternative to
+`friend`: make the overriders themselves `static` member functions of
+`Payroll`. Being members, they already have access to the private state of
+`Payroll`, with nothing to declare:
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=pay]
+----
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=payroll]
+----
+
+`&Payroll::pay_employee` and `&Payroll::pay_salesman` are ordinary `static`
+member function pointers - the same shape as a free function's address - so
+xref:reference:BOOST_OPENMETHOD_OVERRIDE_FN.adoc[BOOST_OPENMETHOD_OVERRIDE_FN]
+can register them exactly as it would register free functions, from wherever
+in the class the call is placed. `override<Fn...>` accepts more than one
+function, so a single call registers both overriders for `pay`.
+
+`pay_employee` and `pay_salesman` can be, and here are, `private`: nothing
+outside `Payroll` ever names them directly, since dispatch still goes through
+the free function `pay`. Unlike the `friend`-based idiom above, this does not
+expose every overrider of every signature of `pay` to `Payroll` - only the
+ones `Payroll` itself declares are members of it in the first place.
+
+This does not apply when `Payroll` is a class the caller does not control -
+a third-party type with no room to add a member. `friend`, as shown above,
+remains the way to grant access in that case.

@@ -73,18 +73,30 @@ inline constexpr bool method_not_found = false;
 
 //! Create a registrar object.
 //!
-//! Creates a registrar for a type, i.e. a static object of that type with a
-//! unique generated name. At static initialization time, the object adds
-//! itself to a list: methods and class registrations add themselves to a
+//! Creates a registrar for a type, i.e. an object of that type with a unique
+//! generated name. At static initialization time, the object adds itself to a
+//! list: methods and class registrations add themselves to a
 //! @ref boost::openmethod::registry, and overriders add themselves to a
 //! method's overrider list.
+//!
+//! The registrar is declared `inline`, so this macro can be used inside a
+//! class body - the object then becomes a `static` data member, with the
+//! same access to the class's private members as any other member. That is
+//! what lets an overrider be a `static` member function of the class it
+//! needs access to: see @ref BOOST_OPENMETHOD_OVERRIDE_FN.
+//!
+//! @note `inline` is illegal on a variable declared at block (function)
+//! scope. Code that calls this macro inside a function body, to control
+//! exactly when registration happens relative to
+//! @ref boost::openmethod::initialize, must spell out the macro's expansion
+//! by hand instead: `static TYPE BOOST_OPENMETHOD_GENSYM;` (no `inline`).
 //!
 //! @param ... The registrar's type. It is variadic so that it may contain
 //! unparenthesized commas, as in `std::pair<int, int>`.
 //!
 //! @see [Core API](xref:ROOT:core_api.adoc)
 #define BOOST_OPENMETHOD_REGISTER(...)                                         \
-    static __VA_ARGS__ BOOST_OPENMETHOD_GENSYM
+    static inline __VA_ARGS__ BOOST_OPENMETHOD_GENSYM
 
 //! Generate a method id.
 //!
@@ -582,6 +594,46 @@ inline constexpr bool method_not_found = false;
     inline auto BOOST_OPENMETHOD_OVERRIDER(                                    \
         ID, PARAMETERS, __VA_ARGS__)::fn PARAMETERS                            \
         -> boost::mp11::mp_back<boost::mp11::mp_list<__VA_ARGS__>>
+
+//! Add one or more existing functions to a method as overriders.
+//!
+//! Unlike @ref BOOST_OPENMETHOD_OVERRIDE, which declares and defines a new
+//! overrider, `BOOST_OPENMETHOD_OVERRIDE_FN` registers functions that already
+//! exist - free functions, or `static` member functions of a class.
+//!
+//! `ID`, `PARAMETERS` and the return type are the method's own, exactly as
+//! given to @ref BOOST_OPENMETHOD; they are not any individual overrider's.
+//! Each function in `...` is still checked against them the same way the
+//! overrider of @ref BOOST_OPENMETHOD_OVERRIDE is: same arity,
+//! `virtual_ptr<T>` and `virtual_<T>` parameters covariant with the method's,
+//! other parameters identical, return type the same or covariant.
+//!
+//! Because it expands through @ref BOOST_OPENMETHOD_REGISTER, this macro can
+//! be used inside a class body, registering one or more `static` member
+//! functions of that class as overriders - which, being members, have the
+//! same access to the class's private state as any other member, with no
+//! need to `friend` anything. See [Friends](xref:ROOT:friends.adoc) for the
+//! `friend`-based alternative this replaces when the class is under the
+//! caller's control.
+//!
+//! @note `ID` must be an *identifier*. Qualified names are not allowed.
+//!
+//! @note The return type is a single macro argument, unlike the trailing
+//! `...` of @ref BOOST_OPENMETHOD_TYPE; it does not accept an explicit
+//! registry argument after it in the same call. A method that
+//! overrides a non-default registry can still be targeted by spelling the
+//! registration out: `BOOST_OPENMETHOD_REGISTER(BOOST_OPENMETHOD_TYPE(ID,
+//! PARAMETERS, RETURN, REGISTRY)::override<Fn...>)`.
+//!
+//! @param ID The method's name.
+//! @param PARAMETERS The method's parameter list, in parentheses.
+//! @param RETURN The method's return type.
+//! @param ... One or more functions to add as overriders.
+//!
+//! @see [Friends](xref:ROOT:friends.adoc)
+#define BOOST_OPENMETHOD_OVERRIDE_FN(ID, PARAMETERS, RETURN, ...)              \
+    BOOST_OPENMETHOD_REGISTER(                                                 \
+        BOOST_OPENMETHOD_TYPE(ID, PARAMETERS, RETURN)::override<__VA_ARGS__>)
 
 //! Register classes.
 //!

@@ -94,8 +94,11 @@ auto poke_animal(Animal&) -> std::string {
 }
 
 BOOST_AUTO_TEST_CASE(the_class_range_is_an_input_range) {
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Dog, Cat, reg>);
-    BOOST_OPENMETHOD_REGISTER(poke::override<poke_animal>);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<Animal, Dog, Cat, reg> BOOST_OPENMETHOD_GENSYM;
+    static poke::override<poke_animal> BOOST_OPENMETHOD_GENSYM;
 
     initialize<reg>();
 

@@ -35,6 +35,8 @@ The following macros are for advanced uses of the library.
 | Description.
 | xref:reference:BOOST_OPENMETHOD_DEFAULT_REGISTRY.adoc[BOOST_OPENMETHOD_DEFAULT_REGISTRY]
 | Default registry.
+| xref:reference:BOOST_OPENMETHOD_OVERRIDE_FN.adoc[BOOST_OPENMETHOD_OVERRIDE_FN]
+| Adds one or more existing functions to a method as overriders.
 | xref:reference:BOOST_OPENMETHOD_OVERRIDER.adoc[BOOST_OPENMETHOD_OVERRIDER]
 | Returns the class template specialization containing an overrider.
 | xref:reference:BOOST_OPENMETHOD_OVERRIDERS.adoc[BOOST_OPENMETHOD_OVERRIDERS]

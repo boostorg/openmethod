@@ -276,7 +276,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(indirect_virtual_ptr, Registry, test_policies) {
     // namespace scan cannot see it: the registration is by hand under every
     // standard, like the one in the header.
     struct Cat : Animal {};
-    BOOST_OPENMETHOD_CLASSES(Animal, Cat, Registry);
+    // Function-local static: registers on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_CLASSES expands through
+    // BOOST_OPENMETHOD_REGISTER, now `inline` - illegal at block scope - so
+    // it's bypassed here in favor of its own expansion, spelled out by hand.
+    static use_classes<Animal, Cat, Registry> BOOST_OPENMETHOD_GENSYM;
 
     init_test<Registry>();
 

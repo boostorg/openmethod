@@ -54,7 +54,10 @@ struct NonPolymorphic {};
 
 template<class Registry>
 void init_test() {
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Cat, Dog, Registry>);
+    // Function-local static: registers on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<Animal, Cat, Dog, Registry> BOOST_OPENMETHOD_GENSYM;
     struct id;
     // without following line, no methods, no v-tables
     (void)&method<id, auto(virtual_ptr<Animal, Registry>)->void, Registry>::fn;

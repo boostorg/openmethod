@@ -126,10 +126,14 @@ BOOST_AUTO_TEST_CASE(test_use_classes_linear) {
 
     struct registry : test_registry_<__COUNTER__> {};
 
-    BOOST_OPENMETHOD_CLASSES(Base, D1, D2, D3, registry);
-    BOOST_OPENMETHOD_CLASSES(D2, D3, registry);
-    BOOST_OPENMETHOD_CLASSES(D3, D4, registry);
-    BOOST_OPENMETHOD_CLASSES(D4, D5, D3, registry);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_CLASSES expands through
+    // BOOST_OPENMETHOD_REGISTER, now `inline` - illegal at block scope - so
+    // it's bypassed here in favor of its own expansion, spelled out by hand.
+    static use_classes<Base, D1, D2, D3, registry> BOOST_OPENMETHOD_GENSYM;
+    static use_classes<D2, D3, registry> BOOST_OPENMETHOD_GENSYM;
+    static use_classes<D3, D4, registry> BOOST_OPENMETHOD_GENSYM;
+    static use_classes<D4, D5, D3, registry> BOOST_OPENMETHOD_GENSYM;
 
     auto comp = initialize<registry>();
 
@@ -179,9 +183,13 @@ BOOST_AUTO_TEST_CASE(test_use_classes_derived_before_base) {
 
     struct registry : test_registry_<__COUNTER__> {};
 
-    BOOST_OPENMETHOD_CLASSES(D3, D4, registry);
-    BOOST_OPENMETHOD_CLASSES(D4, D5, registry);
-    BOOST_OPENMETHOD_CLASSES(Base, D1, D2, D3, registry);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_CLASSES expands through
+    // BOOST_OPENMETHOD_REGISTER, now `inline` - illegal at block scope - so
+    // it's bypassed here in favor of its own expansion, spelled out by hand.
+    static use_classes<D3, D4, registry> BOOST_OPENMETHOD_GENSYM;
+    static use_classes<D4, D5, registry> BOOST_OPENMETHOD_GENSYM;
+    static use_classes<Base, D1, D2, D3, registry> BOOST_OPENMETHOD_GENSYM;
 
     auto comp = initialize<registry>();
 
@@ -213,7 +221,11 @@ BOOST_AUTO_TEST_CASE(test_use_classes_derived_before_base) {
 BOOST_AUTO_TEST_CASE(test_use_classes_diamond) {
     using test_registry = test_registry_<__COUNTER__>;
     using namespace diamond;
-    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, AB, C, D, E, test_registry>);
+    // Function-local static: registers on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<A, B, AB, C, D, E, test_registry>
+        BOOST_OPENMETHOD_GENSYM;
 
     std::vector<class_*> actual, expected;
 
@@ -1691,7 +1703,10 @@ BOOST_AUTO_TEST_CASE(test_finalize_clears_vptr_vector) {
     };
     struct B : A {};
 
-    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, test_registry>);
+    // Function-local static: registers on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<A, B, test_registry> BOOST_OPENMETHOD_GENSYM;
     (void)method<A, auto(virtual_<A&>)->void, test_registry>::fn;
 
     initialize<test_registry>();
@@ -1720,8 +1735,11 @@ BOOST_AUTO_TEST_CASE(test_registries_do_not_share_vptr_state) {
     };
     struct B : A {};
 
-    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, registry1>);
-    BOOST_OPENMETHOD_REGISTER(use_classes<A, B, registry2>);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<A, B, registry1> BOOST_OPENMETHOD_GENSYM;
+    static use_classes<A, B, registry2> BOOST_OPENMETHOD_GENSYM;
     (void)method<A, auto(virtual_<A&>)->void, registry1>::fn;
     (void)method<A, auto(virtual_<A&>)->void, registry2>::fn;
 

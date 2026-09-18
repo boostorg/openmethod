@@ -159,14 +159,18 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     // Dog is registered here with Animal as its direct base, although it
     // really derives from Carnivore. The missing edge is added between the two
     // initializes, below.
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Carnivore, Cat, Registry>);
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Dog, Registry>);
-    BOOST_OPENMETHOD_REGISTER(
-        typename poke<Registry>::template override<poke_animal<Registry>>);
-    BOOST_OPENMETHOD_REGISTER(
-        typename poke<Registry>::template override<poke_dog<Registry>>);
-    BOOST_OPENMETHOD_REGISTER(
-        typename poke<Registry>::template override<poke_carnivore<Registry>>);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<Animal, Carnivore, Cat, Registry>
+        BOOST_OPENMETHOD_GENSYM;
+    static use_classes<Animal, Dog, Registry> BOOST_OPENMETHOD_GENSYM;
+    static typename poke<Registry>::template override<poke_animal<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
+    static typename poke<Registry>::template override<poke_dog<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
+    static typename poke<Registry>::template override<poke_carnivore<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
 
     Dog dog;
     Cat cat;
@@ -192,8 +196,11 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
     // computed from; the Carnivore edge inserts `poke_carnivore` between
     // `poke_dog` and `poke_animal`, changing what `next<poke_dog>` resolves
     // to. The final initialize below observes both.
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Bird, Registry>);
-    BOOST_OPENMETHOD_REGISTER(use_classes<Carnivore, Dog, Registry>);
+    // BOOST_OPENMETHOD_REGISTER is now `inline`, which is illegal at block
+    // scope, so it's spelled out here (same function-local-static reasoning
+    // as above).
+    static use_classes<Animal, Bird, Registry> BOOST_OPENMETHOD_GENSYM;
+    static use_classes<Carnivore, Dog, Registry> BOOST_OPENMETHOD_GENSYM;
 
     explosive::armed = true;
     BOOST_CHECK_THROW(initialize<Registry>(), std::runtime_error);
@@ -247,11 +254,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         typename Registry::registry_type>;
     using vptr_state = typename snapshot<Registry>::vptr_state;
 
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Dog, Cat, Registry>);
-    BOOST_OPENMETHOD_REGISTER(
-        typename poke<Registry>::template override<poke_animal<Registry>>);
-    BOOST_OPENMETHOD_REGISTER(
-        typename poke<Registry>::template override<poke_dog<Registry>>);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<Animal, Dog, Cat, Registry> BOOST_OPENMETHOD_GENSYM;
+    static typename poke<Registry>::template override<poke_animal<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
+    static typename poke<Registry>::template override<poke_dog<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
 
     Dog dog;
     auto& st = Registry::state();
@@ -344,9 +354,13 @@ BOOST_AUTO_TEST_CASE(a_throwing_trace_does_not_commit) {
     using Registry = tracing_registry<__COUNTER__>;
     using vptr_state = typename snapshot<Registry>::vptr_state;
 
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Dog, Cat, Registry>);
-    BOOST_OPENMETHOD_REGISTER(poke<Registry>::override<poke_animal<Registry>>);
-    BOOST_OPENMETHOD_REGISTER(poke<Registry>::override<poke_dog<Registry>>);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<Animal, Dog, Cat, Registry> BOOST_OPENMETHOD_GENSYM;
+    static poke<Registry>::override<poke_animal<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
+    static poke<Registry>::override<poke_dog<Registry>> BOOST_OPENMETHOD_GENSYM;
 
     Dog dog;
     auto& st = Registry::state();
@@ -383,9 +397,13 @@ BOOST_AUTO_TEST_CASE(a_throwing_report_does_not_commit) {
     using Registry = tracing_registry<__COUNTER__>;
     using vptr_state = typename snapshot<Registry>::vptr_state;
 
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Dog, Cat, Registry>);
-    BOOST_OPENMETHOD_REGISTER(poke<Registry>::override<poke_animal<Registry>>);
-    BOOST_OPENMETHOD_REGISTER(poke<Registry>::override<poke_dog<Registry>>);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<Animal, Dog, Cat, Registry> BOOST_OPENMETHOD_GENSYM;
+    static poke<Registry>::override<poke_animal<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
+    static poke<Registry>::override<poke_dog<Registry>> BOOST_OPENMETHOD_GENSYM;
 
     Dog dog;
     auto& st = Registry::state();
@@ -423,11 +441,14 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         typename Registry::registry_type>;
     using vptr_state = typename snapshot<Registry>::vptr_state;
 
-    BOOST_OPENMETHOD_REGISTER(use_classes<Animal, Dog, Cat, Registry>);
-    BOOST_OPENMETHOD_REGISTER(
-        typename poke<Registry>::template override<poke_animal<Registry>>);
-    BOOST_OPENMETHOD_REGISTER(
-        typename poke<Registry>::template override<poke_dog<Registry>>);
+    // Function-local statics: register on first pass through this
+    // declaration, not before main. BOOST_OPENMETHOD_REGISTER is now
+    // `inline`, which is illegal at block scope, so it's spelled out here.
+    static use_classes<Animal, Dog, Cat, Registry> BOOST_OPENMETHOD_GENSYM;
+    static typename poke<Registry>::template override<poke_animal<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
+    static typename poke<Registry>::template override<poke_dog<Registry>>
+        BOOST_OPENMETHOD_GENSYM;
 
     Dog dog;
     auto& st = Registry::state();
