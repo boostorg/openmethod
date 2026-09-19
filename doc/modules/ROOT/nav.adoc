@@ -5,7 +5,7 @@
 ** xref:smart_pointers.adoc[Smart Pointers]
 ** xref:headers.adoc[Header and Implementation Files]
 ** xref:namespaces.adoc[Namespaces]
-** xref:friends.adoc[Friends]
+** xref:friends.adoc[Members and Friends]
 ** xref:multiple_dispatch.adoc[Multiple Dispatch]
 * Advanced Features
 ** xref:core_api.adoc[Core API]

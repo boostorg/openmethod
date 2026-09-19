@@ -1,5 +1,61 @@
 :example: ../examples/rolex
 
+[#members]
+
+A method may itself be a `static` member function of a class, declared with
+`BOOST_OPENMETHOD_MEM` instead of `BOOST_OPENMETHOD`:
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=zoo]
+----
+
+`Zoo::poke` is called as `Zoo::poke(animal)`. There is no implicit object
+parameter and no dispatch on `this` - dispatch still goes entirely by the
+method's own virtual parameters, exactly as for a free method. `poke` may be
+overloaded within `Zoo`, just as a free method may be overloaded at namespace
+scope.
+
+An overrider, too, may be a `static` member function - of any class, not
+necessarily the one the method belongs to - added with
+`BOOST_OPENMETHOD_OVERRIDE_MEM` instead of `BOOST_OPENMETHOD_OVERRIDE`:
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=zookeeper]
+----
+
+`ID` names the method being overridden - here `Zoo::poke` - and may equally
+name a free method declared with `BOOST_OPENMETHOD`.
+
+Since a member overrider's class need not be the method's own, this is what
+lets an overrider reach a class's private state with no `friend` declaration
+at all: being a member is already enough access. Let's revisit the `pay`
+example once more, updating a `balance` in a `Payroll` class:
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=pay]
+----
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=payroll]
+----
+
+`update_balance` is `private`, and both overriders are members of `Payroll`,
+so they call it as an ordinary same-class private call - no `friend` in
+sight. `next`/`has_next` are not available by name inside a `_MEM` overrider's
+body the way they are in a free one's; the second overrider reaches the first
+through the core API instead, via `BOOST_OPENMETHOD_OVERRIDER_MEM`, naming
+*itself* (its own `(Class, ID, PARAMETERS, RETURN)`), not the overrider it
+calls.
+
+This does not apply when the class the overrider needs access to is not one
+the caller controls - a third-party type with no room to add a member. The
+rest of this page covers `friend`, which remains the way to grant access in
+that case.
+
 [#friendship]
 
 Note;; This section uses overrider containers, described in the
