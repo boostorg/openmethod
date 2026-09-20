@@ -63,10 +63,14 @@ struct Salesman : Employee {
 
 BOOST_OPENMETHOD_TEST_CLASSES(Employee, Salesman);
 
-BOOST_OPENMETHOD(
-    pay, (Employee & payroll, virtual_ptr<const Employee>), double);
+// Only a reference to it appears in the method's parameter list, so the
+// forward declaration is enough - Payroll is not an Employee, and is not
+// dispatched on.
+class Payroll;
 
-class Payroll : public Employee {
+BOOST_OPENMETHOD(pay, (Payroll & payroll, virtual_ptr<const Employee>), double);
+
+class Payroll {
   public:
     double balance() const {
         return balance_;
@@ -81,18 +85,18 @@ class Payroll : public Employee {
         balance_ += amount;
     }
 
-    static auto pay_employee(Employee& payroll, virtual_ptr<const Employee>)
+    static auto pay_employee(Payroll& payroll, virtual_ptr<const Employee>)
         -> double {
         double amount = 5000.0;
-        static_cast<Payroll&>(payroll).update_balance(-amount);
+        payroll.update_balance(-amount);
         return amount;
     }
 
-    static auto pay_salesman(Employee& payroll, virtual_ptr<const Salesman> emp)
+    static auto pay_salesman(Payroll& payroll, virtual_ptr<const Salesman> emp)
         -> double {
         double base = pay_employee(payroll, emp);
         double commission = emp->sales * 0.05;
-        static_cast<Payroll&>(payroll).update_balance(-commission);
+        payroll.update_balance(-commission);
         return base + commission;
     }
 
@@ -100,7 +104,7 @@ class Payroll : public Employee {
     // override<Fn...> is already variadic, so this is not one line per
     // overrider.
     BOOST_OPENMETHOD_OVERRIDE_FN(
-        pay, (Employee & payroll, virtual_ptr<const Employee>), double,
+        pay, (Payroll & payroll, virtual_ptr<const Employee>), double,
         &Payroll::pay_employee, &Payroll::pay_salesman);
 };
 
