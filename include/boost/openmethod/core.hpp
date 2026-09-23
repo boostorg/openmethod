@@ -3329,6 +3329,10 @@ void method<Id, ReturnType(Parameters...), Registry>::override_impl<
     this->return_type = Registry::rtti::template static_type<
         virtual_type<FnReturnType, Registry>>();
     this->type = Registry::rtti::template static_type<decltype(Function)>();
+    // The registrar's own type: it carries `Function` as a non-type template
+    // argument, so it names this overrider and no other.
+    this->identity = Registry::rtti::template static_type<
+        std::remove_reference_t<decltype(*this)>>();
     using Thunk = thunk<Function, decltype(Function)>;
     detail::init_type_ids<
         Registry, typename Thunk::OverriderVirtualParameters>::fn(this

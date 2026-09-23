@@ -21,3 +21,4 @@ message(STATUS "Boost.OpenMethod: building implicit shared library tests")
 
 add_subdirectory(default_registry)
 add_subdirectory(custom_registry)
+add_subdirectory(member_overrider)

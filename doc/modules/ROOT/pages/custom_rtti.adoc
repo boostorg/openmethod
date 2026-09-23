@@ -53,6 +53,20 @@ struct std_rtti : rtti {
     `virtual_ptr`{empty}s "final" constructs.
     It is also called to set `bad_call::method`.
     This function is required.
++
+It is asked for the type id of types that are not registered classes, and of
+types that are not classes at all: non-virtual parameter types, function types,
+and two of the library's own - a method, and the registrar that stands for an
+overrider. Those ids are keys, not labels. `initialize` groups the copies of a
+method that several modules each registered by the type id of the method, and
+the copies of an overrider by the type id of its registrar; a policy that
+answers with one shared value for every type it does not recognise makes
+distinct methods, or distinct overriders, indistinguishable, and they are
+silently merged. So `static_type` must return a different value for every
+different type - see the example below. Across modules it must return the same
+value for a given type in each of them, up to `type_index`. `dynamic_type` is
+under no such obligation: it is only ever called on an instance of a registered
+polymorphic class.
 
 * `dynamic_type` is used to read the dynamic type of a virtual argument.
   If only the `virtual_ptr` "final" constructs are used, or if
@@ -116,12 +130,18 @@ not require Node to be polymorphic in the C++ sense. If we remove the virtual
 destructor and implement `value` as an open-method as well, the program will
 still work.
 
+`static_type` has to answer for the types that are not `Node`{empty}s too, and
+its answers have to be distinct, so it hands each one an id of its own on first
+use, counting down from the largest value a `type_id` can hold. Counting down
+keeps them clear of the small ids the `Node` hierarchy assigns itself counting
+up. Returning a single value such as zero for all of them would compile and run,
+and would quietly merge two methods, or two overriders of one method, into one.
+
 The policy is quite minimal. It does not support virtual inheritance, because it
 does not provide a `dynamic_cast_ref` function. It would not produce good error
 or trace messages, because it does not provide a `type_name` function. Instead,
 it relies on the `type_name` inherited from cpp:rtti::defaults[]. It
-renders types as adorned integers, e.g. "type_id(2)". All non-"polymorphic"
-types would be rendered the same way, as "type_id(0)".
+renders types as adorned integers, e.g. "type_id(2)".
 
 cpp:rtti::defaults[] also provides a default implementation for `type_index`,
 which simply returns its argument.

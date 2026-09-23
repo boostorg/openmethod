@@ -247,4 +247,5 @@ endif()
 
 # Implicitly (build-time) linked shared libraries. Needs no Boost::dll, since
 # nothing is loaded at run time.
+add_subdirectory(cross_tu)
 add_subdirectory(implicit_shared_libraries)

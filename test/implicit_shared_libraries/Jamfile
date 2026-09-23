@@ -42,3 +42,4 @@ project
 
 build-project default_registry ;
 build-project custom_registry ;
+build-project member_overrider ;

@@ -390,6 +390,15 @@ struct overrider_info : static_list<overrider_info>::static_link {
     method_info* method; // for the destructor, to remove definition
     type_id return_type; // for N2216 disambiguation
     type_id type;        // of the function, for trace
+    // Which overrider this *is*, as opposed to what it looks like. `type` is
+    // the function type, RET(PARAMS) - a shape two unrelated overriders
+    // routinely share. `identity` is the type id of the registrar itself,
+    // whose mangled name embeds the registered function as a non-type
+    // template argument, so it is distinct between any two different
+    // overriders and identical between the copies of one overrider that
+    // several modules each register. augment_methods() consolidates on it,
+    // exactly as it consolidates method copies on method_type_id.
+    type_id identity;
     void (**next)();
     type_id *vp_begin, *vp_end;
     void (*pf)();
@@ -592,9 +601,22 @@ struct RttiFn {
 
     //! Returns the static @ref type_id of a type.
     //!
-    //! @note `Class` is not necessarily a @e registered class. This
-    //! function is also called to acquire the type_id of non-virtual
-    //! parameters, library types, etc, for diagnostic and trace purposes.
+    //! `Class` is not necessarily a @e registered class, nor even a class.
+    //! The library also asks for the type_id of non-virtual parameters,
+    //! function types, and its own internal types - a method, and the
+    //! registrar standing for an overrider.
+    //!
+    //! @warning Those type_ids are not merely descriptive. @ref initialize
+    //! groups the per-module copies of a method by the type_id of the method
+    //! itself, and the copies of an overrider by the type_id of its
+    //! registrar, so a policy that answers with one shared value for every
+    //! type it does not recognize makes distinct methods, or distinct
+    //! overriders, indistinguishable. `static_type` must therefore return a
+    //! different value for every different type, whatever that type is. A
+    //! program that spans several modules needs more: the value must also be
+    //! the same in each of them for a given type, up to @ref type_index.
+    //! @ref dynamic_type carries no such obligation - it is only ever called
+    //! on an instance of a registered polymorphic class.
     //!
     //! @tparam Class A class.
     //! @return The static type_id of Class.
@@ -605,7 +627,7 @@ struct RttiFn {
     //!
     //! @tparam Class A registered class.
     //! @param obj A reference to an instance of `Class`.
-    //! @return The type_id of `obj`'s class.
+    //! @return The type_id of the class of `obj`.
     template<class Class>
     static auto dynamic_type(const Class& obj) -> type_id;
 
