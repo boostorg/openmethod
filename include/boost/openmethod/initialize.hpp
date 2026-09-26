@@ -718,7 +718,7 @@ auto operator<<(trace_stream<Compiler>& tr, const generic_compiler::class_& cls)
 template<class Compiler, template<typename...> class Container, typename... T>
 auto operator<<(
     trace_stream<Compiler>& tr,
-    Container<generic_compiler::class_*, T...>& classes)
+    [[maybe_unused]] Container<generic_compiler::class_*, T...>& classes)
     -> trace_stream<Compiler>& {
     if constexpr (Compiler::has_trace) {
         tr << "(";
