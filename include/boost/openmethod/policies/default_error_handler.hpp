@@ -78,8 +78,9 @@ struct default_error_handler : error_handler {
         using error_variant = typename error_variant_aux<
             void,
             std::variant<
-                not_initialized, no_overrider, ambiguous_call, missing_class,
-                missing_base, odr_violation, final_error>,
+                not_initialized, parameter_registry_not_initialized,
+                no_overrider, ambiguous_call, missing_class, missing_base,
+                odr_violation, final_error>,
             typename Registry::policy_list>::type;
 
         //! The type of the error handler function object.

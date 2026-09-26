@@ -590,8 +590,10 @@ that is what lets a method mix a class that has an affinity with one that has no
 `detail::param_registry` says what a parameter carries - **what it carries, never its class's
 affinity**: a spelled `virtual_ptr<B, a_registry>` decides the method's registry even though `B`
 declares nothing. `detail::agreed_registry` folds them, adopters abstaining. A method that names a
-registry requires every carrier to carry that one (`validate_method_parameter`, all four shapes);
-one that names none takes what the carriers agree on, or the macro default.
+registry accepts any carrier - a parameter carrying another registry dispatches in it, see *Mixed
+registries* below; one that names none takes what the carriers agree on, or the macro default, and
+carriers that disagree are an error there ("carry conflicting registries"), which is what forces
+a mixed method to name its registry.
 
 **The answer is memoized, so every question carries a `Question` tag.** A class mentioned before
 it is complete - `virtual_ptr<Node>` as a member of `Node`, or through a forward declaration - is
@@ -620,11 +622,11 @@ is the strict fold, deliberately *not* `agreed_registry`.
 Two things declare no affinity - but declaring none is not the same as contributing none, and the
 interop shapes differ from one another. What each does, with the method on another registry:
 
-| parameter spelling `R` | decides an unannotated method's registry | checked against a method naming another |
+| parameter spelling `R` | decides an unannotated method's registry | with a method naming another |
 |---|---|---|
-| `virtual_<Animal&, R>` (ordinary carrier) | yes | yes - `core.hpp`, "the parameter belongs to another registry" |
-| `virtual_<const std::any&, R>` (interop) | yes | **no - nothing checks it** (#123) |
-| `virtual_any<A, R>&` | no, abstains | yes - `virtual_any.hpp`, "registry mismatch" |
+| `virtual_<Animal&, R>` (ordinary carrier) | yes | dispatches in `R` (mixed registries) |
+| `virtual_<const std::any&, R>` (interop) | yes | dispatches in `R` - probed with `std::any`, **untested** |
+| `virtual_any<A, R>&` | no, abstains | error - `virtual_any.hpp`, "registry mismatch" |
 
 - `interop/std_any.hpp`, `interop/boost_any.hpp`, `interop/boost_type_erasure.hpp` and
   `interop/virtual_any.hpp` declare no affinity for any class, so a class reached through them
@@ -632,9 +634,13 @@ interop shapes differ from one another. What each does, with the method on anoth
   different thing from declaring an affinity, and the reason #116 gave the
   `validate_method_parameter` specializations the registry parameter `virtual_` gained in #113.
   A specialization there must never go back to the bare `virtual_<T>` spelling. Those
-  specializations accept any `ParamRegistry` without ever comparing it, which is the middle row
-  above and a bug rather than a decision (#123); `virtual_any`'s are a different shape
-  (`virtual_any<Any, Registry>&`) and do compare. None of this is covered in `doc/`.
+  specializations accept any `ParamRegistry` without comparing it. Before mixed registries that
+  was a bug (#123): the spelled registry was ignored. Now `parameter_traits` routes the parameter
+  through `virtual_traits<const std::any&, R>`, so the held types register in `R` and dispatch
+  there - a mixed `std::any` parameter works in a probe, but no test covers it and the other
+  interop headers were not tried. `virtual_any`'s specializations are a different shape
+  (`virtual_any<Any, Registry>&`) and still require the method's registry. None of this is covered
+  in `doc/`.
 - The C++26 `register_classes` still defaults to the macro - its groups may name a namespace,
   whose classes are only known during the scan that the choice of registry feeds.
 
@@ -649,6 +655,88 @@ for the token `BOOST_OPENMETHOD_DEFAULT_REGISTRY` **or** for an include of a hea
 carries the override on the file's behalf (`test_capture_errors.hpp` and
 `test_checked_registry.hpp`). Add another such header and the scan has to learn about it: miss
 one and the file still compiles, binds to `default_registry`, and fails at run time.
+
+### Mixed registries
+
+A virtual parameter dispatches in `detail::dispatch_registry<Parameter, R>` - what it carries, or
+the method's registry `R` when it carries nothing - and everything per-parameter goes through that
+registry: `parameter_traits`, `method::vptr` (the declared parameter is the template argument, not
+`remove_virtual_<>` of it), the type ids (`init_type_ids<Classes, Registries, Positions>`, one rtti
+per position), `init_bad_call` (one rtti per argument). "Another registry" means another *state*:
+`detail::same_registry` compares `registry_type`, so `struct zoo : default_registry {}` is the
+default registry under a second name, and a parameter carrying it is native.
+
+**Type ids never cross registries.** Two registries may give the same id to different classes, or
+use rtti policies whose ids are not comparable at all (std_rtti's `type_index` on a `static_rtti`
+id is UB). So a foreign parameter is described to the method's registry by *position*, never by id:
+
+- The method owns one `detail::foreign_parameter_info` per foreign parameter
+  (`method::foreign_parameters`, a `std::array`), pushed onto
+  `registry_state_type::foreign_parameters` of the parameter's registry S by the method's
+  constructor. `method_info::foreign_begin/end` point at them.
+- `S::initialize()` (`augment_foreign_parameters`) maps the method's and overriders' ids for that
+  parameter through its own `class_map` - `missing_class` and `missing_base` are raised there,
+  by S - gives the parameter a slot like any other (`generic_compiler::parameter::slot` points at
+  it), leaves the entries empty (`vtbl_entry::method_index == no_method`, written as 0), and
+  publishes at commit: the slot, the cone of the parameter's class (the class first, then
+  `classes` order, so every module's copy of the method gets the same layout), each class's entry
+  address in the new dispatch data, the transitive-derived sets as cone positions, and each
+  overrider's class as a cone position.
+- `R::initialize()` builds proxy `class_`es for the cone (`method::foreign_classes`, empty `ci`,
+  `is_foreign()`), so `build_dispatch_tables`, `is_more_specific` and the inline-overrider dedup
+  (which now compares `class_*` vectors, not ids) run unchanged. The entries for the proxies are
+  collected in `foreign_writes` and written in `commit_global_data`, like everything else.
+  **`foreign_class_of(method, param, position)` indexes from `foreign_first[param]`, a fixed
+  base** - an earlier draft indexed from the iterator the loop advanced, and dispatched the wrong
+  overriders without crashing.
+- `registry_state_type::generation` counts S's commits (and `finalize`s). A record remembers the
+  generation it was published at (`generation`) and the one R built from (`installed_generation`).
+  R's `initialize` refuses a record that is unpublished or stale; under `runtime_checks`,
+  `method::check_foreign_parameters` refuses a call once S has been initialized again. Both raise
+  `parameter_registry_not_initialized`. Consequence: S before R, R again after S, and a cycle
+  (an R method with an S parameter, an S method with an R parameter) cannot be initialized.
+- Each module's copy of a method registers its own record. S groups them into one
+  `foreign_parameter` with several `copies`, sharing a slot, by the key (`method_state`, method
+  type id, `param`). The method's state address is one symbol per registry; the type ids are
+  compared by `same_method`, which the method template builds from *its* registry's
+  `rtti::type_index` - S cannot compare them itself, and a raw comparison would fail in exactly
+  the multi-module case (one `type_info` per module). Each copy still gets its own overrider
+  positions, since its overrider list is its own. `copies_share_the_slot` in
+  `test_mixed_registries.cpp` fakes a second copy.
+- **Each parameter's type ids follow the deferral of the registry it dispatches in**, never the
+  method's. `method::resolve_type_ids()` (R's, at construction or in R's `initialize()`) sets the
+  method's own ids and the *native* positions only (`NativeParameters`). A foreign position whose
+  registry does not defer is set at construction (`EagerForeignParameters`); one whose registry
+  defers is set by S's `initialize()`, through `foreign_parameter_info::resolve_vp` for the method
+  and `overrider_info::resolve_vp` for each overrider - function pointers built by the templates,
+  since S knows neither type. Neither registry calls the other's rtti during static construction.
+  The slot-sharing key calls `method_type()` rather than reading `method_type_id`, which a
+  deferring R has not resolved yet when S initializes; the `deferred_static_rtti` contract only
+  promises ids from the first `initialize()` on, which S's is. `test_mixed_registries_deferred.cpp`
+  assigns its ids at the start of the test, so an early read yields 0 and fails.
+- The C++26 scan (`method_traits_aux`) registers only the classes of the parameters that dispatch
+  in the method's registry (`detail::dispatches_in`).
+- `rebind_parameter_registry` still rebinds every `virtual_ptr` to the method's registry, so an
+  overrider that spells a third registry on a foreign parameter gets "cannot find method" rather
+  than "registry mismatch".
+
+**The trace follows the handshake across both registries** - `trace()` on each `initialize()`
+shows it end to end, and the entry addresses match between the two halves. S prints the overrider
+classes of each foreign parameter, says which parameter an entry it leaves empty belongs to rather
+than `empty`, and ends with `Publishing to methods of other registries` (generation, slot, number
+of module copies, the cone with each class and entry address, the overrider positions). R prints,
+under the method, what it received per foreign parameter, names the cone classes `foreign#k`
+(`foreign#0` is the parameter's class) wherever a `class_` is printed, and ends with
+`Entries in the v-tables of other registries, written at commit`. **A registry with no `output`
+policy cannot be traced at all** (`Registry::output::stream()` is `void`) - that is existing
+behaviour, but it bites here, because a custom-rtti registry written for an example often has no
+`output`.
+
+Tests: `test_mixed_registries.cpp` (two number-based rtti policies that collide on purpose, plus
+std_rtti; foreign first, second and only parameter; `next`; errors; re-initialization; copies
+sharing a slot), `test_mixed_registries_affinity.cpp` (the affinity and spelling shapes that used
+to be "registry mismatch" compile-fail tests) and `test_mixed_registries_deferred.cpp` (deferred
+and eager registries, both ways round).
 
 ### Flattened headers for Compiler Explorer
 
@@ -707,7 +795,9 @@ Registries are completely independent. Use separate registries to:
 - Apply different policies to different method families
 - Enable coexistence of incompatible configurations
 
-Registry type must be specified consistently across related methods and classes.
+Registry type must be specified consistently across related methods and classes. A method's
+virtual parameters may dispatch in other registries, with other rtti policies - see *Mixed
+registries*.
 
 ## File Organization
 

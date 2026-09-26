@@ -8,6 +8,7 @@
 
 #include <stdint.h>
 #include <algorithm>
+#include <array>
 #include <cstdlib>
 #include <tuple>
 #include <type_traits>
@@ -351,17 +352,34 @@ using class_list_registry = typename pick_class_registry<
     typename extract_registry<Classes...>::registry,
     typename extract_registry<Classes...>::others>::type;
 
-template<class Registry, class... Class>
+// Set `ids[Index]`, for each `Index` in `Positions`, to the type_id of the class
+// in that position, computed by the rtti policy of the registry in the same
+// position: the virtual parameters of a method may belong to different
+// registries, and their type ids may be resolved at different times.
+template<class Classes, class Registries, class Positions>
 struct init_type_ids;
 
-template<class Registry, class... Class>
-struct init_type_ids<Registry, mp11::mp_list<Class...>> {
-    static auto fn(type_id* ids) {
-        (..., (*ids++ = Registry::rtti::template static_type<Class>()));
-
-        return ids;
+template<class Classes, class Registries, class... Index>
+struct init_type_ids<Classes, Registries, mp11::mp_list<Index...>> {
+    // `Positions` is empty for a method whose virtual parameters all belong to
+    // other registries, and are all resolved elsewhere.
+    static void fn([[maybe_unused]] type_id* ids) {
+        (...,
+            (ids[Index::value] =
+                    mp11::mp_at<Registries, Index>::rtti::template static_type<
+                        mp11::mp_at<Classes, Index>>()));
     }
 };
+
+// The same, for one position, known at run time.
+template<class Classes, class Registries>
+void init_type_id(type_id* ids, std::size_t position) {
+    mp11::mp_with_index<mp11::mp_size<Classes>::value>(
+        position, [ids](auto index) {
+            ids[index] = mp11::mp_at<Registries, decltype(index)>::rtti::
+                template static_type<mp11::mp_at<Classes, decltype(index)>>();
+        });
+}
 
 template<class Base, class Derived>
 struct is_unambiguous_accessible_base_of : std::is_base_of<Base, Derived> {
@@ -413,6 +431,12 @@ auto optimal_cast(B&& obj) -> decltype(auto) {
 
 // =============================================================================
 // Common details
+
+// The registry a virtual parameter dispatches in: the one it carries, or the
+// method's when it carries none (`void`).
+template<class Carried, class Registry>
+using registry_or =
+    std::conditional_t<std::is_same_v<Carried, void>, Registry, Carried>;
 
 template<typename T>
 struct is_virtual : std::false_type {};
@@ -2226,22 +2250,22 @@ struct select_overrider_virtual_type_aux {
 template<typename P, class ParamRegistry, typename Q, class Registry>
 struct select_overrider_virtual_type_aux<
     virtual_<P, ParamRegistry>, Q, Registry> {
-    using type = virtual_type<Q, Registry>;
+    using type = virtual_type<Q, registry_or<ParamRegistry, Registry>>;
 };
 
-template<typename P, typename Q, class Registry>
+template<typename P, typename Q, class ParamRegistry, class Registry>
 struct select_overrider_virtual_type_aux<
-    virtual_ptr<P, Registry>, virtual_ptr<Q, Registry>, Registry> {
+    virtual_ptr<P, ParamRegistry>, virtual_ptr<Q, ParamRegistry>, Registry> {
     using type = typename virtual_traits<
-        virtual_ptr<Q, Registry>, Registry>::virtual_type;
+        virtual_ptr<Q, ParamRegistry>, ParamRegistry>::virtual_type;
 };
 
-template<typename P, typename Q, class Registry>
+template<typename P, typename Q, class ParamRegistry, class Registry>
 struct select_overrider_virtual_type_aux<
-    const virtual_ptr<P, Registry>&, const virtual_ptr<Q, Registry>&,
+    const virtual_ptr<P, ParamRegistry>&, const virtual_ptr<Q, ParamRegistry>&,
     Registry> {
     using type = typename virtual_traits<
-        const virtual_ptr<Q, Registry>&, Registry>::virtual_type;
+        const virtual_ptr<Q, ParamRegistry>&, ParamRegistry>::virtual_type;
 };
 
 template<typename P, typename Q, class Registry>
@@ -2256,35 +2280,30 @@ using overrider_virtual_types = boost::mp11::mp_remove<
         MethodParameters, OverriderParameters>,
     void>;
 
-template<class Method, class Rtti, std::size_t Index>
+// `Rtti` identifies the method; each argument is identified by the rtti policy
+// in the same position in `ArgRtti`, that of the registry its parameter
+// dispatches in.
+template<class Method, class Rtti, class... ArgRtti>
 struct init_bad_call {
-    template<typename Arg, typename... Args>
-    static auto fn(bad_call& error, const Arg& arg, const Args&... args) {
-        if constexpr (Index == 0u) {
-            error.method = Rtti::template static_type<Method>();
-            error.arity = sizeof...(args) + 1;
-        }
+    template<typename... Args>
+    static auto fn(bad_call& error, const Args&... args) {
+        error.method = Rtti::template static_type<Method>();
+        error.arity = sizeof...(args);
+        std::size_t index = 0;
+        (..., set_type<ArgRtti>(error, index++, args));
+    }
 
-        type_id arg_type_id;
+    template<class ArgRttiType, typename Arg>
+    static auto set_type(bad_call& error, std::size_t index, const Arg& arg) {
+        if (index >= bad_call::max_types) {
+            return;
+        }
 
         if constexpr (is_virtual_ptr<Arg>) {
-            arg_type_id = Rtti::dynamic_type(*arg);
+            error.types[index] = ArgRttiType::dynamic_type(*arg);
         } else {
-            arg_type_id = Rtti::dynamic_type(arg);
+            error.types[index] = ArgRttiType::dynamic_type(arg);
         }
-
-        error.types[Index] = arg_type_id;
-
-        init_bad_call<Method, Rtti, Index + 1>::fn(error, args...);
-    }
-
-    static auto fn(bad_call&) {
-    }
-};
-
-template<class Method, class Rtti>
-struct init_bad_call<Method, Rtti, bad_call::max_types> {
-    static auto fn(bad_call&) {
     }
 };
 
@@ -2304,17 +2323,21 @@ struct parameter_traits {
     }
 };
 
+// A virtual parameter is handled by the traits of the registry it carries,
+// which is not necessarily the method's.
 template<typename T, class ParamRegistry, class Registry>
 struct parameter_traits<virtual_<T, ParamRegistry>, Registry> :
-    virtual_traits<T, Registry> {};
+    virtual_traits<T, registry_or<ParamRegistry, Registry>> {};
 
-template<class Class, class Registry>
-struct parameter_traits<virtual_ptr<Class, Registry, void>, Registry> :
-    virtual_traits<virtual_ptr<Class, Registry, void>, Registry> {};
+template<class Class, class ParamRegistry, class Registry>
+struct parameter_traits<virtual_ptr<Class, ParamRegistry, void>, Registry> :
+    virtual_traits<virtual_ptr<Class, ParamRegistry, void>, ParamRegistry> {};
 
-template<class Class, class Registry>
-struct parameter_traits<const virtual_ptr<Class, Registry, void>&, Registry> :
-    virtual_traits<const virtual_ptr<Class, Registry, void>&, Registry> {};
+template<class Class, class ParamRegistry, class Registry>
+struct parameter_traits<
+    const virtual_ptr<Class, ParamRegistry, void>&, Registry> :
+    virtual_traits<
+        const virtual_ptr<Class, ParamRegistry, void>&, ParamRegistry> {};
 
 template<typename T, class Registry, typename = void>
 struct validate_method_parameter : std::true_type {};
@@ -2325,13 +2348,22 @@ struct validate_method_parameter<virtual_<T, ParamRegistry>, Registry, U> :
     static_assert(false_t<T>, "virtual_traits not specialized for type");
 };
 
+// `ParamRegistry` is what the parameter carries: the registry spelled on it, or
+// the one its class declares an affinity for, or `void` when the class
+// declares none - in which case the parameter adopts the method's. The
+// parameter dispatches in that registry, which need not be the method's, so
+// the class is checked against it.
 template<typename T, class ParamRegistry, class Registry>
 struct validate_method_parameter<
     virtual_<T, ParamRegistry>, Registry,
-    std::void_t<typename virtual_traits<T, Registry>::virtual_type>> :
+    std::void_t<typename virtual_traits<
+        T, registry_or<ParamRegistry, Registry>>::virtual_type>> :
     std::bool_constant<
-        has_vptr_fn<virtual_type<T, Registry>, Registry> ||
-        Registry::rtti::template is_polymorphic<virtual_type<T, Registry>>> {
+        has_vptr_fn<
+            virtual_type<T, registry_or<ParamRegistry, Registry>>,
+            registry_or<ParamRegistry, Registry>> ||
+        registry_or<ParamRegistry, Registry>::rtti::template is_polymorphic<
+            virtual_type<T, registry_or<ParamRegistry, Registry>>>> {
     static_assert(
         validate_method_parameter::value,
         "virtual_<> parameter is not a polymorphic class and no "
@@ -2339,60 +2371,31 @@ struct validate_method_parameter<
 
     // The class is complete here (is_polymorphic needs it), so this is one of
     // the checkpoints where its affinity is asked again.
-    static_assert(check_affinity<virtual_type<T, Registry>>::value);
-
-    // `ParamRegistry` is what the parameter carries: the registry spelled on
-    // it, or the one its class declares an affinity for, or `void` when the
-    // class declares none - in which case the parameter adopts the method's.
-    // A carrier must agree with the method.
-    static_assert(
-        std::is_same_v<ParamRegistry, void> ||
-            std::is_same_v<ParamRegistry, Registry>,
-        "registry mismatch: the parameter belongs to another registry");
+    static_assert(check_affinity<
+        virtual_type<T, registry_or<ParamRegistry, Registry>>>::value);
 };
 
-// A `virtual_ptr` parameter, in any of its three shapes, must name the
-// method's registry. The scan that picks a registry for a method that names
-// none takes the class's affinity, so this is where a registry spelled on the
-// parameter is held to agree with the class.
-template<class Class, class Registry>
-struct validate_method_parameter<virtual_ptr<Class, Registry>, Registry, void> :
-    std::true_type {
+// A `virtual_ptr` parameter, in any of its three shapes, dispatches in the
+// registry it names, whether or not it is the method's. The scan that picks a
+// registry for a method that names none takes the class's affinity, so this
+// is where a registry spelled on the parameter is held to agree with the
+// class.
+template<class Class, class ParamRegistry, class Registry>
+struct validate_method_parameter<
+    virtual_ptr<Class, ParamRegistry>, Registry, void> : std::true_type {
     static_assert(check_affinity<Class>::value);
 };
 
-template<class Class, class Registry, class MethodRegistry>
+template<class Class, class ParamRegistry, class Registry>
 struct validate_method_parameter<
-    virtual_ptr<Class, Registry>, MethodRegistry, void> : std::false_type {
-    static_assert(
-        false_t<Class, Registry, MethodRegistry>, "registry mismatch");
-};
-
-template<class Class, class Registry>
-struct validate_method_parameter<
-    virtual_ptr<Class, Registry>&, Registry, void> : std::true_type {
+    virtual_ptr<Class, ParamRegistry>&, Registry, void> : std::true_type {
     static_assert(check_affinity<Class>::value);
 };
 
-template<class Class, class Registry, class MethodRegistry>
+template<class Class, class ParamRegistry, class Registry>
 struct validate_method_parameter<
-    virtual_ptr<Class, Registry>&, MethodRegistry, void> : std::false_type {
-    static_assert(
-        false_t<Class, Registry, MethodRegistry>, "registry mismatch");
-};
-
-template<class Class, class Registry>
-struct validate_method_parameter<
-    const virtual_ptr<Class, Registry>&, Registry, void> : std::true_type {
+    const virtual_ptr<Class, ParamRegistry>&, Registry, void> : std::true_type {
     static_assert(check_affinity<Class>::value);
-};
-
-template<class Class, class Registry, class MethodRegistry>
-struct validate_method_parameter<
-    const virtual_ptr<Class, Registry>&, MethodRegistry, void> :
-    std::false_type {
-    static_assert(
-        false_t<Class, Registry, MethodRegistry>, "registry mismatch");
 };
 } // namespace detail
 
@@ -2462,6 +2465,28 @@ struct method_registry_aux<ReturnType(Parameters...)> {
 template<typename Fn>
 using method_registry = typename method_registry_aux<Fn>::type;
 
+// The registry a parameter of a method in `Registry` dispatches in: the one it
+// carries, or the method's. `Registry` for a non-virtual parameter.
+template<typename Parameter, class Registry>
+using dispatch_registry =
+    registry_or<typename param_registry<Parameter>::type, Registry>;
+
+// Whether two registries are the same, i.e. share their state. A registry
+// derived from another without adding policies is the same registry.
+template<class Registry, class Other>
+using same_registry = std::is_same<
+    typename Registry::registry_type, typename Other::registry_type>;
+
+// Whether a parameter of a method in `Registry` dispatches in it.
+template<typename Parameter, class Registry>
+using dispatches_in =
+    same_registry<dispatch_registry<Parameter, Registry>, Registry>;
+
+// The class of a virtual parameter of a method in `Registry`.
+template<typename Parameter, class Registry>
+using parameter_class = virtual_type<
+    remove_virtual_<Parameter>, dispatch_registry<Parameter, Registry>>;
+
 } // namespace detail
 
 //! Implement a method
@@ -2475,17 +2500,29 @@ using method_registry = typename method_registry_aux<Fn>::type;
 //!
 //! `Fn` is a function type, i.e. a type in the form `ReturnType(Parameters...)`.
 //!
-//! `Registry` is an instantiation of class template @ref registry. Methods may
-//! use only classes that have been registered in the same registry as virtual
-//! parameters and arguments. The registry also contains a set of policies that
-//! influence several aspects of the dispatch mechanism - for example, how to
-//! acquire a v-table pointer for an object, how to report errors, whether to
+//! `Registry` is an instantiation of class template @ref registry. It holds the
+//! method and its dispatch data. The registry also contains a set of policies
+//! that influence several aspects of the dispatch mechanism - for example, how
+//! to acquire a v-table pointer for an object, how to report errors, whether to
 //! perform sanity checks, etc.
 //!
-//! `Registry` defaults to the registry the virtual parameters of `Fn` have an
-//! affinity for - see @ref registry_affinity - and to
-//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY when none of them declares one.
-//! Parameters that declare different registries are an error.
+//! Each virtual parameter dispatches in a registry: the one it carries, spelled
+//! on it or declared by its class (see @ref registry_affinity), or `Registry`
+//! if it carries none. The classes of a virtual parameter, and the arguments
+//! passed for it, must be registered in that registry, which identifies them
+//! with its own `rtti` policy. This is how a method dispatches on classes
+//! that use different RTTI systems.
+//!
+//! `Registry` defaults to the registry the virtual parameters of `Fn` carry,
+//! and to @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY when none of them carries
+//! one. Parameters that carry different registries are an error, unless
+//! `Registry` is specified; it may then be any registry.
+//!
+//! A registry in which a parameter of a method of another registry dispatches
+//! must be initialized before the method's registry, and the method's registry
+//! must be initialized again whenever that registry is. Each parameter's type
+//! ids follow the registry it dispatches in: a registry with
+//! @ref policies::deferred_static_rtti may be mixed with one without.
 //!
 //! Specializations of `method` have a single instance: the static member `fn`,
 //! which has an `operator()` that forwards to the appropriate overrider. It is
@@ -2542,8 +2579,8 @@ using method_registry = typename method_registry_aux<Fn>::type;
 //! @tparam Id A type
 //! @tparam Fn A function type
 //! @tparam Registry The registry in which the method is defined. Defaults to
-//! the registry that `Fn`\'s virtual parameters have an affinity for, and to
-//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY if none of them has one.
+//! the registry that `Fn`\'s virtual parameters carry, and to
+//! @ref BOOST_OPENMETHOD_DEFAULT_REGISTRY if none of them carries one.
 //!
 //! @see [Core API](xref:ROOT:core_api.adoc)
 template<typename Id, typename Fn, class Registry = detail::method_registry<Fn>>
@@ -2586,6 +2623,12 @@ class method<Id, ReturnType(Parameters...), Registry> :
         boost::mp11::mp_transform<detail::remove_virtual_, DeclaredParameters>;
     using VirtualParameters =
         typename detail::virtual_types<DeclaredParameters>;
+    // The registry each virtual parameter dispatches in, and its class.
+    using VirtualRegistries = mp11::mp_transform_q<
+        mp11::mp_bind_back<detail::dispatch_registry, Registry>,
+        mp11::mp_filter<detail::is_virtual, DeclaredParameters>>;
+    using VirtualClasses = mp11::mp_transform<
+        detail::virtual_type, VirtualParameters, VirtualRegistries>;
     using Signature = auto(Parameters...) -> ReturnType;
     using FunctionPointer = auto (*)(detail::remove_virtual_<Parameters>...)
         -> ReturnType;
@@ -2724,7 +2767,33 @@ class method<Id, ReturnType(Parameters...), Registry> :
         detail::validate_method_parameter<Parameters, Registry>::value && ...));
     static_assert(Arity > 0, "method has no virtual parameters");
 
+    // The virtual parameters that dispatch in another registry, by position.
+    template<class Index>
+    using is_foreign_parameter = mp11::mp_not<
+        detail::same_registry<mp11::mp_at<VirtualRegistries, Index>, Registry>>;
+    using ForeignParameters =
+        mp11::mp_copy_if<mp11::mp_iota_c<Arity>, is_foreign_parameter>;
+    static constexpr auto ForeignCount =
+        mp11::mp_size<ForeignParameters>::value;
+
+    // A parameter's type ids follow the deferral of the registry it dispatches
+    // in. Those of the parameters in the method's registry are resolved with
+    // the method's own, by `resolve_type_ids`; those of a foreign parameter,
+    // at construction, or - if its registry defers them - by that registry's
+    // initialize(), through `resolve_type_id`.
+    template<class Index>
+    using is_deferred_parameter = mp11::mp_bool<
+        mp11::mp_at<VirtualRegistries, Index>::has_deferred_static_rtti>;
+    using NativeParameters =
+        mp11::mp_remove_if<mp11::mp_iota_c<Arity>, is_foreign_parameter>;
+    using EagerForeignParameters =
+        mp11::mp_remove_if<ForeignParameters, is_deferred_parameter>;
+
+    static auto method_type() -> type_id;
+    static void resolve_type_id(type_id* ids, std::size_t param);
+
     type_id vp_type_ids[Arity];
+    std::array<detail::foreign_parameter_info, ForeignCount> foreign_parameters;
 
     std::size_t slots_strides[2 * Arity - 1];
     // Slots followed by strides. No stride for first virtual argument.
@@ -2737,8 +2806,10 @@ class method<Id, ReturnType(Parameters...), Registry> :
 
     void resolve_type_ids();
 
-    template<typename MethodArg, typename ArgType>
+    template<typename Parameter, typename ArgType>
     auto vptr(const ArgType& arg) const -> vptr_type;
+
+    void check_foreign_parameters() const;
 
     template<typename MethodArgList, typename ArgType, typename... MoreArgTypes>
     auto resolve_uni(const ArgType& arg, const MoreArgTypes&... more_args) const
@@ -2795,6 +2866,7 @@ class method<Id, ReturnType(Parameters...), Registry> :
             detail::overrider_info> {
         explicit override_impl(FunctionPointer* next = nullptr);
         void resolve_type_ids();
+        static void resolve_type_id(type_id* ids, std::size_t param);
 
         static type_id vp_type_ids[Arity];
     };
@@ -2851,33 +2923,74 @@ method<Id, ReturnType(Parameters...), Registry>::method() {
         resolve_type_ids();
     }
 
+    detail::init_type_ids<
+        VirtualClasses, VirtualRegistries,
+        EagerForeignParameters>::fn(vp_type_ids);
+
     this->vp_begin = vp_type_ids;
     this->vp_end = vp_type_ids + Arity;
     this->not_implemented = reinterpret_cast<void (*)()>(fn_not_implemented);
     this->ambiguous = reinterpret_cast<void (*)()>(fn_ambiguous);
+    this->foreign_begin = foreign_parameters.data();
+    this->foreign_end = foreign_parameters.data() + ForeignCount;
 
     // zero-initalized static variable
     // coverity[uninit_use]
     Registry::static_::st.methods.push_back(*this);
+
+    // Each foreign parameter goes to the registry it dispatches in.
+    mp11::mp_for_each<mp11::mp_iota_c<ForeignCount>>([this](auto index) {
+        using Param = mp11::mp_at<ForeignParameters, decltype(index)>;
+        using ParamRegistry = mp11::mp_at<VirtualRegistries, Param>;
+        auto& param = foreign_parameters[index];
+        param.method = this;
+        param.param = Param::value;
+        param.host_generation = &ParamRegistry::static_::st.generation;
+        param.method_state = &Registry::static_::st;
+        param.same_method = [](type_id a, type_id b) {
+            return Registry::rtti::type_index(a) ==
+                Registry::rtti::type_index(b);
+        };
+        param.method_type = method_type;
+        param.resolve_vp = resolve_type_id;
+        ParamRegistry::static_::st.foreign_parameters.push_back(param);
+    });
 }
 
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
 void method<Id, ReturnType(Parameters...), Registry>::resolve_type_ids() {
     using namespace detail;
-    this->method_type_id = rtti::template static_type<method>();
+    this->method_type_id = method_type();
     this->return_type_id =
         rtti::template static_type<virtual_type<ReturnType, Registry>>();
-    init_type_ids<
-        Registry,
-        mp11::mp_transform_q<
-            mp11::mp_bind_back<virtual_type, Registry>,
-            VirtualParameters>>::fn(this->vp_type_ids);
+    init_type_ids<VirtualClasses, VirtualRegistries, NativeParameters>::fn(
+        this->vp_type_ids);
+}
+
+template<
+    typename Id, typename... Parameters, typename ReturnType, class Registry>
+auto method<Id, ReturnType(Parameters...), Registry>::method_type() -> type_id {
+    return rtti::template static_type<method>();
+}
+
+template<
+    typename Id, typename... Parameters, typename ReturnType, class Registry>
+void method<Id, ReturnType(Parameters...), Registry>::resolve_type_id(
+    type_id* ids, std::size_t param) {
+    detail::init_type_id<VirtualClasses, VirtualRegistries>(ids, param);
 }
 
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
 method<Id, ReturnType(Parameters...), Registry>::~method() {
+    mp11::mp_for_each<mp11::mp_iota_c<ForeignCount>>([this](auto index) {
+        using Param = mp11::mp_at<ForeignParameters, decltype(index)>;
+        using ParamRegistry = mp11::mp_at<VirtualRegistries, Param>;
+        ParamRegistry::static_::st.foreign_parameters.remove(
+            foreign_parameters[index]);
+    });
+
     Registry::static_::st.methods.remove(*this);
 }
 
@@ -2909,6 +3022,10 @@ BOOST_FORCEINLINE
 
     Registry::require_initialized();
 
+    if constexpr (Registry::has_runtime_checks && ForeignCount > 0) {
+        check_foreign_parameters();
+    }
+
     void (*pf)();
 
     if constexpr (Arity == 1) {
@@ -2922,24 +3039,51 @@ BOOST_FORCEINLINE
     return reinterpret_cast<FunctionPointer>(pf);
 }
 
+// A foreign parameter's entries live in the v-tables of its registry, which
+// clears them when it is initialized again: then the method's registry must be
+// initialized again too.
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
-template<typename MethodArg, typename ArgType>
+void method<Id, ReturnType(Parameters...), Registry>::check_foreign_parameters()
+    const {
+    for (auto& param : foreign_parameters) {
+        if (param.installed_generation != *param.host_generation) {
+            if constexpr (Registry::has_error_handler) {
+                parameter_registry_not_initialized error;
+                error.method = this->method_type_id;
+                error.param = param.param;
+                Registry::error_handler::error(error);
+            }
+
+            abort();
+        }
+    }
+}
+
+// The v-table pointer comes from the registry the parameter dispatches in.
+template<
+    typename Id, typename... Parameters, typename ReturnType, class Registry>
+template<typename Parameter, typename ArgType>
 BOOST_FORCEINLINE auto method<Id, ReturnType(Parameters...), Registry>::vptr(
     const ArgType& arg) const -> vptr_type {
-    if constexpr (detail::is_virtual_ptr<ArgType>) {
+    using namespace detail;
+
+    if constexpr (is_virtual_ptr<ArgType>) {
         return arg.vptr();
     } else {
-        decltype(auto) obj = virtual_traits<MethodArg, Registry>::peek(arg);
+        using ParamRegistry = dispatch_registry<Parameter, Registry>;
+        using Traits =
+            virtual_traits<remove_virtual_<Parameter>, ParamRegistry>;
+        decltype(auto) obj = Traits::peek(arg);
 
-        if constexpr (detail::has_vptr_fn<decltype(obj), Registry>) {
-            return boost_openmethod_vptr(obj, static_cast<Registry*>(nullptr));
-        } else if constexpr (
-            detail::has_vptr<
-                virtual_traits<MethodArg, Registry>, decltype(obj)>) {
-            return virtual_traits<MethodArg, Registry>::vptr(obj);
+        if constexpr (has_vptr_fn<decltype(obj), ParamRegistry>) {
+            return boost_openmethod_vptr(
+                obj, static_cast<ParamRegistry*>(nullptr));
+        } else if constexpr (has_vptr<Traits, decltype(obj)>) {
+            return Traits::vptr(obj);
         } else {
-            return Registry::template policy<policies::vptr>::dynamic_vptr(obj);
+            return ParamRegistry::template policy<policies::vptr>::dynamic_vptr(
+                obj);
         }
     }
 }
@@ -2957,7 +3101,7 @@ method<Id, ReturnType(Parameters...), Registry>::resolve_uni(
     using namespace boost::mp11;
 
     if constexpr (is_virtual<mp_first<MethodArgList>>::value) {
-        vptr_type vtbl = vptr<remove_virtual_<mp_first<MethodArgList>>>(arg);
+        vptr_type vtbl = vptr<mp_first<MethodArgList>>(arg);
 
         return vtbl[this->slots_strides[0]];
     } else {
@@ -2977,7 +3121,7 @@ method<Id, ReturnType(Parameters...), Registry>::resolve_multi_first(
     using namespace boost::mp11;
 
     if constexpr (is_virtual<mp_first<MethodArgList>>::value) {
-        vptr_type vtbl = vptr<remove_virtual_<mp_first<MethodArgList>>>(arg);
+        vptr_type vtbl = vptr<mp_first<MethodArgList>>(arg);
         std::size_t slot = this->slots_strides[0];
 
         // The first virtual parameter is special.  Since its stride is
@@ -3008,7 +3152,7 @@ method<Id, ReturnType(Parameters...), Registry>::resolve_multi_next(
     using namespace boost::mp11;
 
     if constexpr (is_virtual<mp_first<MethodArgList>>::value) {
-        vptr_type vtbl = vptr<remove_virtual_<mp_first<MethodArgList>>>(arg);
+        vptr_type vtbl = vptr<mp_first<MethodArgList>>(arg);
         std::size_t slot = this->slots_strides[VirtualArg];
         std::size_t stride = this->slots_strides[Arity + VirtualArg - 1];
         dispatch = dispatch + vtbl[slot].i * stride;
@@ -3047,13 +3191,15 @@ template<
 BOOST_NORETURN auto
 method<Id, ReturnType(Parameters...), Registry>::fn_not_implemented(
     detail::remove_virtual_<Parameters>... args) -> ReturnType {
+    using namespace detail;
     using namespace policies;
 
     if constexpr (Registry::has_error_handler) {
         no_overrider error;
-        detail::init_bad_call<method, rtti, 0u>::fn(
-            error,
-            detail::parameter_traits<Parameters, Registry>::peek(args)...);
+        init_bad_call<
+            method, rtti,
+            typename dispatch_registry<Parameters, Registry>::rtti...>::
+            fn(error, parameter_traits<Parameters, Registry>::peek(args)...);
         Registry::error_handler::error(error);
     }
 
@@ -3065,13 +3211,15 @@ template<
 BOOST_NORETURN auto
 method<Id, ReturnType(Parameters...), Registry>::fn_ambiguous(
     detail::remove_virtual_<Parameters>... args) -> ReturnType {
+    using namespace detail;
     using namespace policies;
 
     if constexpr (Registry::has_error_handler) {
         ambiguous_call error;
-        detail::init_bad_call<method, rtti, 0u>::fn(
-            error,
-            detail::parameter_traits<Parameters, Registry>::peek(args)...);
+        init_bad_call<
+            method, rtti,
+            typename dispatch_registry<Parameters, Registry>::rtti...>::
+            fn(error, parameter_traits<Parameters, Registry>::peek(args)...);
         Registry::error_handler::error(error);
     }
 
@@ -3127,9 +3275,21 @@ struct validate_overrider_parameter<virtual_<T1, R1>, virtual_<T2, R2>, void> :
     static_assert(false_t<T1, T2>, "virtual_<> is not allowed in overriders");
 };
 
+// The same `virtual_ptr` in the method and the overrider matches both the
+// generic `<T, T>` and the shape-specific specializations below; these are
+// more specialized than either.
 template<class T, class R>
 struct validate_overrider_parameter<
     virtual_ptr<T, R>, virtual_ptr<T, R>, void> : std::true_type {};
+
+template<class T, class R>
+struct validate_overrider_parameter<
+    const virtual_ptr<T, R>&, const virtual_ptr<T, R>&, void> :
+    std::true_type {};
+
+template<class T, class R>
+struct validate_overrider_parameter<
+    virtual_ptr<T, R>&&, virtual_ptr<T, R>&&, void> : std::true_type {};
 
 template<class T1, class R, class T2, class R2>
 struct validate_overrider_parameter<
@@ -3307,10 +3467,15 @@ method<Id, ReturnType(Parameters...), Registry>::override_impl<
         resolve_type_ids();
     }
 
+    using Thunk = thunk<Function, decltype(Function)>;
+    init_type_ids<
+        typename Thunk::OverriderVirtualParameters, VirtualRegistries,
+        EagerForeignParameters>::fn(vp_type_ids);
+    this->resolve_vp = resolve_type_id;
+
     this->next = reinterpret_cast<void (**)()>(
         p_next ? p_next : &method::next<Function>);
 
-    using Thunk = thunk<Function, decltype(Function)>;
     this->pf = reinterpret_cast<void (*)()>(Thunk::fn);
 
     this->vp_begin = vp_type_ids;
@@ -3330,9 +3495,21 @@ void method<Id, ReturnType(Parameters...), Registry>::override_impl<
         virtual_type<FnReturnType, Registry>>();
     this->type = Registry::rtti::template static_type<decltype(Function)>();
     using Thunk = thunk<Function, decltype(Function)>;
-    detail::init_type_ids<
-        Registry, typename Thunk::OverriderVirtualParameters>::fn(this
-            ->vp_type_ids);
+    init_type_ids<
+        typename Thunk::OverriderVirtualParameters, VirtualRegistries,
+        NativeParameters>::fn(vp_type_ids);
+}
+
+template<
+    typename Id, typename... Parameters, typename ReturnType, class Registry>
+template<auto Function, typename FnReturnType, bool Inline>
+void method<Id, ReturnType(Parameters...), Registry>::
+    override_impl<Function, FnReturnType, Inline>::resolve_type_id(
+        type_id* ids, std::size_t param) {
+    using Thunk = thunk<Function, decltype(Function)>;
+    detail::init_type_id<
+        typename Thunk::OverriderVirtualParameters, VirtualRegistries>(
+        ids, param);
 }
 
 // =============================================================================
@@ -3352,10 +3529,14 @@ struct method_traits_aux<method<Id, ReturnType(Parameters...), Registry>> {
     // return type is registered when the scan finds it deriving from one of
     // these, or when it is listed - as in C++17 - not as a root of its own.
     // A root return type would make `initialize` demand a registration for
-    // the return type of every overrider, `std::ostringstream` included.
+    // the return type of every overrider, `std::ostringstream` included. Nor
+    // the classes of the parameters that dispatch in another registry: they
+    // are registered there.
     using type = mp11::mp_transform_q<
-        mp11::mp_bind_back<virtual_type, Registry>,
-        virtual_types<mp11::mp_list<Parameters...>>>;
+        mp11::mp_bind_back<parameter_class, Registry>,
+        mp11::mp_filter_q<
+            mp11::mp_bind_back<dispatches_in, Registry>,
+            mp11::mp_filter<is_virtual, mp11::mp_list<Parameters...>>>>;
 };
 
 // Read from reflection, by `substitute`-ing a method into it and taking the

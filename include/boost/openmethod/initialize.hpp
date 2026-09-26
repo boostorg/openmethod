@@ -263,13 +263,22 @@ struct generic_compiler {
 
     struct method;
 
+    // A virtual parameter that takes a slot in the v-tables of this registry.
     struct parameter {
+        // Where the slot goes.
+        std::size_t* slot;
+        // The method, or null if it is in another registry.
         struct method* method;
         std::size_t param;
     };
 
+    static constexpr auto no_method = (std::numeric_limits<std::size_t>::max)();
+
     struct vtbl_entry {
-        std::size_t method_index, vp_index, group_index;
+        // `no_method` for an entry that this registry does not write: a hole,
+        // or the slot of a parameter of another registry's method, which that
+        // registry writes.
+        std::size_t method_index = no_method, vp_index = 0, group_index = 0;
     };
 
     struct class_ {
@@ -301,9 +310,51 @@ struct generic_compiler {
             return transitive_derived.find(other) != transitive_derived.end();
         }
 
-        auto is_abstract() const -> bool {
-            return ci[0]->is_abstract;
+        // A class of another registry, in the cone of a foreign parameter,
+        // has no class_info; it is known by its entry in that registry's
+        // v-table (see foreign_class).
+        detail::word* foreign_entry = nullptr;
+        bool foreign_abstract = false;
+        // The position of the class in the cone, for the trace.
+        std::size_t foreign_position = 0;
+
+        auto is_foreign() const -> bool {
+            return ci.empty();
         }
+
+        auto is_abstract() const -> bool {
+            return is_foreign() ? foreign_abstract : ci[0]->is_abstract;
+        }
+    };
+
+    // A parameter of a method of another registry, dispatched through the
+    // v-tables of this one. Each module may register a copy of the method,
+    // and with it a record of the parameter; the copies share the slot.
+    struct foreign_parameter {
+        struct copy {
+            detail::foreign_parameter_info* info;
+            // The class of each overrider of this copy, for the parameter.
+            std::vector<class_*> overriders;
+            // Staged by write_global_data(), published by
+            // commit_global_data().
+            std::vector<detail::foreign_class> cone;
+            std::vector<std::size_t> overrider_positions;
+        };
+
+        class_* vp;
+        std::vector<copy> copies;
+        std::size_t slot = 0;
+    };
+
+    // An entry in the v-table of another registry, filled for one of this
+    // registry's methods.
+    struct foreign_write {
+        detail::word* entry;
+        // The class, in the trace.
+        const class_* cls;
+        struct method* method;
+        std::size_t dim, group;
+        detail::word value;
     };
 
     struct slot_choice {
@@ -361,6 +412,12 @@ struct generic_compiler {
         overrider not_implemented;
         overrider ambiguous;
         vptr_type gv_dispatch_table = nullptr;
+        // For each virtual parameter, the position of its proxies in
+        // `foreign_classes` if it dispatches in another registry, else
+        // `no_method`.
+        std::vector<std::size_t> foreign_first;
+        // Proxies for the classes of the foreign parameters' cones.
+        std::deque<class_> foreign_classes;
         auto arity() const {
             return vp.size();
         }
@@ -514,7 +571,30 @@ struct generic_compiler {
         return const_class_iterator(classes.end(), classes.end());
     }
 
+    // The record of a method's virtual parameter, if it dispatches in another
+    // registry.
+    static auto foreign_parameter_of(
+        const detail::method_info& info, std::size_t param)
+        -> const detail::foreign_parameter_info* {
+        for (auto iter = info.foreign_begin; iter != info.foreign_end; ++iter) {
+            if (iter->param == param) {
+                return iter;
+            }
+        }
+
+        return nullptr;
+    }
+
+    // The proxy for the class at `position` in the cone of a foreign
+    // parameter.
+    static auto foreign_class_of(
+        method& m, std::size_t param, std::size_t position) -> class_* {
+        return &m.foreign_classes[m.foreign_first[param] + position];
+    }
+
     std::deque<method> methods;
+    std::deque<foreign_parameter> foreign_parameters;
+    std::vector<foreign_write> foreign_writes;
     std::size_t class_mark = 0;
     bool compilation_done = false;
 };
@@ -625,7 +705,11 @@ template<class Compiler>
 auto operator<<(trace_stream<Compiler>& tr, const generic_compiler::class_& cls)
     -> trace_stream<Compiler>& {
     if constexpr (Compiler::has_trace) {
-        tr << type_name(cls.ci[0]->type);
+        if (cls.is_foreign()) {
+            tr << "foreign#" << cls.foreign_position;
+        } else {
+            tr << type_name(cls.ci[0]->type);
+        }
     }
 
     return tr;
@@ -634,7 +718,7 @@ auto operator<<(trace_stream<Compiler>& tr, const generic_compiler::class_& cls)
 template<class Compiler, template<typename...> class Container, typename... T>
 auto operator<<(
     trace_stream<Compiler>& tr,
-    Container<generic_compiler::class_*, T...>& classes)
+    [[maybe_unused]] Container<generic_compiler::class_*, T...>& classes)
     -> trace_stream<Compiler>& {
     if constexpr (Compiler::has_trace) {
         tr << "(";
@@ -770,10 +854,32 @@ auto operator<<(trace_stream<Compiler>& tr, const range<T>& range) -> auto& {
     return write_range(tr, range, [](auto value) { return value; });
 }
 
+struct parameter_name {
+    const generic_compiler::parameter& param;
+};
+
 template<class Compiler>
 auto operator<<(trace_stream<Compiler>& tr, const type_name& manip) -> auto& {
     if constexpr (Compiler::has_trace) {
         Compiler::Registry::rtti::type_name(manip.type, tr);
+    }
+
+    return tr;
+}
+
+// The method of a parameter of another registry's method is not named: its
+// type_id is meaningful only to that registry's rtti policy.
+template<class Compiler>
+auto operator<<(trace_stream<Compiler>& tr, const parameter_name& manip)
+    -> auto& {
+    if constexpr (Compiler::has_trace) {
+        if (manip.param.method) {
+            tr << type_name(manip.param.method->infos[0]->method_type_id);
+        } else {
+            tr << "(method of another registry)";
+        }
+
+        tr << " parameter " << manip.param.param;
     }
 
     return tr;
@@ -803,6 +909,10 @@ struct registry<Policies...>::compiler : detail::generic_compiler {
     void calculate_transitive_bases(class_& cls);
     void calculate_transitive_derived(class_& cls);
     void augment_methods();
+    void augment_foreign_parameters();
+    void trace_foreign_parameters(const detail::method_info& info);
+    void trace_unfilled_entry(
+        class_& cls, std::size_t slot, const detail::word* address);
     void assign_slots();
     void assign_tree_slots(class_& cls, std::size_t base_slot);
     void assign_slots(class_& cls);
@@ -1204,12 +1314,33 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
             (void)info; // unused when BOOST_ASSERT compiles out (NDEBUG)
             BOOST_ASSERT(info->arity() == first_info->arity());
         }
-        method.vp.reserve(first_info->arity());
-        method.slots.resize(first_info->arity());
+        auto arity = first_info->arity();
+        method.vp.reserve(arity);
+        method.slots.resize(arity);
+        method.foreign_first.assign(arity, no_method);
 
-        ++tr << type_name(first_info->method_type_id) << " "
-             << range{first_info->vp_begin, first_info->vp_end} << "\n";
-        indent _(tr);
+        // A parameter that dispatches in another registry was prepared by that
+        // registry's initialize(), which must have run since every module's
+        // copy of the method registered it.
+        for (auto info : method.infos) {
+            for (auto& param : range{info->foreign_begin, info->foreign_end}) {
+                if (param.generation == 0 ||
+                    param.generation != *param.host_generation ||
+                    param.overriders.size() != info->overriders.size()) {
+                    ++tr << "registry of parameter #" << param.param
+                         << " not initialized\n";
+
+                    if constexpr (has_error_handler) {
+                        parameter_registry_not_initialized error;
+                        error.method = info->method_type_id;
+                        error.param = param.param;
+                        error_handler::error(error);
+                    }
+
+                    abort();
+                }
+            }
+        }
 
         // Build the virtual-parameter classes once, from the local
         // method_info. All copies describe the same method, so any one of them
@@ -1218,6 +1349,40 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
             std::size_t param_index = 0;
 
             for (auto ti : range{first_info->vp_begin, first_info->vp_end}) {
+                if (auto param =
+                        foreign_parameter_of(*first_info, param_index)) {
+                    // The type_id means nothing here: the parameter's registry
+                    // described the cone of its class, by position.
+                    method.slots[param_index] = param->slot;
+                    method.foreign_first[param_index] =
+                        method.foreign_classes.size();
+
+                    for (auto& cls : param->cone) {
+                        auto& proxy = method.foreign_classes.emplace_back();
+                        proxy.foreign_position = &cls - param->cone.data();
+                        proxy.foreign_entry = cls.entry;
+                        proxy.foreign_abstract = cls.is_abstract;
+                    }
+
+                    std::size_t position = 0;
+
+                    for (auto& cls : param->cone) {
+                        auto proxy =
+                            foreign_class_of(method, param_index, position++);
+
+                        for (auto derived : cls.transitive_derived) {
+                            proxy->transitive_derived.insert(
+                                foreign_class_of(method, param_index, derived));
+                        }
+                    }
+
+                    method.vp.push_back(
+                        foreign_class_of(method, param_index, 0));
+                    ++param_index;
+
+                    continue;
+                }
+
                 auto class_ = class_map[rtti::type_index(ti)];
                 if (!class_) {
                     ++tr << "unknown class " << ti << "(" << type_name(ti)
@@ -1235,6 +1400,14 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
                 method.vp.push_back(class_);
                 ++param_index;
             }
+        }
+
+        ++tr << type_name(first_info->method_type_id) << " " << method.vp
+             << "\n";
+        indent _(tr);
+
+        if constexpr (has_trace) {
+            trace_foreign_parameters(*first_info);
         }
 
         if (rtti::type_index(first_info->return_type_id) !=
@@ -1273,42 +1446,69 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         // method<...>::override<Fn1> and method<...>::override<Fn2>, both
         // non-inline by default) are always genuinely distinct and must
         // remain ambiguous.
-        std::vector<detail::overrider_info*> all_specs;
+        //
+        // Overriders are compared by the classes of their virtual parameters,
+        // not by type_id: the type_id of a parameter that dispatches in
+        // another registry means nothing to this one.
+        struct candidate {
+            detail::overrider_info* info;
+            std::vector<class_*> vp;
+        };
+
+        std::vector<candidate> all_specs;
         std::size_t module_index = 0;
 
         for (auto info : method.infos) {
             indent _(tr);
             ++tr << "module " << module_index++ << "\n";
+            std::size_t spec_position = 0;
 
             for (auto& spec : info->overriders) {
-                auto same = [&](const detail::overrider_info* kept) {
-                    if (!kept->inline_ || !spec.inline_) {
-                        return false;
+                std::vector<class_*> vp;
+                vp.reserve(arity);
+                std::size_t param_index = 0;
+
+                for (auto type : range{spec.vp_begin, spec.vp_end}) {
+                    if (auto param = foreign_parameter_of(*info, param_index)) {
+                        vp.push_back(foreign_class_of(
+                            method, param_index,
+                            param->overriders[spec_position]));
+                        ++param_index;
+
+                        continue;
                     }
 
-                    if (rtti::type_index(kept->type) !=
-                        rtti::type_index(spec.type)) {
-                        return false;
-                    }
+                    auto class_ = class_map[rtti::type_index(type)];
 
-                    // Same function type id: confirm the virtual-parameter
-                    // signatures match too, so two genuinely different
-                    // overriders that happen to share a function type id are
-                    // never merged.
-                    auto a = kept->vp_begin, ae = kept->vp_end,
-                         b = spec.vp_begin;
+                    if (!class_) {
+                        indent _(tr);
+                        ++tr << "unknown class error for *virtual* parameter #"
+                             << (param_index + 1) << "\n";
+                        missing_class error;
+                        error.type = type;
 
-                    for (; a != ae; ++a, ++b) {
-                        if (rtti::type_index(*a) != rtti::type_index(*b)) {
-                            return false;
+                        if constexpr (has_error_handler) {
+                            error_handler::error(error);
                         }
+
+                        abort();
                     }
 
-                    return true;
+                    vp.push_back(class_);
+                    ++param_index;
+                }
+
+                ++spec_position;
+
+                auto same = [&](const candidate& kept) {
+                    return kept.info->inline_ && spec.inline_ &&
+                        rtti::type_index(kept.info->type) ==
+                        rtti::type_index(spec.type) &&
+                        kept.vp == vp;
                 };
 
                 if (std::none_of(all_specs.begin(), all_specs.end(), same)) {
-                    all_specs.push_back(&spec);
+                    all_specs.push_back({&spec, std::move(vp)});
                 }
             }
         }
@@ -1326,43 +1526,16 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         method.overriders.resize(spec_size);
         auto spec_iter = method.overriders.begin();
 
-        for (auto overrider_info : all_specs) {
-            if constexpr (has_deferred_static_rtti) {
-                static_cast<deferred_overrider_info&>(*overrider_info)
-                    .resolve_type_ids();
-            }
-
+        for (auto& spec : all_specs) {
+            auto overrider_info = spec.info;
             spec_iter->method_index = method.index;
             spec_iter->spec_index = spec_iter - method.overriders.begin();
 
             ++tr << type_name(overrider_info->type) << " ("
                  << overrider_info->pf << ")\n";
             spec_iter->info = overrider_info;
-            spec_iter->vp.reserve(first_info->arity());
-            std::size_t param_index = 0;
-
-            for (
-                auto type :
-                range{overrider_info->vp_begin, overrider_info->vp_end}) {
-                indent _(tr);
-                auto class_ = class_map[rtti::type_index(type)];
-
-                if (!class_) {
-                    ++tr << "unknown class error for *virtual* parameter #"
-                         << (param_index + 1) << "\n";
-                    missing_class error;
-                    error.type = type;
-
-                    if constexpr (has_error_handler) {
-                        error_handler::error(error);
-                    }
-
-                    abort();
-                }
-
-                spec_iter->pf = spec_iter->info->pf;
-                spec_iter->vp.push_back(class_);
-            }
+            spec_iter->pf = overrider_info->pf;
+            spec_iter->vp = std::move(spec.vp);
 
             if (method.covariant_return_type) {
                 auto covariant_return_iter = class_map.find(
@@ -1391,6 +1564,14 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         std::size_t param_index = 0;
 
         for (auto vp : method.vp) {
+            // The parameter's registry checked the classes of a foreign
+            // parameter, and allocated its slot.
+            if (vp->is_foreign()) {
+                ++param_index;
+
+                continue;
+            }
+
             for (auto& overrider : method.overriders) {
                 if (overrider.vp[param_index] == vp) {
                     continue;
@@ -1409,9 +1590,165 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
                 }
             }
 
-            vp->used_by_vp.push_back({&method, param_index++});
+            vp->used_by_vp.push_back(
+                {&method.slots[param_index], &method, param_index});
+            ++param_index;
         }
     }
+
+    augment_foreign_parameters();
+}
+
+// The parameters of other registries' methods that dispatch through this
+// registry's v-tables. Their type_ids were computed by this registry's rtti
+// policy, so this is where they are mapped to classes and checked. Each gets a
+// slot like a parameter of this registry's own methods, but the entries are
+// left empty: the method's registry fills them.
+template<class... Policies>
+template<class... Options>
+void registry<Policies...>::compiler<Options...>::augment_foreign_parameters() {
+    using namespace detail;
+
+    if (registry::static_::st.foreign_parameters.empty()) {
+        return;
+    }
+
+    ++tr << "Parameters of methods of other registries:\n";
+    indent _(tr);
+
+    auto find_class = [this](type_id type) {
+        auto iter = class_map.find(rtti::type_index(type));
+
+        if (iter == class_map.end()) {
+            ++tr << "unknown class " << type_name(type) << "\n";
+            missing_class error;
+            error.type = type;
+
+            if constexpr (has_error_handler) {
+                error_handler::error(error);
+            }
+
+            abort();
+        }
+
+        return iter->second;
+    };
+
+    for (auto& info : registry::static_::st.foreign_parameters) {
+        // The type ids of the parameter are this registry's to resolve: the
+        // method, in another registry, resolved them at construction unless
+        // this one defers them. Only this position - the others follow the
+        // deferral of their own registries.
+        if constexpr (has_deferred_static_rtti) {
+            info.resolve_vp(info.method->vp_begin, info.param);
+
+            for (auto& spec : info.method->overriders) {
+                spec.resolve_vp(spec.vp_begin, info.param);
+            }
+        }
+
+        // The same parameter of another copy of the same method.
+        auto same = std::find_if(
+            foreign_parameters.begin(), foreign_parameters.end(),
+            [&info](const foreign_parameter& param) {
+                auto other = param.copies.front().info;
+
+                return other->method_state == info.method_state &&
+                    other->param == info.param &&
+                    info.same_method(other->method_type(), info.method_type());
+            });
+
+        auto& param = same != foreign_parameters.end()
+            ? *same
+            : foreign_parameters.emplace_back();
+        auto is_new = param.copies.empty();
+        auto& copy = param.copies.emplace_back();
+        copy.info = &info;
+
+        if (is_new) {
+            param.vp = find_class(info.method->vp_begin[info.param]);
+            param.vp->used_by_vp.push_back({&param.slot, nullptr, info.param});
+        }
+
+        ++tr << "parameter " << info.param << ": " << *param.vp
+             << (is_new ? "\n" : " (another copy)\n");
+
+        for (auto& spec : info.method->overriders) {
+            auto cls = find_class(spec.vp_begin[info.param]);
+
+            if (cls != param.vp && !param.vp->is_base_of(cls)) {
+                missing_base error;
+                error.base = param.vp->ci[0]->type;
+                error.derived = cls->ci[0]->type;
+
+                if constexpr (has_error_handler) {
+                    error_handler::error(error);
+                }
+
+                abort();
+            }
+
+            copy.overriders.push_back(cls);
+        }
+
+        {
+            indent _(tr);
+            ++tr << "overriders: " << copy.overriders << "\n";
+        }
+    }
+}
+
+// What the registries of a method's foreign parameters published for them.
+// Their classes are known here only by position in the cone: `foreign#0` is
+// the parameter's class. The registry that published them names them in its
+// own trace.
+template<class... Policies>
+template<class... Options>
+void registry<Policies...>::compiler<Options...>::trace_foreign_parameters(
+    const detail::method_info& info) {
+    using namespace detail;
+
+    for (auto& param : range{info.foreign_begin, info.foreign_end}) {
+        ++tr << "parameter " << param.param
+             << " dispatches in another registry, published at generation "
+             << param.generation << ": slot " << param.slot << "\n";
+        indent _(tr);
+
+        for (auto& cls : param.cone) {
+            ++tr << "foreign#" << (&cls - param.cone.data()) << ": entry at "
+                 << cls.entry << (cls.is_abstract ? ", abstract" : "")
+                 << ", derived:";
+
+            auto derived = cls.transitive_derived;
+            std::sort(derived.begin(), derived.end());
+
+            for (auto position : derived) {
+                tr << " foreign#" << position;
+            }
+
+            tr << "\n";
+        }
+    }
+}
+
+// An entry of this registry's v-tables that it leaves empty: a hole, or the
+// slot of a parameter of another registry's method, which that registry fills.
+template<class... Policies>
+template<class... Options>
+void registry<Policies...>::compiler<Options...>::trace_unfilled_entry(
+    class_& cls, std::size_t slot, const detail::word* address) {
+    for (auto& param : foreign_parameters) {
+        if (param.slot == slot &&
+            (param.vp == &cls || param.vp->is_base_of(&cls))) {
+            ++tr << address << " for (method of another registry) parameter "
+                 << param.copies.front().info->param
+                 << ", filled by its registry\n";
+
+            return;
+        }
+    }
+
+    ++tr << "empty\n";
 }
 
 // Slot allocation. The scheme follows the remarks Steven Watanabe made on the
@@ -1519,10 +1856,9 @@ void registry<Policies...>::compiler<Options...>::assign_tree_slots(
     auto next_slot = base_slot;
 
     for (const auto& mp : cls.used_by_vp) {
-        ++tr << "in " << cls << " for "
-             << type_name(mp.method->infos[0]->method_type_id) << " parameter "
-             << mp.param << ": slot " << next_slot << "\n";
-        mp.method->slots[mp.param] = next_slot++;
+        ++tr << "in " << cls << " for " << parameter_name{mp} << ": slot "
+             << next_slot << "\n";
+        *mp.slot = next_slot++;
     }
 
     // `used_slots` stays empty: the v-table is sized here, and nothing in a
@@ -1557,11 +1893,10 @@ void registry<Policies...>::compiler<Options...>::assign_slots(class_& cls) {
 
     for (const auto& mp : cls.used_by_vp) {
         auto choice = pick_slot(cls.transitive_derived, unavailable);
-        ++tr << "in " << cls << " for "
-             << type_name(mp.method->infos[0]->method_type_id) << " parameter "
-             << mp.param << ": slot " << choice.slot << ", cost " << choice.cost
-             << ", unavailable " << unavailable << "\n";
-        mp.method->slots[mp.param] = choice.slot;
+        ++tr << "in " << cls << " for " << parameter_name{mp} << ": slot "
+             << choice.slot << ", cost " << choice.cost << ", unavailable "
+             << unavailable << "\n";
+        *mp.slot = choice.slot;
         set_bit(unavailable, choice.slot);
 
         // One bit, to the whole cone: `cls` is in it.
@@ -1649,7 +1984,15 @@ void registry<Policies...>::compiler<Options...>::build_dispatch_tables() {
 
                 for (auto cls : group.classes) {
                     indent _(tr);
-                    ++tr << type_name(cls->ci[0]->type) << "\n";
+                    ++tr << *cls << "\n";
+
+                    if (cls->is_foreign()) {
+                        // Written at commit, see write_global_data().
+                        foreign_writes.push_back(
+                            {cls->foreign_entry, cls, &m, dim, group_num, {}});
+                        continue;
+                    }
+
                     auto& entry = cls->vtbl[m.slots[dim] - cls->first_slot];
                     entry.method_index = m.index;
                     entry.vp_index = dim;
@@ -1718,7 +2061,7 @@ void registry<Policies...>::compiler<Options...>::build_dispatch_table(
                  << "\n";
             indent _(tr);
             for (auto cls : range{group.classes.begin(), group.classes.end()}) {
-                ++tr << type_name(cls->ci[0]->type) << "\n";
+                ++tr << *cls << "\n";
             }
         }
 
@@ -1948,6 +2291,19 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
         indent _(tr);
 
         for (auto& entry : cls.vtbl) {
+            if (entry.method_index == no_method) {
+                if constexpr (has_trace) {
+                    trace_unfilled_entry(
+                        cls, cls.first_slot + (&entry - cls.vtbl.data()),
+                        gv_iter);
+                }
+
+                BOOST_ASSERT(gv_iter + 1 <= gv_last);
+                *gv_iter++ = std::size_t(0);
+
+                continue;
+            }
+
             ++tr << "method #" << entry.method_index << " ";
             auto& method = methods[entry.method_index];
 
@@ -1979,6 +2335,112 @@ void registry<Policies...>::compiler<Options...>::write_global_data() {
     }
 
     ++tr << rflush(4, dispatch_data_size) << " " << gv_iter << " end\n";
+
+    // The entries of this registry's methods in other registries' v-tables.
+    // They are written at commit, like everything else.
+    if (!foreign_writes.empty()) {
+        ++tr << "Entries in the v-tables of other registries, written at "
+                "commit:\n";
+    }
+
+    for (auto& write : foreign_writes) {
+        indent _(tr);
+        auto& m = *write.method;
+        ++tr << write.entry << " " << *write.cls << " method #" << m.index
+             << " ";
+
+        if (m.arity() == 1) {
+            auto spec = m.dispatch_table[write.group];
+            write.value = spec->pf;
+            tr << "spec #" << spec->spec_index << "\n";
+            indent _2(tr);
+            ++tr << type_name(m.infos[0]->method_type_id) << "\n";
+            ++tr << spec_name(m, spec) << "\n";
+        } else {
+            if (write.dim == 0) {
+                write.value = std::uintptr_t(m.gv_dispatch_table + write.group);
+            } else {
+                write.value = write.group;
+            }
+
+            tr << "vp #" << write.dim << " group #" << write.group << "\n";
+            indent _2(tr);
+            ++tr << type_name(m.infos[0]->method_type_id) << "\n";
+        }
+    }
+
+    // What this registry publishes for other registries' parameters: the
+    // cone of the parameter's class - the class first, then the others in
+    // `classes` order, which is the same for every module's copy of the
+    // method - with each class's entry in the new v-tables. The dispatch data
+    // is swapped into place at commit, which keeps the addresses.
+    for (auto& param : foreign_parameters) {
+        std::vector<const class_*> cone{param.vp};
+        std::unordered_map<const class_*, std::size_t> position{{param.vp, 0}};
+
+        for (auto& cls : classes) {
+            if (&cls != param.vp && param.vp->is_base_of(&cls)) {
+                position.emplace(&cls, cone.size());
+                cone.push_back(&cls);
+            }
+        }
+
+        auto& first = param.copies.front();
+        first.cone.reserve(cone.size());
+
+        for (auto cls : cone) {
+            auto& foreign = first.cone.emplace_back();
+            // The dispatch data is ours; `vptr` is const only for the users of
+            // the v-tables.
+            foreign.entry = const_cast<word*>(cls->vptr) + param.slot;
+            foreign.is_abstract = cls->is_abstract();
+
+            for (auto derived : cls->transitive_derived) {
+                foreign.transitive_derived.push_back(position.at(derived));
+            }
+        }
+
+        // Each copy gets its own, to swap in at commit, which cannot throw.
+        for (auto& copy : param.copies) {
+            if (&copy != &first) {
+                copy.cone = first.cone;
+            }
+
+            for (auto cls : copy.overriders) {
+                copy.overrider_positions.push_back(position.at(cls));
+            }
+        }
+
+        if constexpr (has_trace) {
+            if (&param == &foreign_parameters.front()) {
+                ++tr << "Publishing to methods of other registries, "
+                        "generation "
+                     << (static_::st.generation + 1) << ":\n";
+            }
+
+            indent _(tr);
+            ++tr << "parameter " << first.info->param << ", slot " << param.slot
+                 << ", " << param.copies.size()
+                 << (param.copies.size() == 1 ? " copy" : " copies")
+                 << " of the method\n";
+            indent _2(tr);
+
+            for (auto cls : cone) {
+                auto& foreign = first.cone[position.at(cls)];
+                ++tr << "foreign#" << position.at(cls) << " is " << *cls
+                     << ": entry at " << foreign.entry
+                     << (foreign.is_abstract ? ", abstract" : "") << "\n";
+            }
+
+            for (auto& copy : param.copies) {
+                ++tr << "overriders at positions "
+                     << range{
+                            copy.overrider_positions.begin(),
+                            copy.overrider_positions.end()}
+                     << "\n";
+            }
+        }
+    }
 
     detail::registry_state_transaction<
         registry, compiler, std::tuple<Options...>>
@@ -2045,6 +2507,34 @@ void registry<Policies...>::compiler<Options...>::commit_global_data(
     }
 
     new_dispatch_data.swap(static_::st.dispatch_data);
+
+    // After the swap: the entries below are in the new dispatch data. A
+    // method of another registry dispatching through the old one learns that
+    // its entries are gone from the generation.
+    auto generation = ++static_::st.generation;
+
+    for (auto& param : foreign_parameters) {
+        for (auto& copy : param.copies) {
+            copy.info->slot = param.slot;
+            copy.info->cone.swap(copy.cone);
+            copy.info->overriders.swap(copy.overrider_positions);
+            copy.info->generation = generation;
+        }
+    }
+
+    for (auto& write : foreign_writes) {
+        *write.entry = write.value;
+    }
+
+    for (auto& m : methods) {
+        for (auto info : m.infos) {
+            for (
+                auto& param :
+                detail::range{info->foreign_begin, info->foreign_end}) {
+                param.installed_generation = param.generation;
+            }
+        }
+    }
 }
 
 template<class... Policies>
@@ -2248,7 +2738,7 @@ void registry<Policies...>::compiler<Options...>::print_slots() {
 
             for (auto cls : lattice) {
                 for (const auto& mp : cls->used_by_vp) {
-                    slots.push_back({mp.method->slots[mp.param], cls, mp});
+                    slots.push_back({*mp.slot, cls, mp});
                 }
             }
 
@@ -2263,8 +2753,7 @@ void registry<Policies...>::compiler<Options...>::print_slots() {
 
                 for (const auto& e : slots) {
                     ++tr << e.slot << ": in " << *e.cls << " for "
-                         << type_name(e.mp.method->infos[0]->method_type_id)
-                         << " parameter " << e.mp.param << "\n";
+                         << parameter_name{e.mp} << "\n";
                 }
             }
 
@@ -2420,6 +2909,7 @@ auto registry<Policies...>::finalize(Options... opts) -> void {
     std::tuple<Options...> options(opts...);
     detail::finalize_policies<registry>::fn(options);
     static_::st.dispatch_data.clear();
+    ++static_::st.generation;
     static_::st.initialized = false;
 }
 
