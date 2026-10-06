@@ -421,8 +421,8 @@ literal `href="#reference:<NAME>.adoc"`.
 
 ### Doc-comment markup traps
 
-MrDocs parses `//!` comments as Markdown plus Doxygen commands, then emits AsciiDoc. Four shapes
-mis-render silently; all four were found by rendering, none by reading the source:
+MrDocs parses `//!` comments as Markdown plus Doxygen commands, then emits AsciiDoc. Five shapes
+mis-render silently; all five were found by rendering, none by reading the source:
 
 - **A line starting with `- ` becomes a list item.** House style uses ` - ` as an em-dash, which is
   fine mid-line but starts a stray bullet at the head of one. Rewrap so the dash never begins a
@@ -435,6 +435,15 @@ mis-render silently; all four were found by rendering, none by reading the sourc
 - **`@attention` is dropped silently**, paragraph and all: no admonition, no text, no warning.
   MrDocs knows `@note` and `@warning`, which render as NOTE and WARNING blocks wherever they sit in
   the description - the first paragraph after the brief included. Use one of those.
+- **A code span followed by a letter keeps its backticks**: `` `type_id`s `` renders as a literal
+  `` `type_id`s ``, and the next code span in the paragraph loses its formatting. MrDocs passes the
+  span to AsciiDoc as is, and a constrained span cannot end inside a word. Reword - "type ids",
+  "`virtual_ptr` objects". A possessive (`` `obj`'s ``) is safe here, unlike in an `.adoc` page:
+  MrDocs writes the apostrophe as `&apos;`. Before building:
+
+  ```bash
+  grep -rnE '//!.*`[^` ]+`[A-Za-z]' include/    # must return nothing
+  ```
 
 An `xref:reference:<name>.adoc` path works only for macros, which MrDocs puts at the top level.
 A namespace-scoped symbol lives under `reference/boost/openmethod/`, so link it with

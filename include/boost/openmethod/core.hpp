@@ -166,9 +166,9 @@ struct registry_affinity_aux;
 //! the derived-to-base pointer conversion makes the base's overload viable. An
 //! overload on the derived class itself is a better match, and wins.
 //!
-//! A class can also declare its affinity with a member typedef, `using
-//! boost_openmethod_registry = Registry;`. It is looked up first, and it is
-//! inherited like any member - a derived class's typedef hides the base's.
+//! A class can also declare its affinity with a member typedef,
+//! `using boost_openmethod_registry = Registry;`. It is looked up first, and it
+//! is inherited like any member - a derived class's typedef hides the base's.
 //! Being visible from the point it is declared, it is the spelling for a class
 //! that mentions `virtual_ptr` of itself in its own body - which a class that
 //! declares no affinity may do freely.
@@ -931,7 +931,7 @@ BOOST_OPENMETHOD_OPEN_NAMESPACE_DETAIL_UNLESS_MRDOCS
 //! Evaluates to `true` if `Class` is a polymorphic type, according to the
 //! `rtti` policy of `Registry`.
 //!
-//! If Registry's `rtti` policy is std_rtti`, this is the same as
+//! If the `rtti` policy of `Registry` is `std_rtti`, this is the same as
 //! `std::is_polymorphic`. However, other `rtti` policies may have a different
 //! view of what is polymorphic.
 //!
@@ -1340,7 +1340,7 @@ class virtual_ptr {
 
     //! Construct a `virtual_ptr` from another `virtual_ptr`
     //!
-    //! Copy the object and v-table pointers from `other` to `this.
+    //! Copy the object and v-table pointers from `other` to `this`.
     //!
     //! `Other` is _not_ required to be a pointer to a polymorphic class.
     //!
@@ -1450,7 +1450,7 @@ class virtual_ptr {
 
     //! Assign a `virtual_ptr` from another `virtual_ptr`
     //!
-    //! Copy the object and v-table pointers from `other` to `this.
+    //! Copy the object and v-table pointers from `other` to `this`.
     //!
     //! `Other` is _not_ required to be a pointer to a polymorphic class.
     //!
@@ -2095,7 +2095,7 @@ virtual_ptr(Class&& obj) -> virtual_ptr<Class, registry_affinity<Class>>;
 // template<class Registry, class Class>
 // virtual_ptr<Registry>(Class&) -> virtual_ptr<Class, Registry>;
 
-//! Compare two `virtual_ptr`s for equality.
+//! Compare two `virtual_ptr` objects for equality.
 //!
 //! Compare the underlying object pointers for equality. The v-table pointers
 //! are not compared.
@@ -2105,8 +2105,8 @@ virtual_ptr(Class&& obj) -> virtual_ptr<Class, registry_affinity<Class>>;
 //! @tparam Registry A @ref registry.
 //! @param left A reference to a `virtual_ptr`.
 //! @param right A reference to a `virtual_ptr`.
-//! @return `true` if both `virtual_ptr`s point to the same object or both
-//! are `nullptr`, `false` otherwise.
+//! @return `true` if both `virtual_ptr` objects point to the same object, or
+//! both are `nullptr`, `false` otherwise.
 template<class Left, class Right, class Registry>
 auto operator==(
     const virtual_ptr<Left, Registry>& left,
@@ -2114,7 +2114,7 @@ auto operator==(
     return left.pointer() == right.pointer();
 }
 
-//! Compare two `virtual_ptr`s for inequality.
+//! Compare two `virtual_ptr` objects for inequality.
 //!
 //! Compare the underlying object pointers for inequality. The v-table pointers
 //! are not compared.
@@ -2123,8 +2123,8 @@ auto operator==(
 //! @tparam Registry A @ref registry.
 //! @param left A reference to a `virtual_ptr`.
 //! @param right A reference to a `virtual_ptr`.
-//! @return `true` if both `virtual_ptr`s point to different objects, or one
-//! is `nullptr` and the other is not, `false` otherwise.
+//! @return `true` if both `virtual_ptr` objects point to different objects,
+//! or one is `nullptr` and the other is not, `false` otherwise.
 template<class Left, class Right, class Registry>
 auto operator!=(
     const virtual_ptr<Left, Registry>& left,

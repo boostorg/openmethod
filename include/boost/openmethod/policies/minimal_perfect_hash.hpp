@@ -58,9 +58,9 @@ namespace boost::openmethod::policies {
 //! sparse set, this one spends `8 * n * 100 / LoadPercent` bytes of v-table
 //! vector plus `4 * n / Lambda` bytes of pilots **whatever the addresses are**,
 //! and its search time depends only on how many type ids there are, not where
-//! they sit. That makes it the policy to reach for in a program that `dlopen`s
-//! modules registering classes of their own, where type ids from different
-//! modules are far apart and in unrelated ranges.
+//! they sit. That makes it the policy to reach for in a program that uses
+//! `dlopen` to load modules registering classes of their own, where type ids
+//! from different modules are far apart and in unrelated ranges.
 //!
 //! The price is on the dispatch path: the pilot must be loaded before the index
 //! can be formed, so the v-table lookup becomes two dependent loads instead of

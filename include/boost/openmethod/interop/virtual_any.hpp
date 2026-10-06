@@ -88,8 +88,8 @@ inline boost::mp11::mp_apply<
 //! `Any`: naming a type as the parameter of an overrider - or storing a
 //! value in a `virtual_any` - registers it in `Registry`.
 //!
-//! Methods take `virtual_any` parameters by reference: `const
-//! virtual_any&`, `virtual_any&` or `virtual_any&&`. Overriders receive
+//! Methods take `virtual_any` parameters by reference:
+//! `const virtual_any&`, `virtual_any&` or `virtual_any&&`. Overriders receive
 //! the *contained* type, by a reference of a compatible category - or the
 //! `virtual_any` itself, unchanged, for a catch-all overrider.
 //!

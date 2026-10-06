@@ -96,8 +96,8 @@ struct virtual_traits<const boost::intrusive_ptr<Class>&, Registry> {
     //! Cast a `boost::intrusive_ptr` to a `boost::intrusive_ptr` to a derived
     //! class, using a static cast if possible, and a dynamic cast otherwise.
     //!
-    //! @tparam OverriderType The type required by the overrider (a `const
-    //! boost::intrusive_ptr&`).
+    //! @tparam OverriderType The type required by the overrider (a
+    //! `const boost::intrusive_ptr&`).
     //! @param obj The method's argument..
     //! @return A `boost::intrusive_ptr` _value_.
     template<class OverriderType>

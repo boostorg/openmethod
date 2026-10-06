@@ -84,7 +84,7 @@ struct std_rtti : rtti {
         //! C++ does *not* guarantee that there is a single instance of
         //! `std::type_info` per type: a class used by several modules of a
         //! program typically has one per module. `type_index` maps a `type_id`
-        //! to a key that compares equal for all the `type_id`s of one class,
+        //! to a key that compares equal for all the type ids of one class,
         //! which is what @ref initialize uses to group the registrations coming
         //! from different modules.
         //!

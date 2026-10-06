@@ -28,8 +28,8 @@ namespace policies {
 //! Stores v-table pointers in a vector.
 //!
 //! `vptr_vector` stores v-table pointers in a global vector. If `Registry`
-//! contains a @ref type_hash policy, it is used to convert `type_id`s to
-//! indices. Otherwise, `type_id`s are used directly as indices.
+//! contains a @ref type_hash policy, it is used to convert type ids to
+//! indices. Otherwise, type ids are used directly as indices.
 //!
 //! If the registry contains the @ref indirect_vptr policy, stores pointers to
 //! pointers to v-tables in the vector.
@@ -45,7 +45,7 @@ struct vptr_vector : vptr {
     //! Keeps track of v-table pointers using a `std::vector`.
     //!
     //! If `Registry` contains a @ref type_hash policy, it is used to convert
-    //! `type_id`s to indices; otherwise, `type_id`s are used as indices.
+    //! type ids to indices; otherwise, type ids are used as indices.
     //!
     //! If `Registry` contains the @ref indirect_vptr policy, stores pointers to
     //! pointers to v-tables in the map.
