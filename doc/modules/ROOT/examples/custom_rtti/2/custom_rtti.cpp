@@ -57,7 +57,9 @@ struct custom_rtti : boost::openmethod::policies::deferred_static_rtti {
             if constexpr (is_polymorphic<T>) {
                 return reinterpret_cast<type_id>(T::static_type);
             } else {
-                return reinterpret_cast<type_id>(0);
+                static const char id = 0;
+
+                return reinterpret_cast<type_id>(&id);
             }
         }
 
@@ -66,7 +68,7 @@ struct custom_rtti : boost::openmethod::policies::deferred_static_rtti {
             if constexpr (is_polymorphic<T>) {
                 return reinterpret_cast<type_id>(obj.type);
             } else {
-                return reinterpret_cast<type_id>(0);
+                return static_type<T>();
             }
         }
     };

@@ -116,19 +116,30 @@ not require Node to be polymorphic in the C++ sense. If we remove the virtual
 destructor and implement `value` as an open-method as well, the program will
 still work.
 
+Note that a non-"polymorphic" type still gets an id of its own - the address of
+a function-local static, as in the library's own cpp:policies::static_rtti[].
+It is tempting to return a single placeholder for all of them, since they never
+take part in dispatch, but `static_type` is also what identifies a *method*: a
+`method<...>` specialization is not derived from `Node`, so it takes the
+non-"polymorphic" branch. Hand every method the same id and cpp:initialize[]
+merges them into one, pools their overriders, and the first call fails as an
+ambiguous call. With a single method in the program nothing goes wrong, which
+is what makes the mistake easy to ship.
+
 The policy is quite minimal. It does not support virtual inheritance, because it
 does not provide a `dynamic_cast_ref` function. It would not produce good error
 or trace messages, because it does not provide a `type_name` function. Instead,
 it relies on the `type_name` inherited from cpp:rtti::defaults[]. It
-renders types as adorned integers, e.g. "type_id(2)". All non-"polymorphic"
-types would be rendered the same way, as "type_id(0)".
+renders types as adorned integers, e.g. "type_id(2)" for a node, and an
+unwieldy address for everything else.
 
 cpp:rtti::defaults[] also provides a default implementation for `type_index`,
 which simply returns its argument.
 
 Now we need a policy to get a v-table pointer from an object. Our RTTI system
-has an interesting property: its type ids are monotonically allocated in a
-small, dense range. It means that we can use them as indexes in a vector.
+has an interesting property: the ids it gives to the classes that take part in
+dispatch are monotonically allocated in a small, dense range. It means that we
+can use them as indexes in a vector.
 `vptr_vector` is perfect for that. So here is our registry:
 
 [source,c++]
