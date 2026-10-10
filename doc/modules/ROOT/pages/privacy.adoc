@@ -1,0 +1,110 @@
+:page-aliases: friends.adoc
+:example: ../examples/rolex
+
+[#members]
+
+A method may itself be a `static` member function of a class, declared with
+xref:reference:BOOST_OPENMETHOD_MEM.adoc[BOOST_OPENMETHOD_MEM] instead of
+xref:reference:BOOST_OPENMETHOD.adoc[BOOST_OPENMETHOD]:
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=zoo]
+----
+
+`Zoo::poke` is called as `Zoo::poke(animal)`. There is no implicit object
+parameter and no dispatch on `this` - dispatch still goes entirely by the
+method's own virtual parameters, exactly as for a free method. `poke` may be
+overloaded within `Zoo`, just as a free method may be overloaded at namespace
+scope.
+
+An overrider, too, may be a `static` member function - of any class, not
+necessarily the one the method belongs to - added with
+xref:reference:BOOST_OPENMETHOD_OVERRIDE_MEM.adoc[BOOST_OPENMETHOD_OVERRIDE_MEM]
+instead of xref:reference:BOOST_OPENMETHOD_OVERRIDE.adoc[BOOST_OPENMETHOD_OVERRIDE]:
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=zookeeper]
+----
+
+The first argument names the method being overridden - here `Zoo::poke` - and
+may equally name a free method declared with
+xref:reference:BOOST_OPENMETHOD.adoc[BOOST_OPENMETHOD].
+
+Since a member overrider's class need not be the method's own, this is what
+lets an overrider reach a class's private state with no `friend` declaration
+at all: being a member is already enough access. Let's revisit the `pay`
+example once more, updating a `balance` in a `Payroll` class:
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=pay]
+----
+
+[source,c++]
+----
+include::{example}/8/main.cpp[tag=payroll]
+----
+
+`update_balance` is `private`, and both overriders are members of `Payroll`,
+so they call it as an ordinary same-class private call - no `friend` in
+sight. `next`/`has_next` are not available by name inside a `_MEM` overrider's
+body the way they are in a free one's; the second overrider reaches the first
+through the core API instead, via
+xref:reference:BOOST_OPENMETHOD_OVERRIDER_MEM.adoc[BOOST_OPENMETHOD_OVERRIDER_MEM],
+passing it the class, method name, parameter list and return type of the
+overrider doing the call - naming *itself*, not the overrider it calls.
+
+This does not apply when the class the overrider needs access to is not one
+the caller controls - a third-party type with no room to add a member. The
+rest of this page covers `friend`, which remains the way to grant access in
+that case.
+
+[#friendship]
+
+Note;; This section uses overrider containers, described in the
+xref:headers.adoc[Headers] section.
+
+`friend` is a controversial feature. OpenMethod aims to interact well with all
+of C++, as much as feasible for a library, and leaves the choice of using
+`friend`, or not, to the user.
+
+Let's consider yet another variation of the `pay` example. This time, we want to
+update a `balance` variable in a `Payroll` class, when an employee is paid. Thus
+we pass the payroll object to the `pay` method:
+
+[source,c++]
+----
+include::{example}/5/main.cpp[tag=pay]
+----
+
+xref:reference:BOOST_OPENMETHOD.adoc[BOOST_OPENMETHOD] declares an overrider
+container for `pay` in the current namespace, even though it does not define
+any overrider by itself. We can thus name the individual address containers
+in `friend` declarations. But note that at this point, the containers have
+not been specialized yet! In particular, the `fn` member function does not
+exist yet. Instead, we declare friendship to the container itself:
+
+[source,c++]
+----
+include::{example}/5/main.cpp[tag=payroll]
+----
+
+We can now implement the `pay` overriders:
+
+[source,c++]
+----
+include::{example}/5/main.cpp[tag=overriders]
+----
+
+We can also declare friendship _en_ _masse_:
+
+[source,c++]
+----
+include::{example}/6/main.cpp[tag=payroll]
+----
+
+Note, however, that this makes all the overriders of _any_ `pay` method, with
+any signature, in the current namespace, friends of `Payroll`. Unfortunately,
+C++ does not currently allow partial specialization of friend declarations.

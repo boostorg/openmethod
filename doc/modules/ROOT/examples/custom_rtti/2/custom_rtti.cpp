@@ -5,6 +5,9 @@
 
 // clang-format off
 
+#include <cstdint>
+#include <limits>
+
 // tag::classes[]
 struct Node {
     Node(unsigned type) : type(type) {}
@@ -53,11 +56,21 @@ struct custom_rtti : boost::openmethod::policies::deferred_static_rtti {
         using type_id = boost::openmethod::type_id; // for brevity
 
         template<typename T>
+        inline static std::uintptr_t np_id = 0;
+
+        inline static std::uintptr_t np_id_alloc =
+            std::numeric_limits<std::uintptr_t>::max();
+
+        template<typename T>
         static auto static_type() {
             if constexpr (is_polymorphic<T>) {
                 return reinterpret_cast<type_id>(T::static_type);
             } else {
-                return reinterpret_cast<type_id>(0);
+                if (np_id<T> == 0) {
+                    np_id<T> = np_id_alloc--;
+                }
+
+                return reinterpret_cast<type_id>(np_id<T>);
             }
         }
 

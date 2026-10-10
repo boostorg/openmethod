@@ -515,6 +515,13 @@ struct generic_compiler {
     }
 
     std::deque<method> methods;
+    // (kept, duplicate) for every overrider copy that augment_methods()
+    // consolidated away. Each module has its own `next` variable for an
+    // overrider it registered, and dispatch through that module reads it, so
+    // the dropped copies' variables are filled from the kept one once its
+    // value is known.
+    std::vector<std::pair<detail::overrider_info*, detail::overrider_info*>>
+        overrider_copies;
     std::size_t class_mark = 0;
     bool compilation_done = false;
 };
@@ -1248,31 +1255,31 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
         }
 
         // Collect overriders from every module copy of this method, deduping
-        // by *logical* identity rather than pointer identity - but only for
-        // overriders declared inline_. The same overrider, defined in a
-        // header and registered by two or more state-sharing modules (e.g.
-        // an exe and a DLL), appears once per module as a distinct
-        // overrider_info object - different address, and a different `pf`
-        // (each module compiles its own copy of the function) - but they
-        // share the same function type id and the same virtual-parameter
-        // type ids. Keeping every copy would make each dispatch cell they
+        // on overrider_info::identity - the type id of the registrar itself,
+        // which names the overrider rather than describing its shape. The
+        // same overrider, defined in a header and registered by two or more
+        // state-sharing modules (an exe and a DLL, say), appears once per
+        // module as a distinct overrider_info - different address, different
+        // `pf`, since each module compiles its own copy of the function - but
+        // one identity. Keeping every copy would make each dispatch cell they
         // fill ambiguous, because is_more_specific() reports "not more
         // specific" both ways for identical vp lists.
         //
-        // A NON-inline overrider with the same signature must never be
-        // merged, even if it happens to match: BOOST_OPENMETHOD_OVERRIDE
-        // (non-inline) keys one explicit specialization per signature, so
-        // writing it twice in one translation unit is a redefinition error,
-        // and defining it identically in more than one TU (as required for
-        // it to appear "duplicated" in the first place) is an ODR violation
-        // for a non-inline function - i.e. the situation this dedup exists
-        // to handle can only arise legitimately for `inline` overriders (see
-        // BOOST_OPENMETHOD_INLINE_OVERRIDE, which is the only thing that
-        // sets overrider_info::inline_ = true). Two DIFFERENT overriders
-        // sharing a signature (e.g. registered directly via
-        // method<...>::override<Fn1> and method<...>::override<Fn2>, both
-        // non-inline by default) are always genuinely distinct and must
-        // remain ambiguous.
+        // The inline_ flag and the signature comparison are necessary but
+        // not sufficient: a signature is a shape, and two genuinely different
+        // overriders share it routinely. Two BOOST_OPENMETHOD_INLINE_OVERRIDEs
+        // of one method in different namespaces were silently merged, one of
+        // them winning, where the non-inline spelling correctly reports the
+        // pair ambiguous. `identity` is the discriminator that was missing.
+        //
+        // It refines the test rather than replacing it, because it cannot be
+        // trusted alone: it is a type id of a non-class type, and an RTTI
+        // policy is free to return one sentinel for every type it does not
+        // recognize - the custom_rtti examples return 0. Such a policy makes
+        // every identity compare equal, so identity must never be the only
+        // thing keeping two overriders apart. As a conjunct it is safe: under
+        // a sentinel policy the behaviour is exactly what it was before, and
+        // under a well-behaved one the false merge is gone.
         std::vector<detail::overrider_info*> all_specs;
         std::size_t module_index = 0;
 
@@ -1283,6 +1290,19 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
             for (auto& spec : info->overriders) {
                 auto same = [&](const detail::overrider_info* kept) {
                     if (!kept->inline_ || !spec.inline_) {
+                        return false;
+                    }
+
+                    // Same overrider, not merely the same shape. Under a
+                    // well-behaved RTTI policy this is what separates two
+                    // different overriders that happen to share a signature
+                    // from the several copies of one. Under a policy that
+                    // ids every non-class type with one sentinel value (the
+                    // custom_rtti examples do) every identity compares
+                    // equal, and the conditions below carry the decision,
+                    // exactly as they did before identity existed.
+                    if (rtti::type_index(kept->identity) !=
+                        rtti::type_index(spec.identity)) {
                         return false;
                     }
 
@@ -1307,8 +1327,17 @@ void registry<Policies...>::compiler<Options...>::augment_methods() {
                     return true;
                 };
 
-                if (std::none_of(all_specs.begin(), all_specs.end(), same)) {
+                auto found =
+                    std::find_if(all_specs.begin(), all_specs.end(), same);
+
+                if (found == all_specs.end()) {
                     all_specs.push_back(&spec);
+                } else {
+                    // A second module's copy of an overrider already kept.
+                    // Its own `next` variable still has to be filled, or
+                    // next<Fn> called through that module reads a null
+                    // pointer while has_next<Fn>() reports true.
+                    overrider_copies.emplace_back(*found, &spec);
                 }
             }
         }
@@ -2036,6 +2065,16 @@ void registry<Policies...>::compiler<Options...>::commit_global_data(
                     reinterpret_cast<void (*)()>(overrider.next->pf);
             }
         }
+    }
+
+    // Every module's copy of a consolidated overrider needs the same `next`
+    // as the copy that was kept: next<Fn> resolves to the variable of the
+    // module it is called from, and a copy that was dropped during
+    // consolidation would otherwise still hold its zero-initialized value,
+    // null, while has_next<Fn>() - which tests only for the not_implemented
+    // and ambiguous thunks - reports true.
+    for (auto [kept, duplicate] : overrider_copies) {
+        *duplicate->next = *kept->next;
     }
 
     for (auto& cls : classes) {

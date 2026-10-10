@@ -22,6 +22,14 @@ uses of the library.
 | Declares a method overrider.
 | xref:reference:BOOST_OPENMETHOD_DEFINE_OVERRIDER.adoc[BOOST_OPENMETHOD_DEFINE_OVERRIDER]
 | Defines the body of a method overrider.
+| xref:reference:BOOST_OPENMETHOD_MEM.adoc[BOOST_OPENMETHOD_MEM]
+| Declares a method as a static member function.
+| xref:reference:BOOST_OPENMETHOD_OVERRIDE_MEM.adoc[BOOST_OPENMETHOD_OVERRIDE_MEM]
+| Adds an overrider, as a static member function, to a method.
+| xref:reference:BOOST_OPENMETHOD_DECLARE_OVERRIDER_MEM.adoc[BOOST_OPENMETHOD_DECLARE_OVERRIDER_MEM]
+| Declares a member overrider, without defining it.
+| xref:reference:BOOST_OPENMETHOD_DEFINE_OVERRIDER_MEM.adoc[BOOST_OPENMETHOD_DEFINE_OVERRIDER_MEM]
+| Defines the body of a member overrider.
 | xref:reference:BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS.adoc[BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS]
 | Enables runtime checks in method calls.
 |===
@@ -37,12 +45,16 @@ The following macros are for advanced uses of the library.
 | Default registry.
 | xref:reference:BOOST_OPENMETHOD_OVERRIDER.adoc[BOOST_OPENMETHOD_OVERRIDER]
 | Returns the class template specialization containing an overrider.
+| xref:reference:BOOST_OPENMETHOD_OVERRIDER_MEM.adoc[BOOST_OPENMETHOD_OVERRIDER_MEM]
+| Finds a member overrider.
 | xref:reference:BOOST_OPENMETHOD_OVERRIDERS.adoc[BOOST_OPENMETHOD_OVERRIDERS]
 | Returns the class template containing the overriders for all the methods with a given name.
 | xref:reference:BOOST_OPENMETHOD_ID.adoc[BOOST_OPENMETHOD_ID]
 | Generates a method id.
 | xref:reference:BOOST_OPENMETHOD_TYPE.adoc[BOOST_OPENMETHOD_TYPE]
 | Expands to core `method` specialization.
+| xref:reference:BOOST_OPENMETHOD_TYPE_MEM.adoc[BOOST_OPENMETHOD_TYPE_MEM]
+| Expands to a core `method` specialization, for a method declared with BOOST_OPENMETHOD_MEM.
 | xref:reference:BOOST_OPENMETHOD_REGISTER.adoc[BOOST_OPENMETHOD_REGISTER]
 | Creates a registrar object.
 | xref:reference:BOOST_OPENMETHOD_IMPORT_REGISTRY.adoc[BOOST_OPENMETHOD_IMPORT_REGISTRY]

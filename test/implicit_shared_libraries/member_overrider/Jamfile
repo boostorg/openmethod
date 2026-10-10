@@ -1,0 +1,41 @@
+#  Boost.OpenMethod Library - implicit_shared_libraries/default_registry Jamfile
+#
+#  Copyright 2017-2026 Jean-Louis Leroy
+#
+#  Distributed under the Boost Software License, Version 1.0.
+#  See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt
+
+# default_registry shared across an implicitly linked library:
+#
+#   test executable  ──linked──▶  lib (owns and exports the registry state)
+#
+# Unlike test/dynamic_loading, nothing is loaded at run time, so there is no
+# Boost.DLL dependency, no -rdynamic, and no need to place the library in a
+# specific directory: b2 adds a linked shared library's directory to the test's
+# runtime path.
+#
+# <local-visibility>global is deliberately NOT set: the export/import macros are
+# what make the state shareable under hidden visibility, and forcing global
+# visibility would mask a regression in them.
+#
+# The project requirements of test/Jamfile - including
+# <library>/boost/openmethod//boost_openmethod - propagate to this Jamfile.
+
+import testing ;
+
+# lib.cpp emits the one definition of the registry state: this library owns
+# it, and the executable imports it.
+lib boost_openmethod-isl_member_overrider_lib
+    : lib.cpp
+    : <link>shared
+    ;
+
+run main.cpp
+    boost_openmethod-isl_member_overrider_lib
+    /boost/test//boost_unit_test_framework/<warnings>off/<link>static
+    :
+    :
+    : <link>shared
+    : implicit_shared_libraries_member_overrider
+    ;

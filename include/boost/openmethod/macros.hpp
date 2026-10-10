@@ -64,12 +64,65 @@ struct va_args<ReturnType, Registry> {
     using method_type = method<Id, Fn, Registry>;
 };
 
+// The return type alone, for the macros that must not be given a registry:
+// the ones that *name* an existing member method, and the ones that declare
+// an overrider. A member method's registry is fixed by the declaration that
+// created it, and an overrider takes the registry of the method it overrides,
+// so a trailing registry there is always a mistake. Worth catching rather
+// than tolerating: pasted raw into a function pointer type, as these macros
+// once did, it produced a parse error on the user's own line with nothing to
+// suggest the cause. A return type containing commas still arrives as several
+// macro arguments but reassembles into one template argument, which is what
+// tells the two cases apart. `return_type` is still published in the failing
+// case, so one mistake yields one diagnostic instead of a cascade.
+template<class ReturnType>
+struct va_args_return_type {
+    using return_type = ReturnType;
+};
+
+template<class...>
+struct va_args_no_registry;
+
+template<class ReturnType>
+struct va_args_no_registry<ReturnType> : va_args_return_type<ReturnType> {};
+
+template<class ReturnType, class... More>
+struct va_args_no_registry<ReturnType, More...> :
+    va_args_return_type<ReturnType> {
+    static_assert(
+        false_t<More...>,
+        "unexpected argument after the return type: a member method's "
+        "registry is fixed by its declaration, and an overrider takes the "
+        "registry of the method it overrides");
+};
+
+// The registrar for a _MEM overrider, as a namespace-scope variable template
+// rather than a class member - the device inplace_vptr_base uses for
+// inplace_vptr_use_classes. Keyed on its own type, so it needs no invented
+// name, and being `inline` it is one entity program-wide: the same overrider,
+// seen from any number of translation units, registers exactly once, by
+// linkage rather than by the inline_ dedup at initialize() time.
+template<class Registrar>
+inline Registrar mem_registrar;
+
 template<typename...>
 inline constexpr bool method_not_found = false;
 
 } // namespace boost::openmethod::detail
 
 #define BOOST_OPENMETHOD_GENSYM BOOST_PP_CAT(openmethod_gensym_, __COUNTER__)
+
+// A name unique within a header, and - unlike BOOST_OPENMETHOD_GENSYM - the
+// SAME in every translation unit that includes it. The _MEM macros declare
+// class *members*, so a __COUNTER__-derived name gives a class in a header a
+// different member-specification per TU, which is an ODR violation no compiler
+// diagnoses and which makes a member method's type differ between TUs. __LINE__
+// is stable for a given header; two _MEM macros on one line collide loudly
+// ("member declared twice"), never silently. The free macros are unaffected:
+// their only gensym names a namespace-scope alias or an internal-linkage
+// variable, neither of which is part of a class's member-specification.
+#define BOOST_OPENMETHOD_DETAIL_LINESYM(PREFIX)                                \
+    BOOST_PP_CAT(BOOST_PP_CAT(openmethod_, PREFIX), __LINE__)
 
 //! Create a registrar object.
 //!
@@ -528,7 +581,7 @@ inline constexpr bool method_not_found = false;
 //! @see [Methods and Overriders](xref:ROOT:basics.adoc)
 //! @see [Header and Implementation Files](xref:ROOT:headers.adoc)
 //! @see [Namespaces](xref:ROOT:namespaces.adoc)
-//! @see [Friends](xref:ROOT:friends.adoc)
+//! @see [Members and Friends](xref:ROOT:privacy.adoc)
 #define BOOST_OPENMETHOD_OVERRIDE(ID, PARAMETERS, ...)                         \
     BOOST_OPENMETHOD_DECLARE_OVERRIDER(ID, PARAMETERS, __VA_ARGS__)            \
     BOOST_OPENMETHOD_DEFINE_OVERRIDER(ID, PARAMETERS, __VA_ARGS__)
@@ -582,6 +635,266 @@ inline constexpr bool method_not_found = false;
     inline auto BOOST_OPENMETHOD_OVERRIDER(                                    \
         ID, PARAMETERS, __VA_ARGS__)::fn PARAMETERS                            \
         -> boost::mp11::mp_back<boost::mp11::mp_list<__VA_ARGS__>>
+
+#define BOOST_OPENMETHOD_DETAIL_MEM(TAG, ALIAS, ID, PARAMETERS, ...)           \
+    struct TAG;                                                                \
+    using ALIAS =                                                              \
+        ::boost::openmethod::detail::va_args<__VA_ARGS__>::method_type<        \
+            TAG,                                                               \
+            ::boost::openmethod::detail::va_args<__VA_ARGS__>::return_type     \
+                PARAMETERS>;                                                   \
+    static auto BOOST_OPENMETHOD_ID(ID)(                                       \
+        ::boost::openmethod::detail::va_args<__VA_ARGS__>::return_type(*)      \
+            PARAMETERS)                                                        \
+        ->ALIAS;                                                               \
+    template<typename... ForwarderParameters>                                  \
+    static typename ::boost::openmethod::detail::enable_forwarder<             \
+        void, ALIAS,                                                           \
+        ::boost::openmethod::detail::va_args<__VA_ARGS__>::return_type,        \
+        ForwarderParameters...>::type                                          \
+    ID(ForwarderParameters&&... args) {                                        \
+        return ALIAS::fn(std::forward<ForwarderParameters>(args)...);          \
+    }                                                                          \
+    template<typename... ForwarderParameters>                                  \
+    static                                                                     \
+        typename ::boost::openmethod::detail::enable_guide_ignoring_registry<  \
+            void, ALIAS, ALIAS, ForwarderParameters...>::type                  \
+            BOOST_OPENMETHOD_DETAIL_GUIDE_ANY_REGISTRY(ID)(                    \
+                ForwarderParameters && ... args);                              \
+    template<typename... ForwarderParameters>                                  \
+    static typename ::boost::openmethod::detail::enable_forwarder<             \
+        void, ALIAS, ALIAS, ForwarderParameters...>::type                      \
+    BOOST_OPENMETHOD_GUIDE(ID)(ForwarderParameters && ... args)
+
+//! Declare a method as a static member function.
+//!
+//! `BOOST_OPENMETHOD_MEM` performs the same function as @ref BOOST_OPENMETHOD,
+//! except that it declares a `static` member function of the class whose body
+//! it is used in, instead of a free function. There is no implicit object
+//! parameter and no dispatch on `this`; the method's own virtual parameters
+//! decide dispatch exactly as for a free method.
+//!
+//! The method is called as `Class::ID(args...)`. `ID` may be overloaded within
+//! the class, just as a free method may be overloaded at namespace scope.
+//!
+//! Unlike @ref BOOST_OPENMETHOD, this macro does not create an overrider
+//! container, so an overrider for this method must be added with
+//! @ref BOOST_OPENMETHOD_OVERRIDE_MEM, or with
+//! @ref BOOST_OPENMETHOD_DECLARE_OVERRIDER_MEM and
+//! @ref BOOST_OPENMETHOD_DEFINE_OVERRIDER_MEM, never with the free overrider
+//! macros.
+//!
+//! @note `ID` must be an *identifier*. Qualified names are not allowed - it
+//! names a member of the class the macro is used in, not the method being
+//! overridden.
+//!
+//! @par Example
+//!
+//! include:member.cpp#declare;override;call
+//!
+//! @param ID The method's name.
+//! @param PARAMETERS The method's parameter list, in parentheses.
+//! @param ... The method's return type, optionally followed by the registry.
+//!
+//! @see [Members and Friends](xref:ROOT:privacy.adoc)
+#define BOOST_OPENMETHOD_MEM(ID, PARAMETERS, ...)                              \
+    BOOST_OPENMETHOD_DETAIL_MEM(                                               \
+        BOOST_OPENMETHOD_DETAIL_LINESYM(tag_),                                 \
+        BOOST_OPENMETHOD_DETAIL_LINESYM(alias_), ID, PARAMETERS, __VA_ARGS__)
+
+//! Expand to a core `method` specialization, for a method declared with
+//! @ref BOOST_OPENMETHOD_MEM.
+//!
+//! @ref BOOST_OPENMETHOD_TYPE cannot name a member method: it reconstructs the
+//! method's identifier tag from `ID` alone, and a member method's tag is a
+//! generated name, not `ID`-derived, so that `ID` may be overloaded within its
+//! class. `BOOST_OPENMETHOD_TYPE_MEM` looks the type up instead, through a
+//! function declared for exactly that purpose by `BOOST_OPENMETHOD_MEM`.
+//!
+//! @note There is no registry argument: the method's registry was fixed when
+//! it was declared with @ref BOOST_OPENMETHOD_MEM.
+//!
+//! @param ID The method's name, qualified with its class, e.g. `Zoo::poke`.
+//! @param PARAMETERS The method's parameter list, in parentheses.
+//! @param ... The method's return type. No registry may follow it: a member
+//! method's registry is fixed by the declaration that created it.
+//!
+//! @see [Members and Friends](xref:ROOT:privacy.adoc)
+#define BOOST_OPENMETHOD_TYPE_MEM(ID, PARAMETERS, ...)                         \
+    decltype(BOOST_OPENMETHOD_ID(ID)(                                          \
+        static_cast<typename ::boost::openmethod::detail::va_args_no_registry< \
+            __VA_ARGS__>::return_type(*) PARAMETERS>(nullptr)))
+
+// The overrider's body cannot be named after ID: ID may be qualified (e.g.
+// Zoo::poke, to override a member method), and pasting a qualified name into
+// a *new* declaration is ill-formed - `##` only joins the token next to it,
+// so ID##_boost_openmethod is `Zoo`, `::`, `poke_boost_openmethod`, a valid
+// call target but never a valid declared name inside an unrelated class. So
+// the body and the accessor that finds its key each get one fixed name,
+// overloaded purely on the exact `RET (*) PARAMETERS` - see the reference
+// page for what that costs (at most one overrider of that exact signature per
+// class, regardless of which method it overrides).
+//
+// KEY is the one gensym this needs. Its trampoline is a member function
+// template defined inline inside KEY, itself nested inside the class this
+// macro is used in: its body, referring to the overrider declared after it,
+// is resolved in KEY's own complete-class context, which (like the library's
+// existing free-overrider machinery) extends through the nesting to the
+// enclosing class. Two things that look simpler do not work, on either
+// compiler: defining the overrider inside KEY and reaching it through
+// `decltype(...)::fn` - decltype cannot name a declaration that way - and
+// defining KEY's own member out-of-line while still inside the enclosing
+// class - illegal for a nested class. The overrider is therefore an ordinary
+// member of the enclosing class, not of KEY.
+// The trampoline is reached only through `fn`, the function pointer formed from
+// its address on the next line, so at an explicit `fn(args)` call it cannot be
+// inlined. BOOST_FORCEINLINE still pays on gcc and clang, where it removes the
+// extra call in an unoptimized build. On MSVC it pays nothing - __forceinline is
+// ignored under /Od - and costs a hard error everywhere else: /O2 emits C4714,
+// "marked as __forceinline not inlined", which taking the address guarantees, and
+// the suite builds with /W4 /WX. Guarded on BOOST_MSVC, not _MSC_VER, so clang-cl
+// (which does not implement C4714) keeps the attribute.
+#ifdef BOOST_MSVC
+#define BOOST_OPENMETHOD_DETAIL_TRAMPOLINE_INLINE
+#else
+#define BOOST_OPENMETHOD_DETAIL_TRAMPOLINE_INLINE BOOST_FORCEINLINE
+#endif
+
+#define BOOST_OPENMETHOD_DETAIL_OVERRIDE_MEM(                                  \
+    KEY, REGISTRAR, ID, PARAMETERS, ...)                                       \
+    BOOST_OPENMETHOD_DETAIL_OVERRIDE_MEM_AUX(                                  \
+        KEY, REGISTRAR, ID, PARAMETERS,                                        \
+        typename ::boost::openmethod::detail::va_args_no_registry<             \
+            __VA_ARGS__>::return_type)
+
+#define BOOST_OPENMETHOD_DETAIL_OVERRIDE_MEM_AUX(                              \
+    KEY, REGISTRAR, ID, PARAMETERS, ...)                                       \
+    struct KEY {                                                               \
+        BOOST_OPENMETHOD_DETAIL_LOCATE_METHOD(ID, PARAMETERS);                 \
+        using method_type =                                                    \
+            boost_openmethod_detail_locate_method_aux<void PARAMETERS>::type;  \
+        template<typename... ForwarderParameters>                              \
+        static BOOST_OPENMETHOD_DETAIL_TRAMPOLINE_INLINE auto trampoline(      \
+            ForwarderParameters... args) -> __VA_ARGS__ {                      \
+            (void)&::boost::openmethod::detail::mem_registrar<                 \
+                typename KEY::method_type::REGISTRAR<KEY::fn>>;                \
+            return boost_openmethod_overrider_body(                            \
+                static_cast<ForwarderParameters&&>(args)...);                  \
+        }                                                                      \
+        static constexpr __VA_ARGS__(*fn)                                      \
+            PARAMETERS = static_cast<__VA_ARGS__(*) PARAMETERS>(&trampoline);  \
+    };                                                                         \
+    static auto boost_openmethod_overrider_key(__VA_ARGS__(*) PARAMETERS)      \
+        ->KEY;                                                                 \
+    static auto boost_openmethod_overrider_body PARAMETERS->__VA_ARGS__
+
+//! Add an overrider, as a static member function, to a method.
+//!
+//! `BOOST_OPENMETHOD_OVERRIDE_MEM` performs the same function as
+//! @ref BOOST_OPENMETHOD_OVERRIDE, except that the overrider is a `static`
+//! member function of the class whose body it is used in - which, being a
+//! member, has the same access to that class's private state as any other
+//! member, with no need to `friend` anything.
+//!
+//! `ID` names the method being overridden, and may be a free method declared
+//! with @ref BOOST_OPENMETHOD or a member method declared with
+//! @ref BOOST_OPENMETHOD_MEM, qualified with its class (`Zoo::poke`).
+//!
+//! It is followed by the overrider's body, exactly like
+//! @ref BOOST_OPENMETHOD_OVERRIDE.
+//!
+//! @note Neither `next` nor `has_next` is available by name inside the body.
+//! Reach them through the core API instead: name the overrider itself with
+//! @ref BOOST_OPENMETHOD_OVERRIDER_MEM, then call `method_type::next<fn>`
+//! and `method_type::has_next<fn>` on it.
+//!
+//! @par Example
+//!
+//! include:member.cpp#declare;override;call
+//!
+//! @param ID The method's name.
+//! @param PARAMETERS The overrider's parameter list, in parentheses.
+//! @param ... The overrider's return type. No registry may follow it: an
+//! overrider takes the registry of the method it overrides.
+//!
+//! @see [Members and Friends](xref:ROOT:privacy.adoc)
+#define BOOST_OPENMETHOD_OVERRIDE_MEM(ID, PARAMETERS, ...)                     \
+    BOOST_OPENMETHOD_DETAIL_OVERRIDE_MEM(                                      \
+        BOOST_OPENMETHOD_DETAIL_LINESYM(key_), inline_override, ID,            \
+        PARAMETERS, __VA_ARGS__)
+
+//! Declare a member overrider, without defining it.
+//!
+//! Performs the same function as @ref BOOST_OPENMETHOD_OVERRIDE_MEM, but does
+//! not start the overrider's definition - use
+//! @ref BOOST_OPENMETHOD_DEFINE_OVERRIDER_MEM for that, in an implementation
+//! file.
+//!
+//! @param ID The method's name.
+//! @param PARAMETERS The overrider's parameter list, in parentheses.
+//! @param ... The overrider's return type. No registry may follow it: an
+//! overrider takes the registry of the method it overrides.
+//!
+//! @see [Members and Friends](xref:ROOT:privacy.adoc)
+#define BOOST_OPENMETHOD_DECLARE_OVERRIDER_MEM(ID, PARAMETERS, ...)            \
+    BOOST_OPENMETHOD_DETAIL_OVERRIDE_MEM(                                      \
+        BOOST_OPENMETHOD_DETAIL_LINESYM(key_), override, ID, PARAMETERS,       \
+        __VA_ARGS__)
+
+//! Define the body of a member overrider declared with
+//! @ref BOOST_OPENMETHOD_DECLARE_OVERRIDER_MEM.
+//!
+//! Used at namespace scope, followed by the overrider's body.
+//!
+//! @param CLASS The class @ref BOOST_OPENMETHOD_DECLARE_OVERRIDER_MEM was used
+//! in.
+//! @param ID The method's name.
+//! @param PARAMETERS The overrider's parameter list, in parentheses.
+//! @param ... The overrider's return type. No registry may follow it: an
+//! overrider takes the registry of the method it overrides.
+//!
+//! @see [Members and Friends](xref:ROOT:privacy.adoc)
+#define BOOST_OPENMETHOD_DEFINE_OVERRIDER_MEM(CLASS, ID, PARAMETERS, ...)      \
+    auto CLASS::boost_openmethod_overrider_body PARAMETERS->                   \
+        typename ::boost::openmethod::detail::va_args_no_registry<             \
+            __VA_ARGS__>::return_type
+
+//! Find a member overrider.
+//!
+//! Expands to the type that holds a member overrider added with
+//! @ref BOOST_OPENMETHOD_OVERRIDE_MEM or
+//! @ref BOOST_OPENMETHOD_DECLARE_OVERRIDER_MEM. It has two members:
+//!
+//! @li `fn`: a pointer to a function, the overrider's registered address. Can
+//! be called directly, with no dispatch: `BOOST_OPENMETHOD_OVERRIDER_MEM(
+//! Class, ID, PARAMETERS, ...)::fn(args...)`.
+//!
+//! @li `method_type`: the overridden method's own type, so that
+//! `method_type::next<fn>(args...)` and `method_type::has_next<fn>()` are
+//! available from the core API.
+//!
+//! @note Unlike @ref BOOST_OPENMETHOD_OVERRIDER, `fn` here is a pointer, not a
+//! function: the registered address belongs to a compiler-generated
+//! forwarding function, not to the overrider's body directly. `next<fn>`,
+//! `has_next<fn>` and `fn(args)` all still work as expected.
+//!
+//! @note `ID` plays no part in finding the overrider - only `CLASS`,
+//! `PARAMETERS` and the return type do, since a `_MEM` overrider is looked up
+//! by its exact signature within `CLASS`, regardless of which method it
+//! overrides. `ID` is required for a uniform call shape across the `_MEM`
+//! overrider macros, not because this one needs it.
+//!
+//! @param CLASS The class the overrider was added to.
+//! @param ID The method's name.
+//! @param PARAMETERS The overrider's parameter list, in parentheses.
+//! @param ... The overrider's return type. No registry may follow it: an
+//! overrider takes the registry of the method it overrides.
+//!
+//! @see [Members and Friends](xref:ROOT:privacy.adoc)
+#define BOOST_OPENMETHOD_OVERRIDER_MEM(CLASS, ID, PARAMETERS, ...)             \
+    decltype(CLASS::boost_openmethod_overrider_key(                            \
+        static_cast<typename ::boost::openmethod::detail::va_args_no_registry< \
+            __VA_ARGS__>::return_type(*) PARAMETERS>(nullptr)))
 
 //! Register classes.
 //!

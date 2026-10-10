@@ -112,6 +112,7 @@ for local src in [ glob compile_fail_*.cpp ]
   compile-fail $(src) ;
 }
 
+build-project cross_tu ;
 build-project dynamic_loading ;
 build-project implicit_shared_libraries ;
 

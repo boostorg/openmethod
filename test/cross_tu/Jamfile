@@ -1,0 +1,24 @@
+#  Boost.OpenMethod Library - test/cross_tu Jamfile
+#
+#  Copyright 2017-2026 Jean-Louis Leroy
+#
+#  Distributed under the Boost Software License, Version 1.0.
+#  See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt
+
+# A member method declared in a header and used from two translation units.
+# Every other test here is a single TU, so nothing else can catch a _MEM macro
+# whose generated member names differ between TUs.
+#
+# The project requirements of test/Jamfile - including
+# <library>/boost/openmethod//boost_openmethod - propagate to this Jamfile.
+
+import testing ;
+
+run main.cpp other_tu.cpp
+    /boost/test//boost_unit_test_framework/<warnings>off/<link>static
+    :
+    :
+    :
+    : test_cross_tu
+    ;
