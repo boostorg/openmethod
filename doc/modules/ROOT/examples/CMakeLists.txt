@@ -15,6 +15,37 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_compile_definitions(BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS)
 endif()
 
+# Hold the examples to the test warning level, plus -Wextra. There is no
+# Jamfile here, so b2 never compiles the examples and this is the only check
+# they get. Set before the first target, so the options also reach shared_libs
+# and the step-by-step subdirectories.
+if (BOOST_OPENMETHOD_WARNINGS_AS_ERRORS)
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC"
+            OR CMAKE_CXX_COMPILER_FRONTEND_VARIANT MATCHES "MSVC")
+        add_compile_options(/W4 /WX)
+    else()
+        add_compile_options(-Wall -Wextra -Werror)
+
+        # friendship.cpp and friendship_across_namespaces.cpp name
+        # virtual_ptr<Cat> in a friend declaration inside Animal, before Cat is
+        # defined - which is the point of the example. Defaulting the registry
+        # argument runs the affinity probe, a SFINAE context, so GCC 16 reports
+        # that the answer may change once Cat is complete. The library asks the
+        # question again under its `rechecked` tag, where the class has to be
+        # complete, and refuses an answer that has changed. -Wsfinae-incomplete
+        # is on by default - neither -Wall nor -Wextra brings it in - so this
+        # keeps the diagnostic visible without failing the build. Probed rather
+        # than tied to a version: only GCC 16 knows the option, and naming it on
+        # any other compiler is a hard error.
+        include(CheckCXXCompilerFlag)
+        check_cxx_compiler_flag(
+            -Wsfinae-incomplete BOOST_OPENMETHOD_HAS_WSFINAE_INCOMPLETE)
+        if (BOOST_OPENMETHOD_HAS_WSFINAE_INCOMPLETE)
+            add_compile_options(-Wno-error=sfinae-incomplete)
+        endif()
+    endif()
+endif()
+
 file(GLOB cpp_files "*.cpp")
 
 foreach (cpp ${cpp_files})

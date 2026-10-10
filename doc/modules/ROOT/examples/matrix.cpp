@@ -150,6 +150,10 @@ auto main() -> int {
 
     cout << a << "\n";
     cout << b << "\n";
+    cout << a * b << "\n";
+    cout << b * b << "\n";
+    cout << times(s, a.rep()) << "\n";
+    cout << times(b.rep(), s) << "\n";
 
     return 0;
 }

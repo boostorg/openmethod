@@ -60,12 +60,12 @@ namespace typeswitch {
 using namespace nodes;
 
 auto to_rpn(const Node& node) -> string {
-  if (auto expr = dynamic_cast<const Number*>(&node)) {
-    return to_string(expr->value());
-  } else if (auto expr = dynamic_cast<const Plus*>(&node)) {
-    return to_rpn(expr->left) + " " + to_rpn(expr->right) + " +";
-  } else if (auto expr = dynamic_cast<const Times*>(&node)) {
-    return to_rpn(expr->left) + " " + to_rpn(expr->right) + " *";
+  if (auto number = dynamic_cast<const Number*>(&node)) {
+    return to_string(number->value());
+  } else if (auto plus = dynamic_cast<const Plus*>(&node)) {
+    return to_rpn(plus->left) + " " + to_rpn(plus->right) + " +";
+  } else if (auto times = dynamic_cast<const Times*>(&node)) {
+    return to_rpn(times->left) + " " + to_rpn(times->right) + " *";
   }
   throw runtime_error("unknown node type");
 }
