@@ -178,6 +178,34 @@ struct not_initialized : openmethod_error {
     }
 };
 
+//! Registry of a virtual parameter not initialized
+//!
+//! A method's virtual parameter carries a registry other than the method's, and
+//! that registry was not initialized before the method's, or was initialized
+//! again since. The parameter's registry allocates the parameter's slot in its
+//! v-tables, and the method's registry fills it, so the parameter's registry
+//! must be initialized first, and the method's again whenever the parameter's
+//! is.
+//!
+//! The error is raised by the method's registry: by @ref initialize, and, if
+//! runtime checks are enabled, by a call to the method.
+//!
+//! @see [Error Handling](xref:ROOT:error_handling.adoc)
+struct parameter_registry_not_initialized : openmethod_error {
+    //! The type_id of the method, in the method's registry.
+    type_id method;
+    //! The position of the parameter among the method's virtual parameters,
+    //! starting from zero.
+    std::size_t param;
+
+    //! Write a short description to an output stream
+    //! @param os The output stream
+    //! @tparam Registry The registry
+    //! @tparam Stream A @ref LightweightOutputStream
+    template<class Registry, class Stream>
+    auto write(Stream& os) const;
+};
+
 //! Missing class.
 //!
 //! A class used as a virtual parameter in a method, an overrider or a method
@@ -273,7 +301,9 @@ struct bad_call : openmethod_error {
     std::size_t arity;
     //! The maximum size of `types`
     static constexpr std::size_t max_types = 16;
-    //! The type_ids of the arguments.
+    //! The type_ids of the arguments, each obtained from the `rtti` policy of
+    //! the registry its parameter dispatches in. They may come from different
+    //! registries, see @ref method.
     type_id types[max_types];
 };
 
@@ -362,8 +392,12 @@ struct deferred_class_info : class_info {
 // method info
 
 struct overrider_info;
+struct foreign_parameter_info;
 
 struct method_info : static_list<method_info>::static_link {
+    // The type ids of the virtual parameters, each computed by the rtti policy
+    // of the parameter's registry - which is not the method's for a foreign
+    // parameter, see foreign_parameter_info. Likewise in overrider_info.
     type_id* vp_begin;
     type_id* vp_end;
     static_list<overrider_info> overriders;
@@ -372,10 +406,71 @@ struct method_info : static_list<method_info>::static_link {
     type_id method_type_id;
     type_id return_type_id;
     std::size_t* slots_strides_ptr;
+    foreign_parameter_info* foreign_begin;
+    foreign_parameter_info* foreign_end;
 
     auto arity() const {
         return std::distance(vp_begin, vp_end);
     }
+};
+
+// A class in the cone of a foreign parameter, as the parameter's registry
+// describes it to the method's. Classes are identified by their position in
+// the cone, never by type_id: the two registries may not share an rtti policy,
+// and the same type_id can then name different classes in each.
+struct foreign_class {
+    // Where the class's v-table holds the parameter's entry. The parameter's
+    // registry owns the memory and leaves the entry empty; the method's
+    // registry writes it.
+    word* entry;
+    bool is_abstract;
+    // Positions in the cone of the class and of every class deriving from it.
+    std::vector<std::size_t> transitive_derived;
+};
+
+// A virtual parameter whose registry is not the method's. The method owns one
+// per such parameter, and registers it with the parameter's registry. That
+// registry's initialize() maps the type_ids - which only its rtti policy can
+// interpret - allocates the slot in its v-tables, and publishes the cone of
+// the parameter's class. The method's registry's initialize() builds the
+// dispatch data from that, and writes the entries.
+struct foreign_parameter_info :
+    static_list<foreign_parameter_info>::static_link {
+    method_info* method;
+    // The position of the parameter among the method's virtual parameters.
+    std::size_t param;
+    // The initialization count of the parameter's registry.
+    const std::size_t* host_generation;
+    // Identify the method across modules, each of which may register a copy
+    // of it: by the state of the method's registry - one symbol per registry -
+    // and by its type_id, compared by that registry's rtti policy, the only
+    // one that can.
+    const void* method_state;
+    bool (*same_method)(type_id, type_id);
+    // The method's type_id. A function, because the method's registry may
+    // defer its type ids, and not have resolved them yet when the parameter's
+    // registry is initialized - which is after static construction, when any
+    // rtti policy can answer.
+    type_id (*method_type)();
+    // Like `overrider_info::resolve_vp`, for the method.
+    void (*resolve_vp)(type_id* ids, std::size_t param);
+
+    // Published by the parameter's registry.
+
+    // The value of `*host_generation` when these were published, 0 if never.
+    std::size_t generation;
+    std::size_t slot;
+    // The cone of the parameter's class; the class itself comes first. A
+    // registry lays it out in the same order for every copy of the method,
+    // one per module.
+    std::vector<foreign_class> cone;
+    // For each overrider of `method`, in list order, the position of its class
+    // for this parameter in `cone`.
+    std::vector<std::size_t> overriders;
+
+    // Written by the method's registry: the `generation` its dispatch data was
+    // built from.
+    std::size_t installed_generation;
 };
 
 struct deferred_method_info : method_info {
@@ -392,6 +487,11 @@ struct overrider_info : static_list<overrider_info>::static_link {
     type_id type;        // of the function, for trace
     void (**next)();
     type_id *vp_begin, *vp_end;
+    // Set the type_id of the class of a virtual parameter in `vp_begin`, by
+    // the rtti policy of the registry the parameter dispatches in. Called by
+    // that registry's initialize() when its type ids are deferred and it is
+    // not the method's.
+    void (*resolve_vp)(type_id* ids, std::size_t param);
     void (*pf)();
     // Set by BOOST_OPENMETHOD_INLINE_OVERRIDE (see the Inline template
     // parameter of override_impl/override_aux and class inline_override in
@@ -1003,7 +1103,13 @@ template<class Registry>
 struct registry_state_type {
     static_list<class_info> classes;
     static_list<method_info> methods;
+    // The parameters of other registries' methods that dispatch through this
+    // registry's v-tables.
+    static_list<foreign_parameter_info> foreign_parameters;
     bool initialized;
+    // Incremented each time the dispatch data is replaced or released, so that
+    // a method in another registry can tell that its entries are gone.
+    std::size_t generation;
     std::vector<word> dispatch_data;
     // The per-policy `state` objects are held in a detail::tuple, whose
     // element types must be unique (each is a distinct base class). If two
@@ -1170,16 +1276,19 @@ detail::registry_state_type<Registry> registry_state<Registry>::st;
 
 //! Methods, classes and policies.
 //!
-//! Methods exist in the context of a registry. Any class used as a method or
-//! overrider parameter, or in as a method call argument, must be registered
-//! with the same registry.
+//! Methods exist in the context of a registry. Any class used as a virtual
+//! parameter of a method or an overrider, or passed as a virtual argument, must
+//! be registered with the registry the parameter dispatches in: the method's,
+//! unless the parameter carries another one (see @ref method).
 //!
 //! Before calling a method, its registry must be initialized with the @ref
 //! initialize function. This is typically done at the beginning of `main`.
 //!
 //! Multiple registries can co-exist in the same program. They must be
 //! initialized individually. Classes referenced by methods in different
-//! registries must be registered with each registry.
+//! registries must be registered with each registry. A registry in which a
+//! parameter of another registry's method dispatches must be initialized
+//! before that registry.
 //!
 //! A registry also contains a set of @ref policies that control how certain
 //! operations are performed. For example, the `rtti` policy provides type
@@ -1415,6 +1524,13 @@ template<class Registry, class Stream>
 auto missing_class::write(Stream& os) const {
     os << "unknown class ";
     Registry::rtti::type_name(type, os);
+}
+
+template<class Registry, class Stream>
+auto parameter_registry_not_initialized::write(Stream& os) const {
+    os << "registry of virtual parameter #" << param << " of ";
+    Registry::rtti::type_name(method, os);
+    os << " not initialized, or initialized again since";
 }
 
 template<class Registry, class Stream>

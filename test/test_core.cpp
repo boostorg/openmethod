@@ -135,8 +135,10 @@ static_assert(!detail::is_registry<not_a_policy>);
 
 BOOST_AUTO_TEST_CASE(test_init_type_ids) {
     type_id ids[2];
-    auto last = init_type_ids<default_registry, mp11::mp_list<a&, b&>>::fn(ids);
-    BOOST_TEST_REQUIRE(last - ids == 2);
+    init_type_ids<
+        mp11::mp_list<a&, b&>,
+        mp11::mp_list<default_registry, default_registry>,
+        mp11::mp_iota_c<2>>::fn(ids);
     BOOST_TEST_REQUIRE(ids[0] == type_id(&typeid(a)));
     BOOST_TEST_REQUIRE(ids[1] == type_id(&typeid(b)));
 }

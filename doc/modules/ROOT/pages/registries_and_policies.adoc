@@ -1,9 +1,11 @@
 
 [#registries_and_policies]
 
-Methods are scoped in a registry. A method can only reference classes in the
-same registry. If a class is used as a virtual parameter in methods using
-different registries, it must be registered with each of them.
+Methods are scoped in a registry. A virtual parameter dispatches in the
+method's registry, unless it carries another one - see <<mixing_registries>>
+below - and its classes must be registered in the registry it dispatches in. If
+a class is used as a virtual parameter in methods using different registries,
+it must be registered with each of them.
 
 Class templates cpp:use_classes[], cpp:method[], cpp:virtual_ptr[], and macros
 xref:reference:BOOST_OPENMETHOD.adoc[BOOST_OPENMETHOD] and
@@ -92,10 +94,10 @@ Every class has a registry affinity; a class that declares none has the
 _default_ affinity, `BOOST_OPENMETHOD_DEFAULT_REGISTRY`. A _declared_ affinity
 wins over a default one, so a method may mix a class that declares one with a
 class that does not, and lands in the declared registry. Two virtual parameters
-with *different* declared affinities are an error, as is a registry named on the
-method that contradicts one of its parameters, whatever its shape. A
-`virtual_ptr` parameter contributes the affinity of its class, not the registry
-it spells; the two must agree.
+with *different* declared affinities do not settle the method's registry
+between themselves: the method must name one. A `virtual_ptr` parameter
+contributes the affinity of its class, not the registry it spells; the two must
+agree.
 
 A class can also declare its affinity with a member typedef:
 
@@ -133,8 +135,9 @@ Either can be spelled: `virtual_<const Animal&, zoo_registry>` and
 `virtual_ptr<Animal, zoo_registry>` carry `zoo_registry` whatever `Animal`
 declares.
 
-A method that names a registry requires every parameter that carries one to
-carry that one; the parameters that adopt go along. A method that names none
+A method that names a registry may name any registry: a parameter that
+carries another one dispatches in it (see <<mixing_registries>>), and the
+parameters that adopt go along with the method. A method that names none
 requires the carriers to agree, and takes their registry - or
 `BOOST_OPENMETHOD_DEFAULT_REGISTRY` if no parameter carries one.
 
@@ -154,6 +157,92 @@ does not follow affinities: it registers into
 `BOOST_OPENMETHOD_DEFAULT_REGISTRY` unless its groups name a registry. Its
 groups may name a namespace, whose classes are only known during the scan that
 the choice of registry feeds.
+
+[#mixing_registries]
+### Mixing registries
+
+The virtual parameters of a method may belong to different registries. Each
+parameter dispatches in the registry it carries, and that registry identifies
+the classes with its own `rtti` policy: this is how a method dispatches on
+classes that use different RTTI systems.
+
+In the following example, the nodes of an expression tree carry their own type
+information, and use a custom RTTI policy, as described in
+xref:custom_rtti.adoc[Custom RTTI]. They are registered in a registry of their
+own:
+
+[source,c++]
+----
+include::example$mixed_registries.cpp[tag=nodes]
+----
+
+That registry has methods of its own. `value` evaluates a node, and takes
+nothing but nodes, so it is an ordinary single-registry method:
+
+[source,c++]
+----
+include::example$mixed_registries.cpp[tag=value]
+----
+
+The output formats use the standard RTTI, and are registered in the default
+registry:
+
+[source,c++]
+----
+include::example$mixed_registries.cpp[tag=formats]
+----
+
+`render` dispatches on both. Its first parameter carries `node_registry`,
+spelled on it; the second carries nothing, and adopts the method's registry:
+
+[source,c++]
+----
+include::example$mixed_registries.cpp[tag=method]
+----
+
+The method must name its registry here, even though it is the default one:
+without it, the method would take the registry of the only parameter that
+carries one, `node_registry`, and `Format` would adopt it. The method's
+registry may be any registry - it holds the method and its dispatch table, and
+need not be one that its parameters carry.
+
+A parameter that dispatches in another registry takes a slot in the v-tables of
+that registry, beside the slots of the methods that registry holds itself, and
+the method's registry fills it. The parameter's registry must therefore be
+initialized first:
+
+[source,c++]
+----
+include::example$mixed_registries.cpp[tag=initialize]
+----
+
+Initializing the method's registry first raises a
+cpp:parameter_registry_not_initialized[] error. So does calling the method
+after the parameter's registry has been initialized again, if the method's
+registry has the `runtime_checks` policy: the parameter's registry rebuilds its
+v-tables, and the method's registry has to be initialized again as well.
+Consequently, two registries cannot each have a method with a parameter that
+dispatches in the other: neither can be initialized first.
+
+Calls work as usual - `render` dispatching in both registries at once, `value`
+in `node_registry` alone:
+
+[source,c++]
+----
+include::example$mixed_registries.cpp[tag=call]
+----
+
+This prints `1 2 + 3 + = 6`, then `((1 + 2) + 3) = 6`.
+
+The type ids of different registries cannot be compared. Two registries may
+give the same id to different classes, or, with different `rtti` policies, ids
+of different kinds. The type ids in a cpp:bad_call[] error come each from the
+registry of its parameter, so an error handler that prints them must use that
+registry's `rtti` policy for each of them.
+
+Registries whose `rtti` policy derives from `deferred_static_rtti` mix with
+those whose policy does not: the type ids of a parameter are resolved when its
+own registry resolves them.
 
 A registry has a collection of _policies_. Each policy belongs to a policy
 category. A registry may contain at most one policy of each category. Policies
