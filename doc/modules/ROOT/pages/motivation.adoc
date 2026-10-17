@@ -9,6 +9,8 @@ expressions:
 include::{examplesdir}/ast_virtual_function.cpp[tag=content]
 ----
 
+link:https://godbolt.org/clientstate/eNrFU2FLwzAQ%2FStHBOlc57YqCu3mT1A%2FiF%2FsPmRprIE0GWlShFB%2Fu5etHV0HgiDYQpt79%2FLuXZvzpOZ1LbSqSQpvnogC38sYiKSqdLTkGBI2nRKEau0M2wMXQjHpCg4roWtrOK0ecpUrXDpm4VFjxucK8GqEsY5K%2BApgNAHfnuJCWWiodCHH0IWFNSyyXLXZQPCVGkG3kkN6ot3D0VFkgowm6pZ9qfMSuuHGiCAEhltnFDQZDNljA8%2FS1aPiAYoOcgG%2BBMnfbQxDxIjywwZLIRWFxyQ%2BgFGX%2Bo3FsP%2B6J00POn18dD82lJ0bGvf2Iio%2Bbm6P%2FV93V3%2FQXShaUaHCmTs9LkB90saw9Tf4ZP428Ps%2FCoWnmGqz7rNwXyCnZ9S2SFOmnYXVCvjRLgY5ybEoyWA%2Bh2SBHnIVJobpaickN8PhIuXyLglJvbPd3JEZKq9xypb3MHtKSLvBNP%2FkzFnd7%2B2lMBoLSbHdkzY%2Fi7YbvL8BAphHLw%3D%3D[Run this example on Compiler Explorer^]
+
 We want to add a new operation that prints the expression in postfix
 notation. How do we do it?
 
