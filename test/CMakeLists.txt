@@ -194,9 +194,9 @@ set_property(
     TEST boost_openmethod-compile_fail_fixture
     PROPERTY FIXTURES_SETUP openmethod_build_tree)
 
-function(openmethod_compile_fail_test testname fail_regex)
+function(openmethod_compile_fail_test testname source fail_regex)
     set(test_target "boost_openmethod-${testname}")
-    add_library(${test_target} STATIC EXCLUDE_FROM_ALL "${testname}.cpp")
+    add_library(${test_target} STATIC EXCLUDE_FROM_ALL "${source}")
     target_link_libraries(${test_target} PRIVATE Boost::openmethod)
     add_test(
         NAME "${test_target}"
@@ -221,8 +221,12 @@ function(openmethod_compile_fail_test testname fail_regex)
 endfunction()
 
 # Each compile_fail_*.cpp carries the diagnostic it expects in an
-# `// expected-error: <regex>` comment, next to the code that provokes it.
-file(GLOB compile_fail_cpp_files "compile_fail_*.cpp")
+# `// expected-error: <regex>` comment, next to the code that provokes it. The
+# troubleshooting page's examples of compilation errors are checked the same way,
+# so the messages it quotes cannot drift from the ones the library emits.
+file(GLOB compile_fail_cpp_files
+    "compile_fail_*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/../doc/modules/ROOT/examples/troubleshooting/compile_fail_*.cpp")
 
 foreach(compile_fail_cpp ${compile_fail_cpp_files})
     get_filename_component(testname ${compile_fail_cpp} NAME_WE)
@@ -238,7 +242,7 @@ foreach(compile_fail_cpp ${compile_fail_cpp_files})
         message(FATAL_ERROR
             "${testname}.cpp: the expected-error regex contains a `;`; use `.*`")
     endif()
-    openmethod_compile_fail_test(${testname} "${fail_regex}")
+    openmethod_compile_fail_test(${testname} ${compile_fail_cpp} "${fail_regex}")
 endforeach()
 
 if (TARGET Boost::dll)

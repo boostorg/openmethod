@@ -107,7 +107,8 @@ for local src in $(bmi2-sources)
 run mix_release_debug/main.cpp mix_release_debug/lib.cpp unit_test_framework ;
 
 
-for local src in [ glob compile_fail_*.cpp ]
+for local src in [ glob compile_fail_*.cpp
+    ../doc/modules/ROOT/examples/troubleshooting/compile_fail_*.cpp ]
 {
   compile-fail $(src) ;
 }

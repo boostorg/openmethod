@@ -97,6 +97,18 @@ silently unchecked test cannot slip through. So is a marker containing a `;`:
 and the test would pass on either half. Write `.*` in its place. The glob has no `CONFIGURE_DEPENDS` (matching the
 `test_*.cpp` glob above it), so a new file needs a manual re-run of `cmake`.
 
+The same glob, in both `test/CMakeLists.txt` and `test/Jamfile`, also picks up
+`doc/modules/ROOT/examples/troubleshooting/compile_fail_*.cpp`: the compile errors shown on the
+troubleshooting page are tests, so the messages it quotes cannot drift from the library's. They
+sit in a subdirectory because `doc/modules/ROOT/examples/CMakeLists.txt` builds every top-level
+`*.cpp` as an ordinary example. Match a gcc curly quote (`‘postfix’`) with `.*`, not `.`: it is
+three bytes, and the regex works on bytes.
+
+The tested sources behind the reference's `include:` markers live in
+`doc/modules/ROOT/examples/snippets/`, inside Antora's `examples` family, so that pages can include
+them too (`include::example$snippets/...`). Antora ignores any directory of a module that is not
+a family, so a page cannot reach files outside one.
+
 Where the expected wording differs across compilers, match the common substring and say why in a
 comment above the marker - `no matching` (clang/gcc "no matching function for call to" vs MSVC "no
 matching overloaded function found"), `deleted function` (gcc "use of a", clang "call to", MSVC

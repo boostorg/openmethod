@@ -1,0 +1,594 @@
+:toc: macro
+:toclevels: 2
+:toc-title: Contents
+
+[#troubleshooting]
+
+toc::[]
+
+OpenMethod catches most mistakes at compile time, and says what went wrong in a
+`static_assert`. The rest surface at run time: cpp:initialize[] reports
+inconsistencies in the registered classes, methods and overriders, and a
+method call reports a combination of arguments it cannot dispatch.
+
+This page walks through the mistakes that are made most often, then lists every
+diagnostic the library emits, with its cause and its remedy.
+
+## Compilation errors
+
+OpenMethod is a library that emulates a language feature. A mistake therefore
+surfaces as a failed template instantiation, and the compiler reports it
+together with the whole instantiation context, much of it inside the library.
+Where the library can tell what went wrong, it says so in a `static_assert`.
+Search the output for the message:
+
+[cols="1,3"]
+|===
+| Compiler | Diagnostic
+
+| gcc
+| `static assertion failed: _message_`
+
+| clang
+| `static assertion failed due to requirement '...': _message_`
+
+| MSVC
+| `error C2338: static assertion failed: '_message_'`
+|===
+
+Read the first one. The errors that follow it are usually its consequences.
+
+### The overrider matches no method
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_override_private_base.cpp[tag=content]
+----
+
+[source,console]
+----
+static assertion failed: BOOST_OPENMETHOD_OVERRIDE: cannot find 'postfix' method that accepts the same arguments as the overrider
+----
+
+xref:reference:BOOST_OPENMETHOD_OVERRIDE.adoc[BOOST_OPENMETHOD_OVERRIDE] does
+not take the method as an argument: it finds the method by overload resolution,
+looking for a method of the same name that can be called with the overrider's
+arguments. Here `Plus` derives from `Node` _privately_ - `class` makes the
+inheritance private unless told otherwise - so a `virtual_ptr<Plus>` does not
+convert to a `virtual_ptr<Node>`, and `postfix` cannot be called with one. The
+fix is `class Plus : public Node`.
+
+The other causes of the same message are:
+
+* The method is not declared, or not before the overrider.
+
+* The name is misspelled.
+
+* The class of a virtual parameter does not derive from the class in the same
+  position in the method, or does so ambiguously.
+
+* The overrider has more, or fewer, parameters than the method.
+
+* A virtual parameter is a reference in the method and a pointer in the
+  overrider, or the other way around.
+
+* The method takes a `virtual_` and the overrider a `virtual_ptr`. The
+  overrider takes what the method takes, without the `virtual_`: `Plus&` for
+  `virtual_<Node&>`.
+
+* The method takes a smart `virtual_ptr`, such as cpp:shared_virtual_ptr[],
+  and the overrider a plain `virtual_ptr`, or one over another kind of smart
+  pointer. A plain `virtual_ptr` in the method and a smart one in the overrider
+  has a message of its own: `different virtual_ptr<> pointer kinds`.
+
+* A virtual parameter of the overrider is `const` where the method's is not.
+  The opposite mistake has a message of its own: see
+  <<_the_overrider_discards_const>>.
+
+* A non-virtual parameter differs from the method's.
+
+* The method is in another namespace, and its arguments do not make it visible
+  through argument-dependent lookup. See xref:namespaces.adoc[Namespaces].
+
+When the overrider and the method differ only by their registry, the message
+says so instead: `registry mismatch`.
+
+### The overrider discards `const`
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_overrider_discards_const.cpp[tag=content]
+----
+
+[source,console]
+----
+static assertion failed: overrider parameter discards const qualifier
+----
+
+The method takes a `virtual_ptr<const Node>`: it promises not to modify the
+node. The overrider for `Plus` takes a `virtual_ptr<Plus>`, through which it
+could. When the method calls the overrider, it casts its argument to the type
+of the overrider's parameter, and a cast cannot remove `const`. The fix is
+`virtual_ptr<const Plus>`.
+
+The same applies to references and pointers: an overrider for
+`virtual_<const Node&>` takes a `const Plus&`. Clang follows the message with
+the error from the cast itself, which names the two classes:
+`dynamic_cast from 'const Node' to 'Plus &' casts away qualifiers`.
+
+### The class is not polymorphic
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_call_non_polymorphic.cpp[tag=content]
+----
+
+[cols="1,3"]
+|===
+| Compiler | Diagnostic
+
+| gcc
+| `no matching function for call to ‘postfix(Plus&, std::ostream&)’`
+
+| clang
+| `no matching function for call to 'postfix'`
+
+| MSVC
+| `+'postfix': no matching overloaded function found+`
+|===
+
+The method and the overrider compile; the call does not. An object passed as a
+virtual argument is converted to a cpp:virtual_ptr[], which needs the dynamic
+type of the object. The default registry finds it with `typeid`, which yields
+the dynamic type only for a polymorphic class, so `virtual_ptr` does not accept
+`Node` or classes derived from it, and the call matches no overload. There is
+no `static_assert` here, because the mistake is not in a declaration that the
+library sees: it is the absence of a conversion.
+
+The usual fix is to make the root of the hierarchy polymorphic by giving it a
+virtual destructor - which it needs anyway, if objects are ever deleted through
+a pointer to it. Alternatively, cpp:inplace_vptr_base[] gives a class a v-table
+pointer of its own, and a custom RTTI policy can find the dynamic type of
+non-polymorphic classes: see xref:custom_rtti.adoc[Custom RTTI].
+
+Where the caller knows the exact class of the object, cpp:final_virtual_ptr[]
+makes a `virtual_ptr` without looking for the dynamic type. It takes the static
+type of its argument instead, so it works with any registered class,
+polymorphic or not:
+
+[source,c++]
+----
+Plus plus;
+postfix(final_virtual_ptr(plus), std::cout);
+----
+
+Nothing checks that the static type is the dynamic type: with a non-polymorphic
+class, OpenMethod has no way to find out, even with runtime checks enabled.
+Passed a `Node&` that refers to a `Plus`, `final_virtual_ptr` makes a
+`virtual_ptr` to a `Node`, and the call dispatches on `Node`.
+
+The same mistake made with `virtual_` instead of `virtual_ptr`, as in
+`BOOST_OPENMETHOD(postfix, (virtual_<Node&>, std::ostream&), void)`, is caught
+when the method is declared, and reported with a message of its own:
+`virtual_<> parameter is not a polymorphic class`.
+
+## Runtime errors
+
+Errors detected at run time are passed to the registry's
+cpp:error_handler[] policy. The one in cpp:default_registry[] writes a short
+description of the error to `stderr`, then the program is terminated with
+`abort`. xref:error_handling.adoc[Error Handling] explains how to change that,
+for example to throw an exception.
+
+cpp:initialize[] always checks the classes, methods and overriders it is
+given, and a call that finds no overrider, or several ambiguous ones, is always
+reported. The other checks made during a call - for an unregistered class, a
+call before `initialize`, a misused cpp:final_virtual_ptr[] - are made only if
+the registry contains the cpp:runtime_checks[] policy. `default_registry`
+contains it if
+xref:reference:BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS.adoc[BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS]
+is defined, which is recommended in debug builds. The symbol changes the
+definition of `default_registry`, so it must be defined in all the translation
+units of the program, or in none.
+
+### Missing class registrations
+
+Every class that appears in a virtual parameter, in a method or in an
+overrider, must be registered with
+xref:reference:BOOST_OPENMETHOD_CLASSES.adoc[BOOST_OPENMETHOD_CLASSES]. So must
+the class of every object passed as a virtual argument. cpp:initialize[]
+detects the first two omissions:
+
+[source,c++]
+----
+include::example$snippets/errors_missing_class_method.cpp[tag=classes]
+
+include::example$snippets/errors_missing_class_method.cpp[tag=init,indent=0]
+----
+
+[source,c++]
+----
+include::example$snippets/errors_missing_class_overrider.cpp[tag=classes]
+
+include::example$snippets/errors_missing_class_overrider.cpp[tag=init,indent=0]
+----
+
+The third one can be detected only during the call, and only if runtime checks
+are enabled. Otherwise, the call reads a v-table pointer that was never set up,
+and the behavior is undefined: it may call the wrong overrider, or crash.
+
+[source,c++]
+----
+include::example$snippets/errors_missing_class_call.cpp[tag=classes]
+
+include::example$snippets/errors_missing_class_call.cpp[tag=use,indent=0]
+----
+
+### Missing base classes
+
+`initialize` learns about inheritance relationships from the class
+registrations: each lists a class together with its direct bases. Two classes
+that are registered separately are unrelated, as far as OpenMethod is
+concerned. If an overrider implies that one derives from the other,
+`initialize` reports it:
+
+[source,c++]
+----
+include::example$snippets/errors_missing_base.cpp[tag=classes]
+
+include::example$snippets/errors_missing_base.cpp[tag=init,indent=0]
+----
+
+The message names the base class first, then the derived class. The fix is to
+register the classes together:
+
+[source,c++]
+----
+include::example$snippets/errors_missing_class_call.cpp[tag=fix]
+----
+
+### Calls that cannot be dispatched
+
+A call reports `not implemented` if no overrider is applicable to the dynamic
+types of its virtual arguments, and `ambiguous` if several are, and none of
+them is more specialized than all the others. See
+xref:multiple_dispatch.adoc[Multiple Dispatch].
+
+Neither is a mistake by itself: a method may well be meant for some
+combinations of classes only. However, cpp:initialize[] already knows about
+every such combination, and says how many there are in its report. A program
+can check it, and set the `BOOST_OPENMETHOD_TRACE` environment variable to
+`1` to find out which methods and classes are involved:
+
+[source,c++]
+----
+include::example$snippets/initialize.cpp[tag=report,indent=0]
+----
+
+The trace lists the classes, the methods, their overriders and the dispatch
+tables that `initialize` builds from them. Its format is not specified, and
+may change from one version to the next.
+
+## Message index
+
+Each table quotes enough of a message to search for. Where a diagnostic is not
+a `static_assert`, the wording depends on the compiler, and the table quotes
+gcc.
+
+### Methods and overriders
+
+[cols="2,3"]
+|===
+| Message | Cause and remedy
+
+| `cannot find '...' method that accepts the same arguments as the overrider`
+| See <<_the_overrider_matches_no_method>> above.
+
+| `BOOST_OPENMETHOD_OVERRIDE: the overrider does not match the method`
+| The overrider was matched to a method, but one of its parameters is not
+  acceptable. It is accompanied by a more specific message, such as
+  `registry mismatch`.
+
+| `method has no virtual parameters`
+| A method needs at least one parameter declared with `virtual_` or
+  `virtual_ptr`. Without one, it is an ordinary function.
+
+| `virtual_<> parameter is not a polymorphic class`
+| See <<_the_class_is_not_polymorphic>> above.
+
+| `virtual_traits not specialized for type`
+| A `virtual_` parameter must be a reference (or a pointer, or a smart pointer
+  that OpenMethod supports): `virtual_<Node&>`, not `virtual_<Node>`.
+
+| `virtual_<> is not allowed in overriders`
+| An overrider takes the plain type: `Plus&` where the method takes
+  `virtual_<Node&>`.
+
+| `virtual_ptr<> is required in overrider in same position as in method`
+| Where the method takes a `virtual_ptr`, the overrider must take one too.
+
+| `different virtual_ptr<> reference categories`
+| A `virtual_ptr` parameter is passed by value in the method and by reference
+  in the overrider, or vice versa. Use the same form in both.
+
+| `overrider parameter discards const qualifier`
+| See <<_the_overrider_discards_const>> above.
+
+| `overrider return type is not convertible to method return type`
+| The overrider returns the method's return type, or a type that converts to
+  it, such as `Plus*` for `Node*`. If the method returns `void`, so does the
+  overrider.
+
+| `different virtual_ptr<> pointer kinds`
+| A `virtual_ptr` holds a plain pointer in the method and a smart pointer in
+  the overrider. Use the same kind in both: `virtual_ptr<Plus>` for
+  `virtual_ptr<Node>`, `shared_virtual_ptr<Plus>` for
+  `shared_virtual_ptr<Node>`.
+
+| `virtual_ptr category mismatch`
+| Follows one of the two messages above, from the code that calls the
+  overrider. Fix the first one.
+
+| `non-virtual parameter types must match exactly`
+| The non-virtual parameters of the overrider must have the same types as the
+  method's.
+
+| `method parameter must be an unambiguous accessible base of corresponding overrider parameter`
+| The same mistake as in <<_the_overrider_matches_no_method>>, detected by the
+  core API rather than by the macro.
+|===
+
+### Classes
+
+[cols="2,3"]
+|===
+| Message | Cause and remedy
+
+| `class must be an accessible unambiguous base, repeated inheritance is not supported`
+| A class inherits the same base more than once, without virtual inheritance.
+  OpenMethod cannot convert a pointer to the derived class to a pointer to that
+  base.
+
+| `use_classes: a class is incomplete`
+| A class is registered where it is only declared. Register it after its
+  definition.
+
+| `a registry must be the last element of the list`
+| A class list names its registry last:
+  `BOOST_OPENMETHOD_CLASSES(Animal, Dog, my_registry)`.
+|===
+
+### Virtual pointers and smart pointers
+
+[cols="2,3"]
+|===
+| Message | Cause and remedy
+
+| `no matching function for call to ‘boost::openmethod::virtual_ptr<_C_>::virtual_ptr(_C_&)’`
+| The class is not polymorphic, so `virtual_ptr` cannot find its dynamic type.
+  See <<_the_class_is_not_polymorphic>>.
+
+| `do not wrap an object that has a boost_openmethod_vptr overload in a virtual_ptr`
+| The object carries its own v-table pointer, for example because it derives
+  from cpp:inplace_vptr_base[]. Pass the object itself to methods.
+
+| `class must inherit from inplace_vptr_base`
+| A base class passed to `inplace_vptr_derived` is not itself an
+  `inplace_vptr` class.
+
+| `registry can be specified only for root classes`
+| Only the root of an `inplace_vptr` hierarchy names the registry; its derived
+  classes inherit it.
+
+| `virtual_ptr<> takes a class or a smart pointer: virtual_ptr<Node>, not virtual_ptr<Node*>`
+| `virtual_ptr` is a pointer already. Its argument is the class itself, or a
+  smart pointer to it.
+
+| `virtual_ptr<> must be passed by value or by const reference`
+| A method takes a `virtual_ptr` by non-const lvalue reference, or by rvalue
+  reference. Neither works as a virtual parameter: take it by value, which is
+  cheap, or by const reference.
+
+| `std::shared_ptr cannot be passed by non-const lvalue reference`
+| Pass a `std::shared_ptr` or a `shared_virtual_ptr` by value, or by const
+  reference.
+
+| `cast only allowed to a shared_ptr`
+| The method takes a `std::shared_ptr`, and the overrider takes something
+  else in the same position. It must take a `std::shared_ptr` too.
+
+| `a std::weak_ptr cannot be wrapped in a virtual_ptr; use weak_virtual_ptr`
+| Use cpp:weak_virtual_ptr[] to keep a weak reference together with its
+  v-table pointer.
+
+| `a weak pointer cannot be a virtual parameter; call lock() first`
+| A method cannot dispatch on an object that may no longer exist. Lock the
+  pointer, and pass the resulting shared pointer.
+|===
+
+### Registries
+
+See xref:registries_and_policies.adoc#registry_affinity[Registry Affinity] for
+how a class, a parameter and a method come to belong to a registry.
+
+[cols="2,3"]
+|===
+| Message | Cause and remedy
+
+| `registry mismatch`
+| A `virtual_ptr`, an overrider or a `virtual_any` belongs to a registry
+  other than the method's. The rest of the message, if any, says which.
+
+| `registry mismatch: the parameter belongs to another registry`
+| A virtual parameter names a registry, or its class declares an affinity for
+  one, and the method names another.
+
+| `registry mismatch: a class declares an affinity for another registry`
+| A class list names a registry, and one of the classes declares an affinity
+  for another.
+
+| `virtual parameters carry conflicting registries`
+| The virtual parameters of a method that names no registry belong to
+  different registries. Name the registry on the method, or make the
+  parameters agree.
+
+| `the classes carry conflicting registry affinities - list the registry to say which one is meant`
+| A class list mixes classes that declare different affinities, or a class
+  that declares one with a class that declares none. Add the registry at the
+  end of the list.
+
+| `cannot tell which registry this class belongs to`
+| The class inherits different affinities from several bases, or inherits one
+  from a private base. Declare its affinity in the class itself.
+
+| `boost_openmethod_registry must return a registry`
+| The affinity declaration names a type that is not a registry.
+
+| `this class declared its registry affinity after it was first mentioned`
+| A `virtual_ptr` of the class, or a method over it, was formed before the
+  affinity declaration was seen - through a forward declaration, or from
+  inside the class itself - and kept the default registry. Move the
+  declaration up, or name the registry where the class is first used.
+|===
+
+### `any` and type erasure
+
+See xref:interop_any.adoc[Interoperation with any] and
+xref:interop_type_erasure.adoc[Interoperation with Boost.TypeErasure].
+
+[cols="2,3"]
+|===
+| Message | Cause and remedy
+
+| `requires standard RTTI`
+| Dispatching on the content of an `any` keys on its `std::type_info`, so the
+  registry must use cpp:std_rtti[], or a policy derived from it.
+
+| `virtual_any must be passed by reference`
+| A `virtual_any` method parameter passed by value would copy the `any`, and
+  its content, on every call.
+
+| `an owning type_erasure::any must be passed by reference`
+| The same, for a Boost.TypeErasure `any` that owns its value. The reference
+  forms, `any<C, _self&>` and `any<C, const _self&>`, may be passed by value.
+
+| `do not wrap a virtual_any in a virtual_ptr`
+| A `virtual_any` already carries the v-table pointer of its content. Pass it
+  by reference instead.
+
+| `use of deleted function ‘void boost::openmethod::final_virtual_ptr(...)’`
+| cpp:final_virtual_ptr[] would use the v-table of the `any` class itself, not
+  that of its content. Use a `virtual_any` instead.
+
+| `no matching function for call to ‘...::cast<...>(...)’`
+| The overrider takes the content of the `any` by a kind of reference the
+  `any` cannot provide: a mutable reference to the content of a const `any`,
+  or an rvalue reference to the content of an lvalue `any`.
+|===
+
+### Policies
+
+[cols="2,3"]
+|===
+| Message | Cause and remedy
+
+| `must be copyable: initialize() saves it`
+| The `state` of a policy that defines `initialize` must be copy-assignable:
+  `initialize` saves it, and restores it if another policy throws.
+
+| `must be nothrow move-assignable`
+| The state is restored from a destructor, while an exception is in flight,
+  where throwing would terminate the program.
+
+| `two or more stateful policies in this registry share the same nested state type`
+| Each stateful policy must define its own `state` type.
+
+| `the type_hash policy must appear before vptr_vector in the registry's policy_list`
+| `vptr_vector` uses the hash computed by the `type_hash` policy, so it must
+  come after it in the registry's policy list.
+
+| `minimal_cover_hash needs BMI2`
+| Compile every translation unit with `-mbmi2`, or with a `-march` that
+  implies it, or use cpp:minimal_perfect_hash[], which is portable.
+
+| `This implementation requires that size_t and void* have the same size.`
+| The platform is not supported.
+|===
+
+### C++26 reflection
+
+[cols="2,3"]
+|===
+| Message | Cause and remedy
+
+| `order the groups as namespaces, classes, registries`
+| The groups passed to `register_classes` are out of order.
+
+| `a group holds one kind of reflection`
+| Put the namespaces, the classes and the registries in groups of their own.
+
+| `a group holds reflections of namespaces, classes or registries`
+| A group contains a reflection of something else, such as a function.
+
+| `a listed class must be complete`
+| A class listed explicitly is only declared, not defined.
+|===
+
+### Runtime messages
+
+Each message is written by the default error handler. The second column names
+the error type that a custom handler receives.
+
+[cols="2,1,3"]
+|===
+| Message | Error | Cause and remedy
+
+| `unknown class _C_`
+| cpp:missing_class[]
+| See <<_missing_class_registrations>>.
+
+| `missing base _B_ -<\| _D_`
+| cpp:missing_base[]
+| See <<_missing_base_classes>>.
+
+| `not implemented`
+| cpp:no_overrider[]
+| See <<_calls_that_cannot_be_dispatched>>.
+
+| `ambiguous`
+| cpp:ambiguous_call[]
+| See <<_calls_that_cannot_be_dispatched>>.
+
+| `not initialized`
+| cpp:not_initialized[]
+| A method was called before cpp:initialize[]. Detected only with runtime
+  checks; otherwise the behavior is undefined.
+
+| `invalid call to final construct: static type = _S_, dynamic type = _D_`
+| cpp:final_error[]
+| cpp:final_virtual_ptr[] was given an object whose dynamic type is not its
+  static type. Detected only with runtime checks.
+
+| `conflicting definitions of _R_`
+| cpp:odr_violation[]
+| `BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS` is defined in some translation
+  units and not in others, so `default_registry` has several definitions.
+
+| `could not find hash factors after _N_ attempts using up to _M_ buckets`
+| `fast_perfect_hash::search_error`
+| cpp:fast_perfect_hash[] could not build a collision-free table for the
+  registered type ids. Use another `type_hash` policy, such as
+  cpp:minimal_perfect_hash[].
+
+| `could not place _N_ type ids after trying _M_ multipliers`
+| `minimal_perfect_hash::search_error`
+| The same, for cpp:minimal_perfect_hash[].
+
+| `+could not place N type ids in a table of up to 2^B slots+`
+| `two_level_hash::search_error`
+| The same, for cpp:two_level_hash[].
+
+| `the smallest bit cover of _N_ type ids is _B_ bits wide, more than the _M_ allowed`
+| `minimal_cover_hash::too_many_bits`
+| Increase the limit, or use another `type_hash` policy.
+|===
