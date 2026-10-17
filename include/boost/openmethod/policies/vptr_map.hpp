@@ -111,7 +111,7 @@ class vptr_map : public vptr {
         //! @return A reference to the v-table pointer for `Class`.
         template<class Class>
         static auto dynamic_vptr(const Class& arg) -> const vptr_type& {
-            return vptr(Registry::rtti::dynamic_type(arg));
+            return vptr(detail::dynamic_type_of<Registry>(arg));
         }
 
         //! Returns a *reference* to a v-table pointer for a type.

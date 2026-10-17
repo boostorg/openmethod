@@ -1,0 +1,33 @@
+#  Boost.OpenMethod Library - implicit_shared_libraries/named_static_rtti Jamfile
+#
+#  Copyright 2017-2026 Jean-Louis Leroy
+#
+#  Distributed under the Boost Software License, Version 1.0.
+#  See accompanying file LICENSE_1_0.txt or copy at
+#  http://www.boost.org/LICENSE_1_0.txt
+
+# named_static_rtti shared across an implicitly linked library: the library and
+# the executable have different type_ids for the same class, and the registry
+# merges them by name. See main.cpp.
+#
+#   test executable  ──linked──▶  lib (owns and exports the registry state)
+#
+# <local-visibility>global is deliberately NOT set: hidden visibility, b2's
+# default, is the configuration under test. At global visibility, ELF unifies
+# the type_ids across modules, and there is nothing to merge.
+
+import testing ;
+
+lib boost_openmethod-isl_named_static_rtti_lib
+    : lib.cpp
+    : <link>shared
+    ;
+
+run main.cpp
+    boost_openmethod-isl_named_static_rtti_lib
+    /boost/test//boost_unit_test_framework/<warnings>off/<link>static
+    :
+    :
+    : <link>shared
+    : implicit_shared_libraries_named_static_rtti
+    ;

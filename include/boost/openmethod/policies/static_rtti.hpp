@@ -19,6 +19,13 @@ namespace boost::openmethod::policies {
 //! disabled. `virtual_ptr` must be constructed using @ref final_virtual_ptr (or
 //! its equivalents for smart pointers).
 //!
+//! Each module of a program has its own copy of those variables, unless the
+//! dynamic linker merges them, which it does not do on Windows, nor for symbols
+//! with hidden visibility. A class used by several modules then has one
+//! `type_id` per module, and the registry takes the copies for unrelated
+//! classes. Use @ref named_static_rtti in a program that shares a registry
+//! across modules.
+//!
 //! @par Example
 //!
 //! Selecting the policy. The registry is declared before
@@ -50,7 +57,7 @@ struct static_rtti : rtti {
         //! Returns the @ref type_id of `Class`.
         //!
         //! @tparam Class A class.
-        template<typename T>
+        template<class Class>
         static auto static_type() -> type_id {
             static char id;
 

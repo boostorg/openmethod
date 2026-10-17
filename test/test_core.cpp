@@ -261,7 +261,7 @@ struct Animal {
     friend auto boost_openmethod_vptr(const Animal&, void*) -> vptr_type;
 };
 
-static_assert(detail::has_vptr_fn<Animal, default_registry>);
+static_assert(detail::has_adl_vptr<Animal, default_registry>);
 
 } // namespace TEST_NS
 
@@ -274,8 +274,8 @@ struct Animal {
         -> vptr_type;
 };
 
-static_assert(detail::has_vptr_fn<Animal, test_registry>);
-static_assert(!detail::has_vptr_fn<Animal, default_registry>);
+static_assert(detail::has_adl_vptr<Animal, test_registry>);
+static_assert(!detail::has_adl_vptr<Animal, default_registry>);
 
 // The hook serves dispatch (method::vptr), not virtual_ptr: acquire_vptr
 // rejects classes with a boost_openmethod_vptr overload at compile time -

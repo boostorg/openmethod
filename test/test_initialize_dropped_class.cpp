@@ -105,11 +105,9 @@ struct small_rtti : policies::rtti {
 
         template<typename T>
         static auto dynamic_type(const T& obj) -> type_id {
-            if constexpr (is_polymorphic<T>) {
-                return type_id(obj.type);
-            } else {
-                return type_id(other_static_type<T>());
-            }
+            static_assert(is_polymorphic<T>);
+
+            return type_id(obj.type);
         }
     };
 };

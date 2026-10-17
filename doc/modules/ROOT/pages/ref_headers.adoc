@@ -164,8 +164,13 @@ is defined. That policy needs no header - see above.
 
 ### link:{headers-url}/boost/openmethod/policies/static_rtti.hpp[<boost/openmethod/policies/static_rtti.hpp>]
 
-Provides a minimal implementation of the `rtti` policy that does not depend on
-standard RTTI.
+Provides cpp:static_rtti[], a minimal implementation of the `rtti` policy that
+does not depend on standard RTTI.
+
+### link:{headers-url}/boost/openmethod/policies/named_static_rtti.hpp[<boost/openmethod/policies/named_static_rtti.hpp>]
+
+Provides cpp:named_static_rtti[], a variant of cpp:static_rtti[] that works
+across shared libraries.
 
 ### link:{headers-url}/boost/openmethod/policies/throw_error_handler.hpp[<boost/openmethod/policies/throw_error_handler.hpp>]
 

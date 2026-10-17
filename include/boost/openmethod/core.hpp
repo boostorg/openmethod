@@ -1003,12 +1003,19 @@ struct is_virtual_ptr_aux<const virtual_ptr<Class, Registry, void>&> :
 template<typename T>
 constexpr bool is_virtual_ptr = detail::is_virtual_ptr_aux<T>::value;
 
+// Whether `boost_openmethod_vptr`, the customization point found by ADL, yields
+// a v-table pointer for `Class` in `Registry`. The class provides it, as
+// `inplace_vptr_base` does; the catch-all `boost_openmethod_vptr(...)` makes
+// the question safe to ask of any class.
 template<class Class, class Registry>
-constexpr bool has_vptr_fn = std::is_same_v<
+constexpr bool has_adl_vptr = std::is_same_v<
     decltype(boost_openmethod_vptr(
         std::declval<const Class&>(), std::declval<Registry*>())),
     vptr_type>;
 
+// `has_vptr<Traits, Arg>`: whether `Traits::vptr(arg)` exists. That is how a
+// `virtual_traits` specialization yields a v-table pointer, for a type that
+// cannot carry an ADL overload of its own, such as `std::any`.
 BOOST_OPENMETHOD_DETAIL_HAS_STATIC_FN(vptr);
 
 template<class Registry, class ArgType>
@@ -1018,7 +1025,7 @@ decltype(auto) acquire_vptr(const ArgType& arg) {
     // to the v-table pointer. The hook also returns the vptr by value,
     // which indirect registries cannot store (see box_vptr).
     static_assert(
-        !has_vptr_fn<ArgType, Registry>,
+        !has_adl_vptr<ArgType, Registry>,
         "do not wrap an object that has a boost_openmethod_vptr overload "
         "in a virtual_ptr; call methods directly on the object");
 
@@ -1127,7 +1134,8 @@ inline auto final_virtual_ptr(Arg&& obj) {
 
         // check that dynamic type == static type
         auto static_type = Registry::rtti::template static_type<Class>();
-        auto dynamic_type = Registry::rtti::dynamic_type(Traits::peek(obj));
+        auto dynamic_type =
+            detail::dynamic_type_of<Registry>(Traits::peek(obj));
 
         // Equal type_ids settle it, and that is the common case: both come
         // from this module. Only when they differ is type_index needed, because
@@ -2256,34 +2264,86 @@ using overrider_virtual_types = boost::mp11::mp_remove<
         MethodParameters, OverriderParameters>,
     void>;
 
-template<class Method, class Rtti, std::size_t Index>
+// The class of an object, found from its v-table pointer, for an rtti policy
+// that cannot tell the dynamic type. Used only to report an error.
+//
+// The object's own class always matches, because the v-table pointer came from
+// its `static_vptr`, so a single match is the answer. Another class may match
+// as well: a v-table whose leading slots are unused is pointed to before its
+// start, possibly at the start of another class' v-table. Then `declared` is
+// the answer: it is less precise, but true.
+template<class Registry>
+auto class_of_vptr(vptr_type vptr, type_id declared) -> type_id {
+    using rtti = typename Registry::rtti;
+
+    if (!vptr) {
+        return declared;
+    }
+
+    // `found` is only meaningful once `matched` is set: a `type_id` is opaque,
+    // and a policy may well use a null one.
+    type_id found = declared;
+    bool matched = false;
+
+    for (auto& ci : Registry::state().classes) {
+        if (*ci.static_vptr != vptr) {
+            continue;
+        }
+
+        if (!matched) {
+            found = ci.type;
+            matched = true;
+        } else if (rtti::type_index(ci.type) != rtti::type_index(found)) {
+            return declared;
+        }
+    }
+
+    return found;
+}
+
+template<class Method, class Registry, std::size_t Index>
 struct init_bad_call {
     template<typename Arg, typename... Args>
     static auto fn(bad_call& error, const Arg& arg, const Args&... args) {
+        using rtti = typename Registry::rtti;
+
         if constexpr (Index == 0u) {
-            error.method = Rtti::template static_type<Method>();
+            error.method = rtti::template static_type<Method>();
             error.arity = sizeof...(args) + 1;
         }
 
         type_id arg_type_id;
 
         if constexpr (is_virtual_ptr<Arg>) {
-            arg_type_id = Rtti::dynamic_type(*arg);
+            using Class = std::remove_cv_t<typename Arg::element_type>;
+
+            if constexpr (rtti::template is_polymorphic<Class>) {
+                arg_type_id = dynamic_type_of<Registry>(*arg);
+            } else {
+                arg_type_id = class_of_vptr<Registry>(
+                    arg.vptr(), rtti::template static_type<Class>());
+            }
+        } else if constexpr (rtti::template is_polymorphic<Arg>) {
+            arg_type_id = dynamic_type_of<Registry>(arg);
+        } else if constexpr (has_adl_vptr<Arg, Registry>) {
+            arg_type_id = class_of_vptr<Registry>(
+                boost_openmethod_vptr(arg, static_cast<Registry*>(nullptr)),
+                rtti::template static_type<Arg>());
         } else {
-            arg_type_id = Rtti::dynamic_type(arg);
+            arg_type_id = rtti::template static_type<Arg>();
         }
 
         error.types[Index] = arg_type_id;
 
-        init_bad_call<Method, Rtti, Index + 1>::fn(error, args...);
+        init_bad_call<Method, Registry, Index + 1>::fn(error, args...);
     }
 
     static auto fn(bad_call&) {
     }
 };
 
-template<class Method, class Rtti>
-struct init_bad_call<Method, Rtti, bad_call::max_types> {
+template<class Method, class Registry>
+struct init_bad_call<Method, Registry, bad_call::max_types> {
     static auto fn(bad_call&) {
     }
 };
@@ -2326,7 +2386,7 @@ struct parameter_traits<const virtual_ptr<Class, Registry, void>&, Registry> :
 // indentation, and because each route is worth naming.
 template<typename T, class Registry>
 constexpr bool has_vptr_source =
-    has_vptr_fn<virtual_type<T, Registry>, Registry> ||
+    has_adl_vptr<virtual_type<T, Registry>, Registry> ||
     has_vptr<
         virtual_traits<T, Registry>,
         decltype(virtual_traits<T, Registry>::peek(std::declval<T>()))> ||
@@ -2946,7 +3006,7 @@ BOOST_FORCEINLINE auto method<Id, ReturnType(Parameters...), Registry>::vptr(
     } else {
         decltype(auto) obj = virtual_traits<MethodArg, Registry>::peek(arg);
 
-        if constexpr (detail::has_vptr_fn<decltype(obj), Registry>) {
+        if constexpr (detail::has_adl_vptr<decltype(obj), Registry>) {
             return boost_openmethod_vptr(obj, static_cast<Registry*>(nullptr));
         } else if constexpr (
             detail::has_vptr<
@@ -3065,7 +3125,7 @@ method<Id, ReturnType(Parameters...), Registry>::fn_not_implemented(
 
     if constexpr (Registry::has_error_handler) {
         no_overrider error;
-        detail::init_bad_call<method, rtti, 0u>::fn(
+        detail::init_bad_call<method, Registry, 0u>::fn(
             error,
             detail::parameter_traits<Parameters, Registry>::peek(args)...);
         Registry::error_handler::error(error);
@@ -3083,7 +3143,7 @@ method<Id, ReturnType(Parameters...), Registry>::fn_ambiguous(
 
     if constexpr (Registry::has_error_handler) {
         ambiguous_call error;
-        detail::init_bad_call<method, rtti, 0u>::fn(
+        detail::init_bad_call<method, Registry, 0u>::fn(
             error,
             detail::parameter_traits<Parameters, Registry>::peek(args)...);
         Registry::error_handler::error(error);

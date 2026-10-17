@@ -59,4 +59,7 @@ LIB_API auto lib_speak(boost::openmethod::virtual_ptr<Animal> animal) -> const
 
 LIB_API auto lib_make_dog() -> boost::openmethod::unique_virtual_ptr<Animal>;
 
+// An instance of the library's own Stray, a class in an anonymous namespace.
+LIB_API auto lib_make_stray() -> boost::openmethod::unique_virtual_ptr<Animal>;
+
 #endif

@@ -46,18 +46,25 @@ struct std_rtti : rtti {
 };
 ----
 
-* `is_polymorphic` is used to check if a class is polymorphic.
+* `is_polymorphic` tells whether `dynamic_type` can read the class of an
+  object of a class, which is what makes the class usable as `virtual_<T&>`
+  and lets a `virtual_ptr` be built from a reference or a pointer. It need not
+  agree with C{plus}{plus}: see the example below.
   This template is required.
 
 * `static_type` is called during class registration, by
-    `virtual_ptr`{empty}s "final" constructs.
-    It is also called to set `bad_call::method`.
+    `virtual_ptr`{empty}s "final" constructs, and to name a class in an error
+    or a trace. It is called for every type the library has to name, not only
+    registered classes: a method, and each argument of a cpp:bad_call[],
+    including the arguments that are not classes at all, such as an `int` or a
+    `std::ostream&`.
     This function is required.
 
-* `dynamic_type` is used to read the dynamic type of a virtual argument.
-  If only the `virtual_ptr` "final" constructs are used, or if
-  cpp:boost_openmethod_vptr[] is provided for all the classes in the registry,
-  this function can be omitted.
+* `dynamic_type` reads the class of a virtual argument. The library calls it
+  for a class that `is_polymorphic` deems polymorphic, and for no other, so a
+  policy that deems no class polymorphic - like
+  cpp:policies::static_rtti[] - may omit it. Providing `is_polymorphic` as
+  `true` without it is an error, and is diagnosed as one.
 
 * `type_name` writes a representation of a type to a
    `LightweightOutputStream`.
@@ -65,10 +72,15 @@ struct std_rtti : rtti {
    This function is optional; if it is not provided, _type_ is rendered as
    "type_id(_type_)".
 
-* `type_index` returns an object that _uniquely_ identifies a class.
+* `type_index` returns an object that identifies a class across modules.
     Some forms of RTTI (most notably, C{plus}{plus}'s `typeid` operator) do not
     guarantee that the type information object for a class is unique within
-    the same program.
+    the same program: there is typically one per module. The key must compare
+    equal for all of them, and differ for two different classes - including
+    two classes with the same name in different translation units, such as
+    classes defined in anonymous namespaces, so a name alone is not enough.
+    The key is kept in an ordered and in a hashed container, so it must
+    support `==`, `<` and `std::hash`.
     This function is optional; if not provided, `type` is assumed to be
     unique, and used as is.
 

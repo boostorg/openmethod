@@ -70,8 +70,9 @@ auto sstr(const std::unordered_set<T>& container) {
 template<typename T, typename Compiler>
 auto get_class(const Compiler& comp) {
     // Key through the rtti policy rather than with a raw typeid: the policy
-    // decides what identifies a class (std_rtti uses the mangled name, see
-    // std_rtti::type_index), and only it knows how to derive that from a type.
+    // decides what identifies a class (see std_rtti::type_index, whose key
+    // type depends on the platform), and only it knows how to derive that
+    // from a type.
     return comp.class_map.at(
         boost::openmethod::default_registry::rtti::type_index(&typeid(T)));
 }

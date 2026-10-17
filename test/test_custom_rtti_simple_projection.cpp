@@ -58,12 +58,9 @@ struct custom_rtti : boost::openmethod::policies::rtti {
 
         template<typename T>
         static auto dynamic_type(const T& obj) {
-            if constexpr (is_polymorphic<T>) {
-                return obj.type;
-            } else {
-                return static_cast<const char*>(
-                    &non_polymorphic_static_type_storage<T>);
-            }
+            static_assert(is_polymorphic<T>);
+
+            return obj.type;
         }
 
         template<class Stream>

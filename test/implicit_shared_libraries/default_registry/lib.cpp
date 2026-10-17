@@ -22,12 +22,26 @@ BOOST_OPENMETHOD_INSTANTIATE_REGISTRY(boost::openmethod::default_registry);
 
 BOOST_OPENMETHOD_TEST_CLASSES(Animal, Dog, Cat);
 
+namespace {
+
+// main.cpp has a Stray of its own, with the same name. They are different
+// classes, and must not be merged.
+struct Stray : Animal {};
+
+} // namespace
+
+BOOST_OPENMETHOD_CLASSES(Animal, Stray);
+
 BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Animal>), const char*) {
     return "?";
 }
 
 BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Dog>), const char*) {
     return "woof";
+}
+
+BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Stray>), const char*) {
+    return "library stray";
 }
 
 auto lib_speak_method_type_id() -> const void* {
@@ -45,6 +59,10 @@ auto lib_speak(virtual_ptr<Animal> animal) -> const char* {
 
 auto lib_make_dog() -> unique_virtual_ptr<Animal> {
     return make_unique_virtual<Dog>();
+}
+
+auto lib_make_stray() -> unique_virtual_ptr<Animal> {
+    return make_unique_virtual<Stray>();
 }
 
 BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

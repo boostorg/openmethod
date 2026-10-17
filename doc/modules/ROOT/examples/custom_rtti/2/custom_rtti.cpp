@@ -65,11 +65,9 @@ struct custom_rtti : boost::openmethod::policies::deferred_static_rtti {
 
         template<typename T>
         static auto dynamic_type(const T& obj) {
-            if constexpr (is_polymorphic<T>) {
-                return reinterpret_cast<type_id>(obj.type);
-            } else {
-                return static_type<T>();
-            }
+            static_assert(is_polymorphic<T>);
+
+            return reinterpret_cast<type_id>(obj.type);
         }
     };
 };

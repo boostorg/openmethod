@@ -20,9 +20,22 @@ using namespace boost::openmethod;
 
 BOOST_OPENMETHOD_TEST_CLASSES(Animal, Dog, Cat);
 
+namespace {
+
+// Not the library's Stray, although both have the same name.
+struct Stray : Animal {};
+
+} // namespace
+
+BOOST_OPENMETHOD_CLASSES(Animal, Stray);
+
 // Registered by the executable; the library knows nothing about it.
 BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Cat>), const char*) {
     return "meow";
+}
+
+BOOST_OPENMETHOD_OVERRIDE(speak, (virtual_ptr<Stray>), const char*) {
+    return "executable stray";
 }
 
 // The library is linked implicitly, so its static constructors have already run
@@ -52,8 +65,9 @@ BOOST_AUTO_TEST_CASE(shared_registry_state) {
             << (std::type_index(exe_ti) == std::type_index(lib_ti)));
         // The invariant that matters is the *policy* key: that is what
         // augment_methods() groups by. std::type_index deliberately is NOT
-        // asserted - it is false on Darwin, which is the whole reason
-        // std_rtti::type_index compares names instead.
+        // asserted - libc++ compares the type_info of a class with hidden
+        // visibility by address, which is why std_rtti::type_index uses
+        // std::type_index only with MSVC, and with GCC and libstdc++.
         bool method_identity_agrees =
             default_registry::rtti::type_index(exe_id) ==
             default_registry::rtti::type_index(lib_id);
@@ -80,6 +94,20 @@ BOOST_AUTO_TEST_CASE(shared_registry_state) {
     // A plain Animal falls back to the library's base overrider.
     auto animal = make_unique_virtual<Animal>();
     BOOST_TEST(std::string(lib_speak(animal)) == "?");
+}
+
+// Two classes in anonymous namespaces, one per module, with the same name.
+BOOST_AUTO_TEST_CASE(classes_in_anonymous_namespaces_stay_apart) {
+    initialize();
+
+    auto lib_stray = lib_make_stray();
+    auto exe_stray = make_unique_virtual<Stray>();
+
+    BOOST_TEST(lib_stray.vptr() != exe_stray.vptr());
+    BOOST_TEST(std::string(speak(lib_stray)) == "library stray");
+    BOOST_TEST(std::string(lib_speak(lib_stray)) == "library stray");
+    BOOST_TEST(std::string(speak(exe_stray)) == "executable stray");
+    BOOST_TEST(std::string(lib_speak(exe_stray)) == "executable stray");
 }
 
 BOOST_OPENMETHOD_TEST_REGISTER_CLASSES();

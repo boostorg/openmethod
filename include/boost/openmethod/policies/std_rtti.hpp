@@ -7,12 +7,67 @@
 #define BOOST_OPENMETHOD_POLICY_STD_RTTI_HPP
 
 #include <boost/openmethod/preamble.hpp>
+#include <boost/openmethod/detail/type_key.hpp>
+
+#include <string_view>
 
 #ifndef BOOST_NO_RTTI
-#include <string_view>
+#include <typeindex>
 #include <typeinfo>
 #include <boost/core/demangle.hpp>
 #endif
+
+// Whether std::type_index identifies classes the way initialize() needs: equal
+// for the copies of one class in different modules, and different for two
+// classes with internal linkage that have the same name. See
+// std_rtti::type_index.
+//
+// _MSC_VER, not BOOST_MSVC: what matters is MSVC's standard library, which
+// clang-cl uses too.
+#if defined(_MSC_VER) || (defined(BOOST_GCC) && defined(__GLIBCXX__))
+#define BOOST_OPENMETHOD_DETAIL_STD_TYPE_INDEX 1
+#else
+#define BOOST_OPENMETHOD_DETAIL_STD_TYPE_INDEX 0
+#endif
+
+namespace boost::openmethod::detail {
+
+// Whether a type name mangled per the Itanium C++ ABI designates a type that
+// a different type, in another translation unit, may share the name of. Only
+// the marks that cannot occur in an identifier are recognized, so the answer
+// does not depend on parsing the name:
+//
+//   _GLOBAL__N   the name of an anonymous namespace (a reserved identifier)
+//   $_<digit>    Clang's name for an unnamed type or a lambda: `$_0`
+//   .            GCC's name for an unnamed type: `._anon_0`
+//
+// A bare `$` is not one of them: GCC and Clang accept it in an identifier
+// unless `-fno-dollars-in-identifiers` is given, so a class named `Foo$Impl`
+// would be taken for an unnamed one and never merged across modules.
+//
+// A class local to a static function, or a template instantiated with the
+// address of a static variable, is not recognized - as on MSVC, whose
+// decorated names do not tell those apart either.
+inline auto itanium_unnamed_mark(std::string_view name) -> bool {
+    for (
+        auto pos = name.find("$_"); pos != std::string_view::npos;
+        pos = name.find("$_", pos + 2)) {
+        auto next = pos + 2;
+
+        if (next < name.size() && name[next] >= '0' && name[next] <= '9') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+inline auto itanium_internal_linkage(std::string_view name) -> bool {
+    return name.find("_GLOBAL__N") != std::string_view::npos ||
+        name.find('.') != std::string_view::npos || itanium_unnamed_mark(name);
+}
+
+} // namespace boost::openmethod::detail
 
 namespace boost::openmethod::policies {
 
@@ -55,13 +110,16 @@ struct std_rtti : rtti {
 
         //! Returns the dynamic @ref type_id of an object.
         //!
-        //! Returns `&typeid(obj)`, cast to `type_id`.
+        //! Returns `&typeid(obj)`, cast to `type_id`. `Class` must be
+        //! polymorphic, or `typeid` would yield the static type.
         //!
         //! @tparam Class A registered class.
         //! @param obj A reference to an instance of `Class`.
         //! @return The type_id of `obj`'s class.
         template<class Class>
         static auto dynamic_type(const Class& obj) -> type_id {
+            static_assert(is_polymorphic<Class>);
+
             return &typeid(obj);
         }
 
@@ -79,33 +137,49 @@ struct std_rtti : rtti {
                 reinterpret_cast<const std::type_info*>(type)->name());
         }
 
-        //! Returns a key that uniquely identifies a class.
+        //! Returns a key that identifies a class across modules.
         //!
         //! C++ does *not* guarantee that there is a single instance of
         //! `std::type_info` per type: a class used by several modules of a
         //! program typically has one per module. `type_index` maps a `type_id`
         //! to a key that compares equal for all the type ids of one class,
         //! which is what @ref initialize uses to group the registrations coming
-        //! from different modules.
+        //! from different modules. The key also tells apart two classes with
+        //! the same name in different translation units, when they are defined
+        //! in anonymous namespaces, or are unnamed classes or lambdas.
         //!
-        //! The key is the *name*, not the address and not a `std::type_index`.
-        //! `std::type_index` would delegate to `std::type_info::operator==`,
-        //! and that is only as good as the platform's RTTI uniqueness:
-        //! libstdc++ falls back to comparing names, but libc++ on Darwin
-        //! compares uniquely-named RTTI by address. There, two modules'
-        //! `type_info` objects for the same type compare *unequal* unless the
-        //! symbol happens to be exported and coalesced by dyld - which, for a
-        //! template like `method<Id, Signature, Registry>`, requires every
-        //! template argument to have default visibility as well. Under
-        //! `-fvisibility=hidden` that is not the case, the copies are not
-        //! grouped, each module's method keeps its own overrider list, and
-        //! calls report @ref no_overrider. Comparing names sidesteps the
-        //! platform's uniqueness rules entirely.
+        //! The type of the key is unspecified; it supports `==`, `<` and
+        //! `std::hash`. With MSVC, and with GCC and libstdc++, it is a
+        //! `std::type_index`: their `std::type_info` equality compares names,
+        //! except where the name of a class is shared by another one, in a
+        //! different translation unit. Elsewhere it is not: libc++ compares the
+        //! `std::type_info` objects of a class with hidden visibility by
+        //! address, so the copies in different modules are unequal, and Clang
+        //! does not mark the classes with internal linkage for libstdc++. The
+        //! key is then the mangled name, plus the `type_id` if the mangled name
+        //! shows an anonymous namespace, an unnamed class, or a lambda.
+        //!
+        //! @warning Two classes with the same name, local to `static`
+        //! functions in different translation units, or two instantiations of
+        //! a template on the addresses of `static` variables with the same
+        //! name, may be taken for the same class.
         //!
         //! @param type A `type_id`.
-        //! @return The mangled name of the class identified by `type`.
-        static auto type_index(type_id type) -> std::string_view {
-            return reinterpret_cast<const std::type_info*>(type)->name();
+        //! @return A key identifying the class of `type`.
+        static auto type_index(type_id type) {
+            using namespace detail;
+
+            const auto& info = *reinterpret_cast<const std::type_info*>(type);
+
+#if BOOST_OPENMETHOD_DETAIL_STD_TYPE_INDEX
+            return std::type_index(info);
+#else
+            std::string_view name = info.name();
+
+            return type_key{
+                name, itanium_internal_linkage(name) ? type : nullptr
+            };
+#endif
         }
 
         //! Casts an object to a type.
