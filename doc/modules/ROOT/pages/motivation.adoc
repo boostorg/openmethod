@@ -9,8 +9,6 @@ expressions:
 include::{examplesdir}/ast_virtual_function.cpp[tag=content]
 ----
 
-link:https://godbolt.org/clientstate/eNrFU9FOgzAU%2FZWbmhjmmNvQaAKbn6A%2BGF9kD12p2KS0S2mJSYPf7u0GC2NPGhMhKb3nXM49F3o9qXldC61qksKbJ6LA5zIGIqkqHS05hoRNpwShWjvD9sCFUEy6gsNK6NoaTquHXOUKt45ZeNTI%2BFwBXo0w1lEJXwGMJuDbU1woCw2VLnAMXVhYwyLLVZsNBF%2BpEXQrOaQn2j0cHUUmmNFE3bYvdV5CN9wYEYTAcOuMgiaDYfbYwLN09ah4gKKDXIAvQfJ3G8MQMaL8sMFSoKKwTOIDGHXUTyyG96%2F7pOlBp4%2BP7seGsnND495eRMXHze2x%2F%2Bvu6g%2B6C0UrKlQ4c6fHBahP2hi2%2FgZX5m9Dfv9HofAUqTbrPgv3Beb0GbUt0pRpZ2G1An60i0FOcixKMpjPIVmgh1yFiWG62gnJzXC4SLm8SwIpxXaPb3Cvd7abQTLDKmucuOU9zJ4S0gaaf3LmrO51elmMfinabvD%2BBlDaSns%3D[Run this example on Compiler Explorer^]
-
 We want to add a new operation that prints the expression in postfix
 notation. How do we do it?
 
@@ -51,6 +49,8 @@ int main() {
     std::cout << " = " << e.value() << "\n"; // = 20
 }
 ----
+
+link:https://godbolt.org/clientstate/eNrNVMtu2zAQ%2FJUFCyRy7DysBClg2v2EtoeilyoHmmJcAjRp8CEEINRv71KmHEnJJemhkQGanF3Ozo4oRuKEc9JoR1bwKxJZ4%2F9yAUQxvQtsJ3BJ%2BHxOEHImWN4Bn6TmKtQC1tI4bwXbf6l0pXEauIevBiOx0oBPI60PTMGfBBYziO0Yl9pDw1RIMY4qPGzgho5zGiNrOGChR%2FlUOF%2BvVrnoGRg33tbSgY6fzEq2VQJWI0k9XJxqzzCjKfK0V%2FhSmWmEtTIRgRU%2BWA0NhfYdWgdExsF6PeDpqk4b%2Ba6CmzSRoOLIluAzUOLRL2CIWLn77VNrKVSkYbY4gkUOvaXVtP%2BqT5ofefr1swtv6%2F64KT0de78RU2k25hzOaa71SrQiMK9IPi1ZwtQT%2BtKTqb0%2F5F5M%2Fe2w%2F2fwxYcx%2BOJfDE5975nU6cMff3zAYtkuYBtvceTxrqXP5xrqyDDU0vxmRKwxp88QV6P%2BuQl%2BlkMnIGvfpAGn4uRrh1cojVC4voYSbvEs36HdGyhvUHWl00XHzf4glbDDO5HslvdlCiq57fAHnJuDz1cnucTiG7wol5%2Fh8ltJ2hQWT4IHb3qenhZX7yRtH%2FD3F%2F4S1Xc%3D[Run this example on Compiler Explorer^]
 
 If the classes are part of a small, self-contained program, this may be a
 reasonable solution.

@@ -16,11 +16,11 @@ The source is the tagged region the page includes - `tag=content` by default -
 so the reader gets exactly the code shown above the link.
 
 With `--base`, the link opens a diff instead: the base example in editor #1,
-the example in editor #2, the source diff between them, and the example's
-output.
+the example in editor #2, the diffs between their sources and between their
+disassemblies, and the example's output.
 
     dev/ce_link.py doc/modules/ROOT/examples/ast.cpp \\
-        --base doc/modules/ROOT/examples/ast_virtual_function.cpp
+        --base doc/modules/ROOT/examples/ast_virtual_function_2.cpp --base-tag all
 
 An example that includes a Boost header gets the Boost release that Compiler
 Explorer offers in its Libraries dropdown, not the headers of this tree.
@@ -38,6 +38,14 @@ from pathlib import Path
 COMPILER = "g162"  # x86-64 gcc 16.2
 OPTIONS = "-std=c++17 -O2"
 BOOST = "192"  # Boost 1.92.0, as Compiler Explorer names it
+FILTERS = {
+    "intel": True,
+    "demangle": True,
+    "labels": True,
+    "libraryCode": True,
+    "directives": True,
+    "commentOnly": True,
+}
 TAG_DIRECTIVE = re.compile(r"\s*// (tag|end)::\w+\[\]\s*$")
 
 
@@ -82,10 +90,28 @@ def component(name, **state):
 
 
 def diff_state(base, source):
+    def libs(source):
+        return [{"name": "boost", "ver": BOOST}] if uses_boost(source) else []
+
     def editor(id, source):
         return component("codeEditor", id=id, lang="c++", source=source)
 
-    libs = [{"name": "boost", "ver": BOOST}] if uses_boost(source) else []
+    def compiler(id, source):
+        return component(
+            "compiler",
+            id=id,
+            source=id,
+            lang="c++",
+            compiler=COMPILER,
+            libs=libs(source),
+            options=OPTIONS,
+            filters=FILTERS,
+        )
+
+    def diff(lhs, rhs, difftype):
+        return component(
+            "diff", lhs=lhs, rhs=rhs, lhsdifftype=difftype, rhsdifftype=difftype
+        )
 
     return {
         "content": [
@@ -101,25 +127,33 @@ def diff_state(base, source):
                                 "activeItemIndex": 1,
                                 "content": [editor(1, base), editor(2, source)],
                             },
-                            component(
-                                "executor",
-                                source=2,
-                                lang="c++",
-                                compiler=COMPILER,
-                                libs=libs,
-                                options=OPTIONS,
-                                compilationPanelShown=True,
-                                compilerOutShown=True,
-                            ),
+                            {
+                                "type": "stack",
+                                "activeItemIndex": 2,
+                                "content": [
+                                    compiler(1, base),
+                                    compiler(2, source),
+                                    component(
+                                        "executor",
+                                        source=2,
+                                        lang="c++",
+                                        compiler=COMPILER,
+                                        libs=libs(source),
+                                        options=OPTIONS,
+                                        compilationPanelShown=True,
+                                        compilerOutShown=True,
+                                    ),
+                                ],
+                            },
                         ],
                     },
-                    component(
-                        "diff",
-                        lhs="source_1",
-                        rhs="source_2",
-                        lhsdifftype=16,  # DiffType.Source
-                        rhsdifftype=16,
-                    ),
+                    {
+                        "type": "column",
+                        "content": [
+                            diff("source_1", "source_2", 16),  # DiffType.Source
+                            diff(1, 2, 0),  # DiffType.ASM
+                        ],
+                    },
                 ],
             }
         ]
@@ -142,11 +176,13 @@ def main():
     parser.add_argument("example", type=Path)
     parser.add_argument("--tag", default="content")
     parser.add_argument("--base", type=Path, help="open a diff against this example")
+    parser.add_argument("--base-tag", help="the tag of the base (default: --tag)")
     args = parser.parse_args()
     source = tagged_region(args.example, args.tag)
 
     if args.base:
-        state = diff_state(tagged_region(args.base, args.tag), source)
+        base = tagged_region(args.base, args.base_tag or args.tag)
+        state = diff_state(base, source)
     else:
         state = session_state(source)
 
