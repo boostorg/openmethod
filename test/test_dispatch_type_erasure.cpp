@@ -311,8 +311,8 @@ using dispatchable_ref = te::any<Dispatchable, te::_self&>;
 
 // the intrinsic hook is found for every any, so dispatch prefers it
 // over the vptr policy's hash lookup
-static_assert(detail::has_vptr_fn<dispatchable, default_registry>);
-static_assert(detail::has_vptr_fn<dispatchable_ref, default_registry>);
+static_assert(detail::has_adl_vptr<dispatchable, default_registry>);
+static_assert(detail::has_adl_vptr<dispatchable_ref, default_registry>);
 
 // `Dog` is registered both by the `name` overrider below and by binding
 // (class dedup)
@@ -377,8 +377,8 @@ using dispatchable = te::any<Dispatchable>;
 // The hook is keyed on the registry the concept names: it is found for
 // `indirect_registry`, and for no other - a mismatch would fall back on the
 // vptr policy's hash lookup, silently losing the constant-time property.
-static_assert(detail::has_vptr_fn<dispatchable, indirect_registry>);
-static_assert(!detail::has_vptr_fn<dispatchable, default_registry>);
+static_assert(detail::has_adl_vptr<dispatchable, indirect_registry>);
+static_assert(!detail::has_adl_vptr<dispatchable, default_registry>);
 
 using name_method = method<
     struct name_id, std::string(virtual_<const dispatchable&>),
