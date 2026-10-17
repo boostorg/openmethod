@@ -14,11 +14,22 @@ regenerated from the example whenever the example changes:
 
 The source is the tagged region the page includes - `tag=content` by default -
 so the reader gets exactly the code shown above the link.
+
+With `--base`, the link opens a diff instead: the base example in editor #1,
+the example in editor #2, the source diff between them, and the example's
+output.
+
+    dev/ce_link.py doc/modules/ROOT/examples/ast.cpp \\
+        --base doc/modules/ROOT/examples/ast_virtual_function.cpp
+
+An example that includes a Boost header gets the Boost release that Compiler
+Explorer offers in its Libraries dropdown, not the headers of this tree.
 """
 
 import argparse
 import base64
 import json
+import re
 import sys
 import urllib.parse
 import zlib
@@ -26,6 +37,8 @@ from pathlib import Path
 
 COMPILER = "g162"  # x86-64 gcc 16.2
 OPTIONS = "-std=c++17 -O2"
+BOOST = "192"  # Boost 1.92.0, as Compiler Explorer names it
+TAG_DIRECTIVE = re.compile(r"\s*// (tag|end)::\w+\[\]\s*$")
 
 
 def tagged_region(path, tag):
@@ -37,23 +50,83 @@ def tagged_region(path, tag):
     if len(starts) != 1 or len(ends) != 1 or starts[0] > ends[0]:
         sys.exit(f"{path}: expected exactly one `{begin}` ... `{end}`")
 
-    return "".join(lines[starts[0] + 1 : ends[0]])
+    # Like Asciidoctor, drop the directives of the tags nested in the region.
+    region = lines[starts[0] + 1 : ends[0]]
+
+    return "".join(line for line in region if not TAG_DIRECTIVE.match(line))
 
 
-def clientstate_url(source):
-    state = {
+def uses_boost(source):
+    return "#include <boost/" in source
+
+
+def session_state(source):
+    libs = [{"id": "boost", "version": BOOST}] if uses_boost(source) else []
+    compiler = {"id": COMPILER, "libs": libs, "options": OPTIONS}
+
+    return {
         "sessions": [
             {
                 "id": 1,
                 "language": "c++",
                 "source": source,
-                "compilers": [{"id": COMPILER, "options": OPTIONS}],
-                "executors": [
-                    {"compiler": {"id": COMPILER, "libs": [], "options": OPTIONS}}
+                "compilers": [compiler],
+                "executors": [{"compiler": compiler}],
+            }
+        ]
+    }
+
+
+def component(name, **state):
+    return {"type": "component", "componentName": name, "componentState": state}
+
+
+def diff_state(base, source):
+    def editor(id, source):
+        return component("codeEditor", id=id, lang="c++", source=source)
+
+    libs = [{"name": "boost", "ver": BOOST}] if uses_boost(source) else []
+
+    return {
+        "content": [
+            {
+                "type": "row",
+                "content": [
+                    {
+                        "type": "column",
+                        "width": 40,
+                        "content": [
+                            {
+                                "type": "stack",
+                                "activeItemIndex": 1,
+                                "content": [editor(1, base), editor(2, source)],
+                            },
+                            component(
+                                "executor",
+                                source=2,
+                                lang="c++",
+                                compiler=COMPILER,
+                                libs=libs,
+                                options=OPTIONS,
+                                compilationPanelShown=True,
+                                compilerOutShown=True,
+                            ),
+                        ],
+                    },
+                    component(
+                        "diff",
+                        lhs="source_1",
+                        rhs="source_2",
+                        lhsdifftype=16,  # DiffType.Source
+                        rhsdifftype=16,
+                    ),
                 ],
             }
         ]
     }
+
+
+def clientstate_url(state):
     # CE detects the deflate on its own.
     packed = zlib.compress(json.dumps(state).encode(), 9)
     encoded = base64.b64encode(packed).decode()
@@ -68,8 +141,16 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("example", type=Path)
     parser.add_argument("--tag", default="content")
+    parser.add_argument("--base", type=Path, help="open a diff against this example")
     args = parser.parse_args()
-    print(clientstate_url(tagged_region(args.example, args.tag)))
+    source = tagged_region(args.example, args.tag)
+
+    if args.base:
+        state = diff_state(tagged_region(args.base, args.tag), source)
+    else:
+        state = session_state(source)
+
+    print(clientstate_url(state))
 
 
 if __name__ == "__main__":
