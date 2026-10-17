@@ -196,7 +196,7 @@ struct registry_affinity_aux;
 //!
 //! @par Example
 //!
-//! include:../examples/adl_registry.cpp#affinity
+//! include:../adl_registry.cpp#affinity
 //!
 //! @see @ref registry_affinity
 //! @see [Registries and Policies](xref:ROOT:registries_and_policies.adoc)
@@ -902,7 +902,7 @@ BOOST_FORCEINLINE auto use_reflected_classes(
 //!
 //! `Animal` carries its v-table pointer, and is registry-agnostic:
 //!
-//! include:../examples/virtual_.cpp#virtual_intrusive
+//! include:../virtual_.cpp#virtual_intrusive
 //!
 //! @see @ref inplace_vptr_base
 //! @see [Virtual Pointer Alternatives](xref:ROOT:virtual_ptr_alt.adoc)

@@ -338,17 +338,17 @@ inline constexpr bool method_not_found = false;
 //! overrider across a header and an implementation file. The header declares
 //! the overrider without a body:
 //!
-//! include:../examples/rolex/2/roles.hpp#content
+//! include:../rolex/2/roles.hpp#content
 //!
 //! The implementation file supplies the body with
 //! @ref BOOST_OPENMETHOD_DEFINE_OVERRIDER, as follows:
 //!
-//! include:../examples/rolex/2/employee.cpp#content
+//! include:../rolex/2/employee.cpp#content
 //!
 //! This specific overrider can be called from other overriders explictly. No
 //! dynamic dispatch is performed.
 //!
-//! include:../examples/rolex/2/salesman.cpp#content
+//! include:../rolex/2/salesman.cpp#content
 //!
 //! @par Implementation Notes
 //!
@@ -561,14 +561,14 @@ inline constexpr bool method_not_found = false;
 //! A header that declares a method and supplies a default overrider for it.
 //! Every translation unit including it gets the same definition:
 //!
-//! include:../examples/rolex/3/roles.hpp#content
+//! include:../rolex/3/roles.hpp#content
 //!
 //! A translation unit that includes the header adds a more specialized
 //! overrider of its own. That one is defined once, so it uses
 //! @ref BOOST_OPENMETHOD_OVERRIDE; it reaches the header's overrider through
 //! @ref BOOST_OPENMETHOD_OVERRIDER, as follows:
 //!
-//! include:../examples/rolex/3/salesman.cpp#content
+//! include:../rolex/3/salesman.cpp#content
 //!
 //! @param ID The method's name.
 //! @param PARAMETERS The overrider's parameter list, in parentheses.

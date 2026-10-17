@@ -55,7 +55,7 @@ addons-supplemental:
 # mrdocs-addons/extensions/include.lua. `root` is relative to this file.
 transform-options:
   include:
-    root: modules/ROOT/snippets
+    root: modules/ROOT/examples/snippets
     lang: cpp
 
 # Generator

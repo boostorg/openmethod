@@ -1212,13 +1212,13 @@ detail::registry_state_type<Registry> registry_state<Registry>::st;
 //! specialization, which is what @ref registry_type aliases. Two classes built
 //! from the same policies, in the same order, are therefore the same registry:
 //!
-//! include:../examples/registry_identity.cpp#shared
+//! include:../registry_identity.cpp#shared
 //!
 //! This matters when a second registry exists to isolate a set of methods from
 //! another, since it would naturally be given the same policies. Give each one
 //! a policy of its own to keep them apart:
 //!
-//! include:../examples/registry_identity.cpp#distinct
+//! include:../registry_identity.cpp#distinct
 //!
 //! @tparam Policy The policies used in the registry.
 //!
