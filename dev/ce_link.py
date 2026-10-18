@@ -49,7 +49,9 @@ FILTERS = {
     "intel": True,
     "demangle": True,
     "labels": True,
-    "libraryCode": True,
+    # CE takes a function whose every instruction comes from a header for
+    # library code: `call_via_virtual_ptr` is the inlined dispatch, all of it.
+    "libraryCode": False,
     "directives": True,
     "commentOnly": True,
 }
