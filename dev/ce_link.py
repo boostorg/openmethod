@@ -15,13 +15,6 @@ regenerated from the example whenever the example changes:
 The source is the tagged region the page includes - `tag=content` by default -
 so the reader gets exactly the code shown above the link.
 
-With `--base`, the link opens a diff instead: the base example in editor #1,
-the example in editor #2, the diff between their sources, and the example's
-output.
-
-    dev/ce_link.py doc/modules/ROOT/examples/ast.cpp \\
-        --base doc/modules/ROOT/examples/ast_virtual_function_2.cpp --other-tag all
-
 With `--beside`, the two examples are compiled side by side, each in its own
 compiler pane, to compare the assembly:
 
@@ -106,46 +99,6 @@ def editor(id, source):
     return component("codeEditor", id=id, lang="c++", source=source)
 
 
-def diff_state(base, source, compiler):
-    return {
-        "content": [
-            {
-                "type": "row",
-                "content": [
-                    {
-                        "type": "column",
-                        "width": 40,
-                        "content": [
-                            {
-                                "type": "stack",
-                                "activeItemIndex": 1,
-                                "content": [editor(1, base), editor(2, source)],
-                            },
-                            component(
-                                "executor",
-                                source=2,
-                                lang="c++",
-                                compiler=compiler,
-                                libs=libs(source),
-                                options=OPTIONS,
-                                compilationPanelShown=True,
-                                compilerOutShown=True,
-                            ),
-                        ],
-                    },
-                    component(
-                        "diff",
-                        lhs="source_1",
-                        rhs="source_2",
-                        lhsdifftype=16,  # DiffType.Source
-                        rhsdifftype=16,
-                    ),
-                ],
-            }
-        ]
-    }
-
-
 def beside_state(base, source, compiler):
     def column(id, source):
         return {
@@ -183,21 +136,17 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("example", type=Path)
     parser.add_argument("--tag", default="content")
-    other = parser.add_mutually_exclusive_group()
-    other.add_argument("--base", type=Path, help="open a diff against this example")
-    other.add_argument(
+    parser.add_argument(
         "--beside", type=Path, help="compile this example beside, for the assembly"
     )
-    parser.add_argument("--other-tag", help="the tag of the other example (default: --tag)")
+    parser.add_argument("--beside-tag", help="the tag of the other example (default: --tag)")
     parser.add_argument("--compiler", default=COMPILER, help="CE compiler id")
     args = parser.parse_args()
     source = tagged_region(args.example, args.tag)
-    other = args.base or args.beside
 
-    if other:
-        other = tagged_region(other, args.other_tag or args.tag)
-        layout = diff_state if args.base else beside_state
-        state = layout(other, source, args.compiler)
+    if args.beside:
+        other = tagged_region(args.beside, args.beside_tag or args.tag)
+        state = beside_state(other, source, args.compiler)
     else:
         state = session_state(source, args.compiler)
 
