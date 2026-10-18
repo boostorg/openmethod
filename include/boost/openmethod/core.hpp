@@ -3138,9 +3138,32 @@ struct validate_overrider_parameter<
 template<class T>
 struct validate_overrider_parameter<T, T, void> : std::true_type {};
 
+// Whether an overrider parameter would grant write access to an object that the
+// method parameter grants read access to only. `P` and `Q` are the classes the
+// two parameters designate, cv-qualified: the referent of a reference or a
+// pointer, the `element_type` of a `virtual_ptr`. Without this check, the
+// overrider is rejected by a `static_cast` or a `dynamic_cast` deep inside the
+// thunk.
+template<class P, class Q>
+constexpr bool discards_const = std::is_const_v<P> && !std::is_const_v<Q>;
+
+template<class T>
+using designated_class = std::remove_pointer_t<std::remove_reference_t<T>>;
+
 template<class T1, class R1, class T2>
 struct validate_overrider_parameter<virtual_<T1, R1>, T2, void> :
-    std::true_type {};
+    std::true_type {
+    using P = designated_class<T1>;
+    using Q = designated_class<T2>;
+
+    // Only between classes of the same hierarchy: an interop parameter such as
+    // `virtual_<const std::any&>` rejects a mutable overrider parameter itself.
+    static_assert(
+        !std::conjunction_v<
+            std::bool_constant<discards_const<P, Q>>,
+            std::is_base_of<std::remove_cv_t<P>, std::remove_cv_t<Q>>>,
+        "overrider parameter discards const qualifier");
+};
 
 template<class T1, class R1, class T2, class R2>
 struct validate_overrider_parameter<virtual_<T1, R1>, virtual_<T2, R2>, void> :
@@ -3156,6 +3179,11 @@ template<class T1, class R, class T2, class R2>
 struct validate_overrider_parameter<
     virtual_ptr<T1, R>, virtual_ptr<T2, R2>, void> : std::true_type {
     static_assert(std::is_same_v<R, R2>, "registry mismatch");
+    static_assert(
+        !discards_const<
+            typename virtual_ptr<T1, R>::element_type,
+            typename virtual_ptr<T2, R2>::element_type>,
+        "overrider parameter discards const qualifier");
     using C1 = virtual_type<virtual_ptr<T1, R>, R>;
     using C2 = virtual_type<virtual_ptr<T2, R>, R>;
     static_assert(
@@ -3170,6 +3198,11 @@ struct validate_overrider_parameter<
     const virtual_ptr<T1, R>&, const virtual_ptr<T2, R2>&, void> :
     std::true_type {
     static_assert(std::is_same_v<R, R2>, "registry mismatch");
+    static_assert(
+        !discards_const<
+            typename virtual_ptr<T1, R>::element_type,
+            typename virtual_ptr<T2, R2>::element_type>,
+        "overrider parameter discards const qualifier");
     using C1 = virtual_type<const virtual_ptr<T1, R>&, R>;
     using C2 = virtual_type<const virtual_ptr<T2, R>&, R>;
     static_assert(
@@ -3183,6 +3216,11 @@ template<class T1, class R, class T2, class R2>
 struct validate_overrider_parameter<
     virtual_ptr<T1, R>&&, virtual_ptr<T2, R2>&&, void> : std::true_type {
     static_assert(std::is_same_v<R, R2>, "registry mismatch");
+    static_assert(
+        !discards_const<
+            typename virtual_ptr<T1, R>::element_type,
+            typename virtual_ptr<T2, R2>::element_type>,
+        "overrider parameter discards const qualifier");
     using C1 = virtual_type<virtual_ptr<T1, R>&&, R>;
     using C2 = virtual_type<virtual_ptr<T2, R>&&, R>;
     static_assert(
