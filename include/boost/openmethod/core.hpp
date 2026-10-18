@@ -738,6 +738,14 @@ namespace detail {
 template<class...>
 struct use_class_aux;
 
+// Classes must be complete when they are registered. Without this check, an
+// incomplete class fails in the type traits that compute the inheritance map.
+template<class T, typename = void>
+constexpr bool is_complete = false;
+
+template<class T>
+constexpr bool is_complete<T, std::void_t<decltype(sizeof(T))>> = true;
+
 template<class Registry, class Class, typename... Bases>
 struct use_class_aux<Registry, mp11::mp_list<Class, Bases...>> :
     std::conditional_t<
@@ -826,6 +834,10 @@ using use_classes_tuple_type = boost::mp11::mp_apply<
 //! @see [Registries and Policies](xref:ROOT:registries_and_policies.adoc)
 template<class... Classes>
 class use_classes {
+    static_assert(
+        (detail::is_complete<Classes> && ...),
+        "use_classes: a class is incomplete");
+
     detail::use_classes_tuple_type<Classes...> tuple;
 };
 
@@ -1218,6 +1230,10 @@ inline auto final_virtual_ptr(Arg&& obj) {
 //! @see [Performance](xref:ROOT:performance.adoc)
 template<class Class, class Registry, typename>
 class virtual_ptr {
+    static_assert(
+        std::is_class_v<Class>,
+        "virtual_ptr<> takes a class or a smart pointer: virtual_ptr<Node>, "
+        "not virtual_ptr<Node*>");
 
     using traits = virtual_traits<Class&, Registry>;
 
@@ -2389,17 +2405,24 @@ struct validate_method_parameter<
         false_t<Class, Registry, MethodRegistry>, "registry mismatch");
 };
 
-template<class Class, class Registry>
-struct validate_method_parameter<
-    virtual_ptr<Class, Registry>&, Registry, void> : std::true_type {
-    static_assert(check_affinity<Class>::value);
-};
-
+// A `virtual_ptr` passed by non-const lvalue reference cannot bind to the
+// `virtual_ptr` of a derived class, so it cannot have overriders for one, and
+// the dispatch treats it as the class of the object. By rvalue reference, it is
+// not a virtual parameter at all.
 template<class Class, class Registry, class MethodRegistry>
 struct validate_method_parameter<
     virtual_ptr<Class, Registry>&, MethodRegistry, void> : std::false_type {
     static_assert(
-        false_t<Class, Registry, MethodRegistry>, "registry mismatch");
+        false_t<Class, Registry, MethodRegistry>,
+        "virtual_ptr<> must be passed by value or by const reference");
+};
+
+template<class Class, class Registry, class MethodRegistry>
+struct validate_method_parameter<
+    virtual_ptr<Class, Registry>&&, MethodRegistry, void> : std::false_type {
+    static_assert(
+        false_t<Class, Registry, MethodRegistry>,
+        "virtual_ptr<> must be passed by value or by const reference");
 };
 
 template<class Class, class Registry>
@@ -3150,6 +3173,29 @@ constexpr bool discards_const = std::is_const_v<P> && !std::is_const_v<Q>;
 template<class T>
 using designated_class = std::remove_pointer_t<std::remove_reference_t<T>>;
 
+// Whether two `virtual_ptr`s, one in a method, the other in an overrider, hold
+// the same kind of pointer: both a plain pointer, or both the same smart
+// pointer template. Without this check, a plain `virtual_ptr` in the method and
+// a `shared_virtual_ptr` in the overrider fail on a conversion inside the thunk.
+template<class T1, class R1, class T2, class R2>
+constexpr auto same_pointer_kind() -> bool {
+    if constexpr (IsSmartPtr<T1, R1> != IsSmartPtr<T2, R2>) {
+        return false;
+    } else if constexpr (!IsSmartPtr<T1, R1>) {
+        return true;
+    } else {
+        return std::is_same_v<
+            typename virtual_traits<T1, R1>::template rebind<
+                typename T2::element_type>,
+            T2>;
+    }
+}
+
+// Whether an overrider returning `From` can implement a method returning `To`.
+template<typename From, typename To>
+constexpr bool returns_compatible =
+    std::is_void_v<To> ? std::is_void_v<From> : std::is_convertible_v<From, To>;
+
 template<class T1, class R1, class T2>
 struct validate_overrider_parameter<virtual_<T1, R1>, T2, void> :
     std::true_type {
@@ -3180,6 +3226,9 @@ struct validate_overrider_parameter<
     virtual_ptr<T1, R>, virtual_ptr<T2, R2>, void> : std::true_type {
     static_assert(std::is_same_v<R, R2>, "registry mismatch");
     static_assert(
+        same_pointer_kind<T1, R, T2, R2>(),
+        "different virtual_ptr<> pointer kinds");
+    static_assert(
         !discards_const<
             typename virtual_ptr<T1, R>::element_type,
             typename virtual_ptr<T2, R2>::element_type>,
@@ -3199,6 +3248,9 @@ struct validate_overrider_parameter<
     std::true_type {
     static_assert(std::is_same_v<R, R2>, "registry mismatch");
     static_assert(
+        same_pointer_kind<T1, R, T2, R2>(),
+        "different virtual_ptr<> pointer kinds");
+    static_assert(
         !discards_const<
             typename virtual_ptr<T1, R>::element_type,
             typename virtual_ptr<T2, R2>::element_type>,
@@ -3216,6 +3268,9 @@ template<class T1, class R, class T2, class R2>
 struct validate_overrider_parameter<
     virtual_ptr<T1, R>&&, virtual_ptr<T2, R2>&&, void> : std::true_type {
     static_assert(std::is_same_v<R, R2>, "registry mismatch");
+    static_assert(
+        same_pointer_kind<T1, R, T2, R2>(),
+        "different virtual_ptr<> pointer kinds");
     static_assert(
         !discards_const<
             typename virtual_ptr<T1, R>::element_type,
@@ -3310,6 +3365,9 @@ auto method<Id, ReturnType(Parameters...), Registry>::
         (validate_overrider_parameter<Parameters, OverriderParameters>::value &&
             ...),
         "virtual_ptr category mismatch");
+    static_assert(
+        returns_compatible<OverriderReturn, ReturnType>,
+        "overrider return type is not convertible to method return type");
 
     return Overrider(
         detail::parameter_traits<Parameters, Registry>::template cast<
