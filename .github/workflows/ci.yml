@@ -29,6 +29,7 @@ on:
       - master
       - develop
       - bugfix/**
+      - doc/**
       - feature/**
       - fix/**
       - github/**
