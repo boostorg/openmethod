@@ -72,12 +72,16 @@ BOOST_OPENMETHOD_OVERRIDE(
 BOOST_OPENMETHOD_CLASSES(Node, Variable, Plus, Times);
 // end::class_registration[]
 
+void demo(const Node& e) {
+    postfix(e, std::cout);
+    std::cout << " = " << e.value() << "\n"; // 2 3 + 4 * = 20
+}
+
 int main() {
     boost::openmethod::initialize();
     Variable a{2}, b{3}, c{4};
     Plus d{a, b}; Times e{d, c};
-    postfix(e, std::cout);
-    std::cout << " = " << e.value() << "\n"; // 2 3 + 4 * = 20
+    demo(e);
 }
 // end::content[]
 
