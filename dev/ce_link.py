@@ -16,11 +16,18 @@ The source is the tagged region the page includes - `tag=content` by default -
 so the reader gets exactly the code shown above the link.
 
 With `--base`, the link opens a diff instead: the base example in editor #1,
-the example in editor #2, the diffs between their sources and between their
-disassemblies, and the example's output.
+the example in editor #2, the diff between their sources, and the example's
+output.
 
     dev/ce_link.py doc/modules/ROOT/examples/ast.cpp \\
-        --base doc/modules/ROOT/examples/ast_virtual_function_2.cpp --base-tag all
+        --base doc/modules/ROOT/examples/ast_virtual_function_2.cpp --other-tag all
+
+With `--beside`, the two examples are compiled side by side, each in its own
+compiler pane, to compare the assembly:
+
+    dev/ce_link.py doc/modules/ROOT/examples/dispatch_open_method.cpp \\
+        --beside doc/modules/ROOT/examples/dispatch_virtual_function.cpp \\
+        --compiler clang2310
 
 An example that includes a Boost header gets the Boost release that Compiler
 Explorer offers in its Libraries dropdown, not the headers of this tree.
@@ -35,7 +42,7 @@ import urllib.parse
 import zlib
 from pathlib import Path
 
-COMPILER = "g162"  # x86-64 gcc 16.2
+COMPILER = "g162"  # x86-64 gcc 16.2; clang2310 is x86-64 clang 23.1.0
 OPTIONS = "-std=c++17 -O2"
 BOOST = "192"  # Boost 1.92.0, as Compiler Explorer names it
 FILTERS = {
@@ -68,9 +75,9 @@ def uses_boost(source):
     return "#include <boost/" in source
 
 
-def session_state(source):
+def session_state(source, compiler):
     libs = [{"id": "boost", "version": BOOST}] if uses_boost(source) else []
-    compiler = {"id": COMPILER, "libs": libs, "options": OPTIONS}
+    compiler = {"id": compiler, "libs": libs, "options": OPTIONS}
 
     return {
         "sessions": [
@@ -89,30 +96,15 @@ def component(name, **state):
     return {"type": "component", "componentName": name, "componentState": state}
 
 
-def diff_state(base, source):
-    def libs(source):
-        return [{"name": "boost", "ver": BOOST}] if uses_boost(source) else []
+def libs(source):
+    return [{"name": "boost", "ver": BOOST}] if uses_boost(source) else []
 
-    def editor(id, source):
-        return component("codeEditor", id=id, lang="c++", source=source)
 
-    def compiler(id, source):
-        return component(
-            "compiler",
-            id=id,
-            source=id,
-            lang="c++",
-            compiler=COMPILER,
-            libs=libs(source),
-            options=OPTIONS,
-            filters=FILTERS,
-        )
+def editor(id, source):
+    return component("codeEditor", id=id, lang="c++", source=source)
 
-    def diff(lhs, rhs, difftype):
-        return component(
-            "diff", lhs=lhs, rhs=rhs, lhsdifftype=difftype, rhsdifftype=difftype
-        )
 
+def diff_state(base, source, compiler):
     return {
         "content": [
             {
@@ -127,37 +119,51 @@ def diff_state(base, source):
                                 "activeItemIndex": 1,
                                 "content": [editor(1, base), editor(2, source)],
                             },
-                            {
-                                "type": "stack",
-                                "activeItemIndex": 2,
-                                "content": [
-                                    compiler(1, base),
-                                    compiler(2, source),
-                                    component(
-                                        "executor",
-                                        source=2,
-                                        lang="c++",
-                                        compiler=COMPILER,
-                                        libs=libs(source),
-                                        options=OPTIONS,
-                                        compilationPanelShown=True,
-                                        compilerOutShown=True,
-                                    ),
-                                ],
-                            },
+                            component(
+                                "executor",
+                                source=2,
+                                lang="c++",
+                                compiler=compiler,
+                                libs=libs(source),
+                                options=OPTIONS,
+                                compilationPanelShown=True,
+                                compilerOutShown=True,
+                            ),
                         ],
                     },
-                    {
-                        "type": "column",
-                        "content": [
-                            diff("source_1", "source_2", 16),  # DiffType.Source
-                            diff(1, 2, 0),  # DiffType.ASM
-                        ],
-                    },
+                    component(
+                        "diff",
+                        lhs="source_1",
+                        rhs="source_2",
+                        lhsdifftype=16,  # DiffType.Source
+                        rhsdifftype=16,
+                    ),
                 ],
             }
         ]
     }
+
+
+def beside_state(base, source, compiler):
+    def column(id, source):
+        return {
+            "type": "column",
+            "content": [
+                editor(id, source),
+                component(
+                    "compiler",
+                    id=id,
+                    source=id,
+                    lang="c++",
+                    compiler=compiler,
+                    libs=libs(source),
+                    options=OPTIONS,
+                    filters=FILTERS,
+                ),
+            ],
+        }
+
+    return {"content": [{"type": "row", "content": [column(1, base), column(2, source)]}]}
 
 
 def clientstate_url(state):
@@ -175,16 +181,23 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("example", type=Path)
     parser.add_argument("--tag", default="content")
-    parser.add_argument("--base", type=Path, help="open a diff against this example")
-    parser.add_argument("--base-tag", help="the tag of the base (default: --tag)")
+    other = parser.add_mutually_exclusive_group()
+    other.add_argument("--base", type=Path, help="open a diff against this example")
+    other.add_argument(
+        "--beside", type=Path, help="compile this example beside, for the assembly"
+    )
+    parser.add_argument("--other-tag", help="the tag of the other example (default: --tag)")
+    parser.add_argument("--compiler", default=COMPILER, help="CE compiler id")
     args = parser.parse_args()
     source = tagged_region(args.example, args.tag)
+    other = args.base or args.beside
 
-    if args.base:
-        base = tagged_region(args.base, args.base_tag or args.tag)
-        state = diff_state(base, source)
+    if other:
+        other = tagged_region(other, args.other_tag or args.tag)
+        layout = diff_state if args.base else beside_state
+        state = layout(other, source, args.compiler)
     else:
-        state = session_state(source)
+        state = session_state(source, args.compiler)
 
     print(clientstate_url(state))
 

@@ -9,9 +9,7 @@ function call:
 
 [source,c++]
 ----
-void call_virtual_function(const Node& node, std::ostream& os) {
-    node.postfix(os);
-}
+include::{examplesdir}/dispatch_virtual_function.cpp[tag=call_virtual_function]
 ----
 
 Clang compiles this function to the following assembly on the x64 architecture:
@@ -29,9 +27,7 @@ Let's look at a method call now:
 
 [source,c++]
 ----
-void call_via_ref(const Node& node, std::ostream& os) {
-    postfix(node, os);
-}
+include::{examplesdir}/dispatch_open_method.cpp[tag=call_via_ref]
 ----
 
 This compiles to (variable names are shortened for readability):
@@ -86,9 +82,7 @@ If we already have a `virtual_ptr`:
 
 [source,c++]
 ----
-void call_via_virtual_ptr(virtual_ptr<const Node> node, std::ostream& os) {
-    postfix(node, os);
-}
+include::{examplesdir}/dispatch_open_method.cpp[tag=call_via_virtual_ptr]
 ----
 
 A method call compiles to:
@@ -99,6 +93,8 @@ mov	rax, qword ptr [rip + postfix::fn+88]
 mov	rax, qword ptr [rdi + 8*rax]
 jmp	rax                             # TAILCALL
 ----
+
+link:https://godbolt.org/clientstate/eNrNU11r2zAU%2FSsXDYpL3a7xHsrcj4dtgb0sHrRvSwmKrbQC%2BUpIsrdgvN%2B%2BK9tJnbZb27HCEkike8791LkNyzV6gZ6l8K1hfm0EnZjV31kMj2O5VlWJf4BLozGY49FlxssBLcS0kF7bHfjScx%2FwhsmC%2FiaEKY43ncfBQaA6Xdm8C%2FFGYq6qQsCZ1M5bwcuLOc6RjlXuYUYJoJkj0KeW1ldcwc9gjPahaXftEj3UXFUBo16ch3M4Pt3l1FoWYCjRSv6InC%2FSdEi6B9rturWnoY7OIedKLYYQi1WFuZcao54citkDpN8YHgYcSg%2Fw0SYt2UP4ObK2jeH5oy6NVOLJQW8n%2B8jUtzGCKWDJu8lxAJRcuvDu13TWJnQXruyQGjon38kJHGZJIK6k8sK6PiXJRdGJXop6Z4UoKaISdxbFl0K50V0uLbfrjzSMkZu0guZZixGR6iypuwzVejC2bXt9b1ivLtvkebJdanrXt9oILIW%2F1cXRrTEk4dfXdS%2FQykm8ga4I0t62ijTd6NV42xE%2FZNnl1SL7Op19mV59zj5Fgx5jiEbUsztVX%2FxO1XG3RvsP9oMvrFi9ZC02G9HTtntxP%2BqovJeW%2BkSmf76ByVgkyV9sYMNwSNc9aYDqnj55n7D2%2F17Q8P0FOEgolQ%3D%3D[Compare the three calls on Compiler Explorer^]
 
 `virtual_ptr` arguments are passed through the method call, to the overrider,
 which can use them to make further method calls.
