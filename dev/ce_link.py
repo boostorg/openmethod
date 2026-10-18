@@ -19,8 +19,7 @@ With `--beside`, the two examples are compiled side by side, each in its own
 compiler pane, to compare the assembly:
 
     dev/ce_link.py doc/modules/ROOT/examples/dispatch_open_method.cpp \\
-        --beside doc/modules/ROOT/examples/dispatch_virtual_function.cpp \\
-        --compiler clang2310
+        --beside doc/modules/ROOT/examples/dispatch_virtual_function.cpp
 
 An example that includes a Boost header gets the Boost release that Compiler
 Explorer offers in its Libraries dropdown, not the headers of this tree.
@@ -35,7 +34,7 @@ import urllib.parse
 import zlib
 from pathlib import Path
 
-COMPILER = "g162"  # x86-64 gcc 16.2; clang2310 is x86-64 clang 23.1.0
+COMPILER = "clang2310"  # x86-64 clang 23.1.0
 OPTIONS = "-std=c++17 -O2"
 BOOST = "192"  # Boost 1.92.0, as Compiler Explorer names it
 FILTERS = {
