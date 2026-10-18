@@ -31,9 +31,13 @@ struct Times : Node {
     const Node& left; const Node& right;
 };
 
+void demo(const Node& e) {
+    std::cout << e.value() << "\n"; // 20
+}
+
 int main() {
     Variable a{2}, b{3}, c{4};
     Plus d{a, b}; Times e{d, c};
-    std::cout << e.value() << "\n"; // 20
+    demo(e);
 }
 // end::content[]
