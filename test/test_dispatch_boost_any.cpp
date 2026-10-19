@@ -197,17 +197,20 @@ BOOST_AUTO_TEST_CASE(boost_any_by_xvalue_ref) {
     boost::any spot(Dog{"Spot"});
     BOOST_TEST(steal(std::move(spot)) == "Spot the dog");
     // the overrider moved the name out; the `any` still owns the Dog
+    // coverity[use_after_move]
     BOOST_TEST(!spot.empty());
     BOOST_TEST(boost::any_cast<const Dog&>(spot).name == "");
 
     boost::any felix(std::string{"Felix the cat"});
     BOOST_TEST(steal(std::move(felix)) == "Felix the cat");
+    // coverity[use_after_move]
     BOOST_TEST(!felix.empty());
     BOOST_TEST(boost::any_cast<const std::string&>(felix) == "");
 
     // moving an int copies it
     boost::any answer(42);
     BOOST_TEST(steal(std::move(answer)) == "42 the integer");
+    // coverity[use_after_move]
     BOOST_TEST(boost::any_cast<const int&>(answer) == 42);
 }
 } // namespace BOOST_OPENMETHOD_GENSYM

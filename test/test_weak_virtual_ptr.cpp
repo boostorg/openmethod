@@ -264,6 +264,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         weak_virtual_ptr<Dog, Registry> moved(std::move(source));
         BOOST_TEST(moved.lock().get() == snoopy.get());
         BOOST_TEST(moved.vptr() == Registry::template static_vptr<Dog>);
+        // coverity[use_after_move]
         BOOST_TEST(source.expired());
         BOOST_TEST(source.vptr() == nullptr);
     }
@@ -274,6 +275,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         weak_virtual_ptr<Animal, Registry> moved(std::move(source));
         BOOST_TEST(moved.lock().get() == snoopy.get());
         BOOST_TEST(moved.vptr() == Registry::template static_vptr<Dog>);
+        // coverity[use_after_move]
         BOOST_TEST(source.expired());
         BOOST_TEST(source.vptr() == nullptr);
     }
@@ -284,6 +286,7 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         moved = std::move(source);
         BOOST_TEST(moved.lock().get() == snoopy.get());
         BOOST_TEST(moved.vptr() == Registry::template static_vptr<Dog>);
+        // coverity[use_after_move]
         BOOST_TEST(source.expired());
         BOOST_TEST(source.vptr() == nullptr);
     }

@@ -56,7 +56,7 @@ auto str(const Container<T>& container) {
 
 template<typename... Ts>
 auto sstr(Ts... args) {
-    std::vector<class_*> vec{args...};
+    std::vector<class_*> vec{std::move(args)...};
     std::sort(vec.begin(), vec.end());
 
     return str(vec);
@@ -360,7 +360,7 @@ auto sampled_orders(std::size_t n, std::size_t samples) -> std::vector<order> {
     std::vector<order> orders{listed};
     orders.emplace_back(listed.rbegin(), listed.rend());
     std::mt19937 rng(20250510u);
-    auto shuffled = listed;
+    auto shuffled = std::move(listed);
 
     while (samples--) {
         for (auto i = shuffled.size(); i > 1; --i) {

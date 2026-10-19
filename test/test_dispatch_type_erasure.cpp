@@ -173,11 +173,13 @@ BOOST_AUTO_TEST_CASE(type_erasure_by_xvalue_ref) {
     erased spot(Dog{"Spot"});
     BOOST_TEST(steal(std::move(spot)) == "Spot the dog");
     // the overrider moved the name out; the `any` still owns the Dog
+    // coverity[use_after_move]
     BOOST_TEST(!te::is_empty(spot));
     BOOST_TEST(te::any_cast<const Dog&>(spot).name == "");
 
     erased felix(std::string{"Felix the cat"});
     BOOST_TEST(steal(std::move(felix)) == "Felix the cat");
+    // coverity[use_after_move]
     BOOST_TEST(te::any_cast<const std::string&>(felix) == "");
 }
 } // namespace BOOST_OPENMETHOD_GENSYM

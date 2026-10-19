@@ -164,6 +164,7 @@ BOOST_AUTO_TEST_CASE(virtual_any_by_xvalue_ref) {
     virtual_erased spot = Dog{"Spot"};
     BOOST_TEST(steal(std::move(spot)) == "Spot the dog");
     // the overrider moved the name out; the virtual_any still owns the Dog
+    // coverity[use_after_move]
     BOOST_TEST(!te::is_empty(spot.get()));
     BOOST_TEST(te::any_cast<const Dog&>(spot.get()).name == "");
 
@@ -203,6 +204,7 @@ BOOST_AUTO_TEST_CASE(virtual_any_value_semantics) {
     // move: the source's v-table pointer is nulled
     auto moved = std::move(copy);
     BOOST_TEST(moved.vptr() == default_registry::static_vptr<Dog>);
+    // coverity[use_after_move]
     BOOST_TEST(copy.vptr() == nullptr);
     BOOST_TEST(name(moved) == "Rex the dog");
 
