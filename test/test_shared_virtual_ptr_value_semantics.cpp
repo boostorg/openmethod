@@ -179,6 +179,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         // shared_virtual_ptr<Dog>(shared_virtual_ptr<Dog>&)
         auto snoopy = std::make_shared<Dog>();
         shared_virtual_ptr<Dog, Registry> p(snoopy);
+        // The copy is the point: this tests the non-const lvalue overload.
+        // coverity[copy_instead_of_move]
         shared_virtual_ptr<Dog, Registry> q(p);
         BOOST_TEST(q.get() == snoopy.get());
         BOOST_TEST(q.vptr() == Registry::template static_vptr<Dog>);
