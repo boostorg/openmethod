@@ -5,6 +5,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/initialize.hpp>

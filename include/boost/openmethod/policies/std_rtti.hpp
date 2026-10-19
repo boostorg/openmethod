@@ -9,7 +9,10 @@
 #include <boost/openmethod/preamble.hpp>
 #include <boost/openmethod/detail/type_key.hpp>
 
+#include <boost/config.hpp>
+
 #include <string_view>
+#include <type_traits>
 
 #ifndef BOOST_NO_RTTI
 #include <typeindex>

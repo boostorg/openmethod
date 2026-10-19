@@ -13,6 +13,8 @@
 #define BOOST_TEST_MODULE adl_registry_inheritance
 #include <boost/test/unit_test.hpp>
 
+#include <type_traits>
+
 using namespace boost::openmethod;
 
 struct zoo_registry : default_registry::with<policies::runtime_checks> {};

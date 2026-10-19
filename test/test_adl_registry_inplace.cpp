@@ -8,6 +8,7 @@
 // registry argument nor an override of the default-registry macro.
 
 #include <string>
+#include <type_traits>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/inplace_vptr.hpp>

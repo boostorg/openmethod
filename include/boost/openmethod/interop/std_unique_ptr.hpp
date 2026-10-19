@@ -9,6 +9,8 @@
 #include <boost/openmethod/core.hpp>
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 
 namespace boost::openmethod {
 

@@ -11,6 +11,8 @@
 
 #include "capture.hpp"
 
+#include <string>
+
 namespace bom = boost::openmethod;
 
 struct Animal {

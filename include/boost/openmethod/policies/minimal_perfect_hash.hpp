@@ -9,12 +9,15 @@
 #include <boost/openmethod/preamble.hpp>
 
 #include <boost/assert.hpp>
+#include <boost/config.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <numeric>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 

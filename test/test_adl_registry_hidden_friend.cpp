@@ -8,6 +8,7 @@
 // broken. Argument-dependent lookup finds it from anywhere.
 
 #include <string>
+#include <type_traits>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/initialize.hpp>

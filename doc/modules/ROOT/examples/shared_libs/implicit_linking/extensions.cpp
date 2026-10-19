@@ -10,6 +10,8 @@
 
 #include "animals.hpp"
 
+#include <string>
+
 using namespace boost::openmethod;
 
 BOOST_OPENMETHOD_INSTANTIATE_REGISTRY(boost::openmethod::default_registry);

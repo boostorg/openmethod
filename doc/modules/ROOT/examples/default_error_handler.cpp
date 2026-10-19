@@ -5,7 +5,9 @@
 
 // tag::example[]
 #include <iostream>
+#include <stdexcept>
 #include <variant>
+#include <vector>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/initialize.hpp>

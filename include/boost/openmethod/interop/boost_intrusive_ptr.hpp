@@ -8,7 +8,9 @@
 
 #include <boost/openmethod/core.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
-#include <memory>
+
+#include <type_traits>
+#include <utility>
 
 namespace boost::openmethod {
 

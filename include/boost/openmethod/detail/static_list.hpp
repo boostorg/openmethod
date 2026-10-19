@@ -6,8 +6,10 @@
 #ifndef BOOST_OPENMETHOD_DETAIL_STATIC_LIST_HPP
 #define BOOST_OPENMETHOD_DETAIL_STATIC_LIST_HPP
 
-#include <algorithm>
 #include <boost/assert.hpp>
+
+#include <cstddef>
+#include <iterator>
 
 namespace boost::openmethod {
 

@@ -15,6 +15,7 @@
 #include <boost/dll/shared_library.hpp>
 #include <iostream>
 #include <memory>
+#include <string>
 
 using namespace boost::openmethod;
 

@@ -11,6 +11,8 @@
 #include "shared_overrider.hpp"
 #include "../test_classes.hpp"
 
+#include <string>
+
 #if defined(_WIN32) || defined(__CYGWIN__)
 #include <boost/config.hpp>
 #else

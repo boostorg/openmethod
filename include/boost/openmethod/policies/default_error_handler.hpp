@@ -8,7 +8,11 @@
 
 #include <boost/openmethod/preamble.hpp>
 
+#include <boost/mp11/list.hpp>
+
 #include <functional>
+#include <type_traits>
+#include <utility>
 #include <variant>
 
 namespace boost::openmethod {

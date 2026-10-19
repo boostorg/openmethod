@@ -9,6 +9,7 @@
 #include <memory>
 #include <string>
 #include <typeinfo>
+#include <utility>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/policies/static_rtti.hpp>

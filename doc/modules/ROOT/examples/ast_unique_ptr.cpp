@@ -37,6 +37,8 @@ struct Times : Node {
 };
 
 #include <iostream>
+#include <memory>
+#include <utility>
 
 BOOST_OPENMETHOD(postfix, (virtual_ptr<const Node> node, std::ostream& os), void);
 

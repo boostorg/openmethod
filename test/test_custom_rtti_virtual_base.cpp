@@ -12,6 +12,8 @@ struct test_registry;
 #include "test_classes.hpp"
 
 #include <cstddef>
+#include <sstream>
+#include <type_traits>
 
 namespace {
 constexpr std::size_t non_polymorphic_high_bit = std::size_t(1)

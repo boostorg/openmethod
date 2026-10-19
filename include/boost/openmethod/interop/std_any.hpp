@@ -7,6 +7,8 @@
 #define BOOST_OPENMETHOD_INTEROP_STD_ANY_HPP
 
 #include <any>
+#include <type_traits>
+#include <utility>
 #include <boost/openmethod/core.hpp>
 #include <boost/openmethod/interop/virtual_any.hpp>
 #include <boost/openmethod/policies/std_rtti.hpp>

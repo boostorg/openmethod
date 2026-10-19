@@ -8,7 +8,11 @@
 
 #include <boost/openmethod/preamble.hpp>
 
+#include <boost/mp11/utility.hpp>
+
+#include <cstdlib>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 
 #ifdef _MSC_VER

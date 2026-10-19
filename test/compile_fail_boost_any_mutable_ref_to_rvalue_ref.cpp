@@ -7,6 +7,7 @@
 // expected-error: no matching
 
 #include <string>
+#include <utility>
 #include <boost/any.hpp>
 
 #include <boost/openmethod.hpp>

@@ -21,6 +21,7 @@
 
 #include "test_util.hpp"
 
+#include <cstddef>
 #include <iterator>
 #include <string>
 #include <tuple>

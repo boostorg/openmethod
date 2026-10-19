@@ -12,6 +12,8 @@
 #define BOOST_TEST_MODULE runtime_errors_initialize_unknown_class
 #include <boost/test/unit_test.hpp>
 
+#include <string>
+
 using namespace boost::openmethod;
 using namespace test_matrices;
 

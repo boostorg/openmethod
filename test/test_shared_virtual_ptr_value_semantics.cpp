@@ -13,6 +13,8 @@
 #include "test_virtual_ptr_value_semantics.hpp"
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 
 static_assert(SameSmartPtr<
     std::shared_ptr<Animal>, std::shared_ptr<Dog>, default_registry>);

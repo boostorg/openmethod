@@ -11,6 +11,7 @@ struct custom_registry;
 #include <boost/openmethod/initialize.hpp>
 
 #include <iostream>
+#include <vector>
 
 struct Animal {
     virtual ~Animal() = default;

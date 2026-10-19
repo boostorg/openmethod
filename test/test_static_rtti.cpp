@@ -19,6 +19,8 @@ struct static_registry :
 
 #include "test_classes.hpp"
 
+#include <sstream>
+
 struct Animal {};
 
 struct Dog : Animal {};

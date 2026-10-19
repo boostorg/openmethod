@@ -7,9 +7,8 @@
 #define BOOST_OPENMETHOD_CORE_HPP
 
 #include <stdint.h>
-#include <algorithm>
+#include <cstddef>
 #include <cstdlib>
-#include <tuple>
 #include <type_traits>
 #include <utility>
 

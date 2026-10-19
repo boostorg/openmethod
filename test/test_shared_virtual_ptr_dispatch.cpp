@@ -12,6 +12,8 @@
 
 #include "test_util.hpp"
 
+#include <string>
+
 using boost::mp11::mp_list;
 using namespace boost::openmethod;
 using namespace boost::openmethod::detail;

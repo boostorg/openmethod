@@ -16,6 +16,8 @@
 #include "test_virtual_ptr_value_semantics.hpp"
 
 #include <memory>
+#include <type_traits>
+#include <utility>
 
 #ifdef BOOST_GCC
 #pragma GCC diagnostic ignored "-Wunused-local-typedefs"

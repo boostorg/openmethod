@@ -8,6 +8,11 @@
 
 #include <boost/openmethod/core.hpp>
 
+#include <boost/assert.hpp>
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/bind.hpp>
+#include <boost/mp11/list.hpp>
+
 #include <type_traits>
 #include <utility>
 

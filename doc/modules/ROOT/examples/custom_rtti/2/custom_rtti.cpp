@@ -79,6 +79,7 @@ struct custom_registry : boost::openmethod::registry<
 // end::registry[]
 
 #include <iostream>
+#include <type_traits>
 
 using boost::openmethod::virtual_ptr;
 

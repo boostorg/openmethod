@@ -6,6 +6,7 @@
 // clang-format off
 
 #include <iostream>
+#include <memory>
 #include <string>
 #include <boost/openmethod.hpp>
 

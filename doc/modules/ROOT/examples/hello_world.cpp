@@ -6,6 +6,7 @@
 // clang-format off
 
 // tag::domain_classes[]
+#include <memory>
 #include <string>
 
 struct Animal {

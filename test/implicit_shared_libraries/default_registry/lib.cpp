@@ -13,6 +13,8 @@
 #include "lib.hpp"
 #include "../../test_classes.hpp"
 
+#include <typeinfo>
+
 using namespace boost::openmethod;
 
 // The one definition of the shared state. It carries no visibility attribute:

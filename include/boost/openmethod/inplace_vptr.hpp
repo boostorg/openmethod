@@ -3,6 +3,10 @@
 
 #include <boost/openmethod/core.hpp>
 
+#include <boost/mp11/list.hpp>
+
+#include <type_traits>
+
 // =============================================================================
 // inplace_vptr
 

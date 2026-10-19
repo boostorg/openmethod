@@ -8,6 +8,7 @@
 // reflection there is nothing to test, and the whole file reduces to one test
 // case that says so.
 
+#include <cstddef>
 #include <sstream>
 #include <string>
 #include <utility>

@@ -24,9 +24,11 @@
 #include <boost/test/unit_test.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <set>
 #include <tuple>
+#include <utility>
 #include <vector>
 
 namespace bom = boost::openmethod;

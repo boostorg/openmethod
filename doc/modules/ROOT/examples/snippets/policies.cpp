@@ -12,6 +12,7 @@
 #include <boost/openmethod/policies/vptr_map.hpp>
 
 #include <stdexcept>
+#include <string>
 #include <variant>
 
 #define BOOST_TEST_MODULE openmethod

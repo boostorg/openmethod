@@ -15,6 +15,8 @@
 
 #include "capture.hpp"
 
+#include <string>
+
 using namespace boost::openmethod;
 
 // tag::classes[]

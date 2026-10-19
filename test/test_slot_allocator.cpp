@@ -4,14 +4,20 @@
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <algorithm>
+#include <cstddef>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <numeric>
 #include <random>
 #include <sstream>
+#include <string>
+#include <tuple>
 #include <type_traits>
+#include <typeinfo>
 #include <unordered_map>
+#include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include <boost/mp11/algorithm.hpp>

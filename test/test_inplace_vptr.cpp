@@ -12,6 +12,8 @@ struct test_registry;
 #include <boost/openmethod/initialize.hpp>
 
 #include <iostream>
+#include <memory>
+#include <sstream>
 #include <string>
 
 namespace bom = boost::openmethod;

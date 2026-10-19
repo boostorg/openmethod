@@ -4,6 +4,7 @@
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
 #include <memory>
+#include <type_traits>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/initialize.hpp>

@@ -10,6 +10,7 @@
 #include <boost/openmethod/initialize.hpp>
 #include <iostream>
 #include <memory>
+#include <string>
 
 using namespace boost::openmethod::aliases;
 

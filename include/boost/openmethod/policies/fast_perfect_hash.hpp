@@ -8,11 +8,19 @@
 
 #include <boost/openmethod/preamble.hpp>
 
+#include <boost/config.hpp>
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/list.hpp>
+
+#include <algorithm>
+#include <cstddef>
 #include <limits>
 #include <random>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <variant>
+#include <vector>
 
 #ifdef _MSC_VER
 #pragma warning(push)

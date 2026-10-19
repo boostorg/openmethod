@@ -83,6 +83,9 @@ struct test_registry :
 #include <boost/test/unit_test.hpp>
 #include <boost/utility/identity_type.hpp>
 
+#include <sstream>
+#include <type_traits>
+
 using namespace boost::openmethod;
 
 BOOST_OPENMETHOD_TEST_CLASSES(Animal, Dog, Cat);

@@ -39,8 +39,10 @@ struct test_registry :
 
 #if BOOST_OPENMETHOD_HAS_PEXT
 
+#include <cstddef>
 #include <set>
 #include <string>
+#include <typeinfo>
 
 using namespace boost::openmethod;
 

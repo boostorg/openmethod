@@ -6,6 +6,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/interop/std_shared_ptr.hpp>

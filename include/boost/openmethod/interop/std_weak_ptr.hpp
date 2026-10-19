@@ -7,7 +7,9 @@
 #define BOOST_OPENMETHOD_INTEROP_WEAK_PTR_HPP
 
 #include <boost/openmethod/interop/std_shared_ptr.hpp>
+#include <cstddef>
 #include <memory>
+#include <type_traits>
 #include <utility>
 
 namespace boost::openmethod {

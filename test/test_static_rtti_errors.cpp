@@ -20,6 +20,7 @@
 
 #include <boost/mp11/list.hpp>
 
+#include <cstddef>
 #include <sstream>
 #include <string_view>
 #include <type_traits>

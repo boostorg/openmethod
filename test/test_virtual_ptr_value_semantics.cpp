@@ -8,6 +8,11 @@
 
 #include "test_virtual_ptr_value_semantics.hpp"
 
+#include <type_traits>
+#include <typeinfo>
+#include <utility>
+#include <variant>
+
 BOOST_AUTO_TEST_CASE_TEMPLATE(
     plain_virtual_ptr_value, Registry, test_policies) {
     static_assert(std::is_same_v<

@@ -24,8 +24,10 @@ struct test_registry :
 #define BOOST_TEST_MODULE dispatch_two_level_hash
 #include <boost/test/unit_test.hpp>
 
+#include <cstddef>
 #include <set>
 #include <string>
+#include <typeinfo>
 
 using namespace boost::openmethod;
 

@@ -9,6 +9,7 @@
 // the declaration wins outright, and no scan happens.
 
 #include <string>
+#include <type_traits>
 
 #include <boost/openmethod.hpp>
 

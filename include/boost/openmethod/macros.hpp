@@ -6,9 +6,15 @@
 #ifndef BOOST_OPENMETHOD_MACROS_HPP
 #define BOOST_OPENMETHOD_MACROS_HPP
 
+#include <boost/config.hpp>
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/list.hpp>
 #include <boost/preprocessor/cat.hpp>
 
 #include <boost/openmethod/core.hpp>
+
+#include <type_traits>
+#include <utility>
 
 namespace boost::openmethod::detail {
 

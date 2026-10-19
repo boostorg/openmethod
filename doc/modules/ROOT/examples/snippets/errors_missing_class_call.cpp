@@ -15,6 +15,8 @@
 
 #include "error_harness.hpp"
 
+#include <string>
+
 using namespace boost::openmethod;
 
 struct Animal {

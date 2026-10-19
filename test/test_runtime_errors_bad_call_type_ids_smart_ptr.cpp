@@ -13,6 +13,8 @@
 #define BOOST_TEST_MODULE runtime_errors_bad_call_type_ids_smart_ptr
 #include <boost/test/unit_test.hpp>
 
+#include <typeinfo>
+
 using namespace boost::openmethod;
 using namespace test_matrices;
 

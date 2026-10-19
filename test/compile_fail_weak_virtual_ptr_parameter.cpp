@@ -10,6 +10,8 @@
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/interop/std_weak_ptr.hpp>
 
+#include <memory>
+
 using namespace boost::openmethod;
 
 struct Animal {

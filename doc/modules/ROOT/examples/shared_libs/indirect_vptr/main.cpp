@@ -15,6 +15,7 @@
 #include <boost/openmethod/interop/std_unique_ptr.hpp>
 #include <boost/dll/shared_library.hpp>
 #include <iostream>
+#include <string>
 
 using namespace boost::openmethod::aliases;
 

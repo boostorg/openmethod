@@ -25,6 +25,8 @@ struct static_registry :
 
 #include "capture.hpp"
 
+#include <string>
+
 using namespace boost::openmethod::aliases;
 
 // tag::classes[]

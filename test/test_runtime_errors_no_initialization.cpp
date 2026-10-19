@@ -13,6 +13,8 @@
 #define BOOST_TEST_MODULE runtime_errors_no_initialization
 #include <boost/test/unit_test.hpp>
 
+#include <memory>
+
 using namespace boost::openmethod;
 using namespace test_matrices;
 

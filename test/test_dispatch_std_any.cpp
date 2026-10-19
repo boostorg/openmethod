@@ -3,8 +3,11 @@
 // See accompanying file LICENSE_1_0.txt
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include <sstream>
 #include <string>
 #include <any>
+#include <type_traits>
+#include <utility>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/interop/std_any.hpp>

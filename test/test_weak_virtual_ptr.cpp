@@ -14,6 +14,7 @@
 #include <set>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 // A weak virtual_ptr is not a virtual_ptr at all: neither a smart one in the
 // `IsSmartPtr` sense (no `virtual_traits`, no `rebind`) nor a plain one.

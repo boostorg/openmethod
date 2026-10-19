@@ -11,6 +11,8 @@
 
 #include "lib.hpp"
 
+#include <variant>
+
 using namespace boost::openmethod;
 
 BOOST_AUTO_TEST_CASE(mix_release_debug) {

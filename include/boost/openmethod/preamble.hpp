@@ -11,6 +11,9 @@
 #include <boost/preprocessor/cat.hpp>
 
 #include <stdlib.h>
+#include <cstddef>
+#include <type_traits>
+#include <utility>
 #include <vector>
 #include <cstdint>
 #include <limits>

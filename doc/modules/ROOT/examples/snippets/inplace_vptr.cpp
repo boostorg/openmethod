@@ -8,6 +8,7 @@
 #include <boost/openmethod/initialize.hpp>
 
 #include <memory>
+#include <string>
 
 #define BOOST_TEST_MODULE openmethod
 #include <boost/test/unit_test.hpp>

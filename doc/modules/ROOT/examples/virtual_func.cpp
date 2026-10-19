@@ -9,6 +9,7 @@
 
 #include <iostream>
 #include <memory>
+#include <string>
 
 struct Animal {
     Animal(std::string name) : name(name) {}

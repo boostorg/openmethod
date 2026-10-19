@@ -11,6 +11,8 @@
 #define BOOST_TEST_MODULE class_registration_own_state
 #include <boost/test/unit_test.hpp>
 
+#include <type_traits>
+
 using namespace boost::openmethod;
 
 BOOST_AUTO_TEST_CASE(registry_own_state) {

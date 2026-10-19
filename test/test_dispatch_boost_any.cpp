@@ -3,7 +3,9 @@
 // See accompanying file LICENSE_1_0.txt
 // or copy at http://www.boost.org/LICENSE_1_0.txt)
 
+#include <sstream>
 #include <string>
+#include <utility>
 #include <boost/any.hpp>
 
 #include <boost/openmethod.hpp>

@@ -7,9 +7,10 @@
 #define BOOST_OPENMETHOD_DETAIL_OSTDSTREAM_HPP
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <charconv>
-#include <random>
 #include <string_view>
 
 namespace boost::openmethod {

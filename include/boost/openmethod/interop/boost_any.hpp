@@ -11,6 +11,9 @@
 #include <boost/openmethod/interop/virtual_any.hpp>
 #include <boost/openmethod/policies/std_rtti.hpp>
 
+#include <type_traits>
+#include <utility>
+
 // Dispatch on the type contained in a `boost::any`.
 //
 // This interop is based on a design contributed by Steven Watanabe:

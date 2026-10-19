@@ -8,8 +8,12 @@
 
 #include <boost/openmethod/preamble.hpp>
 
+#include <boost/mp11/algorithm.hpp>
+
+#include <algorithm>
+#include <cstddef>
 #include <tuple>
-#include <variant>
+#include <type_traits>
 #include <vector>
 
 #ifdef _MSC_VER

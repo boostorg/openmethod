@@ -13,6 +13,11 @@
 
 #include "capture.hpp"
 
+#include <memory>
+#include <string>
+#include <type_traits>
+#include <utility>
+
 using namespace boost::openmethod;
 
 namespace polymorphic_classes {

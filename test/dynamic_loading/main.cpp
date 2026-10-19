@@ -25,6 +25,8 @@
 
 #include <iomanip>
 #include <stdexcept>
+#include <string>
+#include <typeinfo>
 
 using namespace boost::openmethod;
 

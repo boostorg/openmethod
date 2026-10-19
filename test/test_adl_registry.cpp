@@ -8,6 +8,7 @@
 // and the methods that take the class as a virtual parameter.
 
 #include <string>
+#include <type_traits>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/initialize.hpp>

@@ -10,14 +10,16 @@
 #include <boost/openmethod/detail/ostdstream.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 #include <deque>
+#include <iterator>
 #include <limits>
 #include <map>
-#include <memory>
 #include <numeric>
-#include <string>
 #include <tuple>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -25,6 +27,9 @@
 
 #include <boost/assert.hpp>
 #include <boost/dynamic_bitset.hpp>
+#include <boost/mp11/algorithm.hpp>
+#include <boost/mp11/integral.hpp>
+#include <boost/mp11/list.hpp>
 
 #ifdef _MSC_VER
 #pragma warning(push)

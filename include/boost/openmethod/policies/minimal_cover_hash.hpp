@@ -8,12 +8,16 @@
 
 #include <boost/openmethod/preamble.hpp>
 
+#include <boost/config.hpp>
+
 #include <algorithm>
 #include <cmath>
+#include <cstddef>
 #include <cstdint>
 #include <limits>
 #include <tuple>
 #include <type_traits>
+#include <utility>
 #include <variant>
 #include <vector>
 

@@ -8,6 +8,7 @@
 
 #include <memory>
 #include <string>
+#include <type_traits>
 
 #include <boost/openmethod.hpp>
 #include <boost/openmethod/interop/boost_intrusive_ptr.hpp>
