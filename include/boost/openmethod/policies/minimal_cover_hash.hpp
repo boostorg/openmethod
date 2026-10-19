@@ -405,7 +405,7 @@ auto minimal_cover_hash<MaxBits>::fn<Registry>::minimal_cover(
     std::uint64_t by_add = 0;
 
     while (!injective(ids, by_add, scratch)) {
-        int best_bit = -1;
+        std::uint64_t best_bit = 0;
         std::size_t best_count = (std::numeric_limits<std::size_t>::max)();
 
         for (const auto& info : bits) {
@@ -419,11 +419,11 @@ auto minimal_cover_hash<MaxBits>::fn<Registry>::minimal_cover(
 
             if (count < best_count) {
                 best_count = count;
-                best_bit = info.bit;
+                best_bit = bit;
             }
         }
 
-        by_add |= std::uint64_t(1) << best_bit;
+        by_add |= best_bit;
     }
 
     by_add = drop(by_add);
