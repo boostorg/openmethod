@@ -251,6 +251,8 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         // dog_virtual_ptr(dog_virtual_ptr&)
         auto snoopy = smart::template make<Dog>();
         dog_virtual_ptr p(snoopy);
+        // The copy is the point: this tests the non-const lvalue overload.
+        // coverity[copy_instead_of_move]
         dog_virtual_ptr q(p);
         BOOST_TEST(q.get() == snoopy.get());
         BOOST_TEST(q.vptr() == default_registry::template static_vptr<Dog>);

@@ -2938,6 +2938,9 @@ typename method<Id, ReturnType(Parameters...), Registry>::FunctionPointer
 template<
     typename Id, typename... Parameters, typename ReturnType, class Registry>
 method<Id, ReturnType(Parameters...), Registry>
+    // The constructor uses only zero- or constant-initialized statics, so the
+    // order of initialization does not matter.
+    // coverity[global_init_order]
     method<Id, ReturnType(Parameters...), Registry>::fn;
 
 template<

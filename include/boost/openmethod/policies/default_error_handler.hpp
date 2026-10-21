@@ -108,6 +108,9 @@ struct default_error_handler : error_handler {
         //! @param error The error object.
         template<class Error>
         static auto error(const Error& error) -> void {
+            // Copy on purpose: the handler may call set(), which would destroy
+            // the function object while it is running.
+            // coverity[auto_causes_copy]
             auto handler = st().handler ? st().handler : default_handler;
             handler(error_variant(error));
         }
@@ -123,7 +126,11 @@ struct default_error_handler : error_handler {
         static auto set(function_type new_handler) -> function_type {
             auto prev = std::exchange(st().handler, std::move(new_handler));
 
-            return prev ? prev : default_handler;
+            if (!prev) {
+                return default_handler;
+            }
+
+            return prev;
         }
 
         //! The default error handler function.

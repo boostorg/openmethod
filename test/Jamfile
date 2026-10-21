@@ -8,6 +8,7 @@
 
 import-search /boost/config/checks ;
 
+import os ;
 import testing ;
 import config : requires ;
 
@@ -107,10 +108,17 @@ for local src in $(bmi2-sources)
 run mix_release_debug/main.cpp mix_release_debug/lib.cpp unit_test_framework ;
 
 
-for local src in [ glob compile_fail_*.cpp
-    ../doc/modules/ROOT/examples/troubleshooting/compile_fail_*.cpp ]
+# Boost.CI sets COVERITY_SCAN_TOKEN only in its Coverity step. These sources
+# are meant not to compile; Coverity analyzes the half-parsed translation unit
+# and reports defects (a missing return, an uncaught exception) that are not
+# in the code.
+if ! [ os.environ COVERITY_SCAN_TOKEN ]
 {
-  compile-fail $(src) ;
+  for local src in [ glob compile_fail_*.cpp
+      ../doc/modules/ROOT/examples/troubleshooting/compile_fail_*.cpp ]
+  {
+    compile-fail $(src) ;
+  }
 }
 
 build-project dynamic_loading ;

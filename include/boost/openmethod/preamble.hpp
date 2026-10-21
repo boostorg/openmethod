@@ -364,6 +364,9 @@ struct class_info : static_list<class_info>::static_link {
     }
 
     auto type_id_end() const {
+        // One past the end of a one-element range: a valid pointer, never
+        // dereferenced.
+        // coverity[array_vs_singleton]
         return &type + 1;
     }
 };
