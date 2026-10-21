@@ -42,13 +42,19 @@ struct Times : Node {
     }
 };
 
-int main() {
-    Variable a{2}, b{3}, c{4};
-    Plus d{a, b}; Times e{d, c};
+void demo(const Node& e) {
     e.postfix(std::cout); // 2 3 + 4 *
     std::cout << " = " << e.value() << "\n"; // = 20
 }
+
+int main() {
+    Variable a{2}, b{3}, c{4};
+    Plus d{a, b}; Times e{d, c};
+    demo(e);
+}
 ----
+
+link:https://godbolt.org/clientstate/eNrNVMtu2zAQ%2FJUFCyRS7CS2HKCAZecT0hyKXqocaIpxCUiiwYcQQFC%2FPbsS5UhKL2kOrQzQ5OxydnZAsmFWWqt0ZdkWfjZM5fi%2FXgIreHX0%2FChxycRiwRCy2hvRAV9UJQqfS9gpbZ2RvLzPqqzCqRcOHjRGmqwC%2FGplnOcF%2FCYwiqFpp7iqHNS88BQTqMLBHlbpNKfWKocTFnpWL5F1%2BXYbil6AttNtbTrS8YMbxQ%2BFhO1E0gBH59oxZtRRmA4K3yvTtTRGEREY6bypoE6h%2FQutIyJtYbcb8XRV5408Ft7OmiAo6tkIvoBCPrsljBGjjr8ctUahiIZ42YNRCH2kVdp%2FMyQtep5h%2FebCx7rvN9HXsQ8bMTUNxlzCZRpq%2FSGaMVhkLJyWIGHuSfrek7m931Up5%2F522L8z%2BOq%2FMfjqMwZ3cnNZ6omTdMl6Lnkz6UVo7%2BJQ7QwEHXsacCrPHnV4hmVYCre3kMAGz%2BUdWreHZIUKSAAZX3JVRfH89gNvknYJh2aDo2ju2vTtYkHecAy1aTgasskxZ8jo%2BpGkE0vQuyh0eVKFNOMnlAl6QJPNekUZhTp0wSec65MLzy27xib3%2BLiuv8L1t4S1FJYvUninB7KBG1efYW6f8PcK2LHoow%3D%3D[Run this example on Compiler Explorer^]
 
 If the classes are part of a small, self-contained program, this may be a
 reasonable solution.

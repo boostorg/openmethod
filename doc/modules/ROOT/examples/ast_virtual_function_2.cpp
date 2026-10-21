@@ -39,11 +39,15 @@ struct Times : Node {
     const Node& left; const Node& right;
 };
 
+void demo(const Node& e) {
+    e.postfix(std::cout);
+    std::cout << " = " << e.value() << "\n"; // 2 3 + 4 * = 20
+}
+
 int main() {
     Variable a{2}, b{3}, c{4};
     Plus d{a, b}; Times e{d, c};
-    e.postfix(std::cout);
-    std::cout << " = " << e.value() << "\n"; // 2 3 + 4 * = 20
+    demo(e);
 }
 // end::all[]
 
