@@ -260,7 +260,7 @@ endif ()
 # Library
 #
 #-------------------------------------------------
-file(GLOB_RECURSE BOOST_OPENMETHOD_HEADERS CONFIGURE_DEPENDS include/boost/*.hpp)
+file(GLOB_RECURSE BOOST_OPENMETHOD_HEADERS ${BOOST_CONFIGURE_DEPENDS} include/boost/*.hpp)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 source_group(TREE ${CMAKE_CURRENT_SOURCE_DIR}/include/boost PREFIX "" FILES ${BOOST_OPENMETHOD_HEADERS})
 
@@ -288,7 +288,7 @@ endfunction()
 
 add_library(boost_openmethod INTERFACE)
 
-if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.19)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL 3.19 AND CMAKE_GENERATOR MATCHES "Visual Studio")
   target_sources(boost_openmethod PRIVATE ${BOOST_OPENMETHOD_HEADERS})
 endif()
 
