@@ -385,9 +385,10 @@ gcc.
   smart pointer to it.
 
 | `virtual_ptr<> must be passed by value or by const reference`
-| A method takes a `virtual_ptr` by non-const lvalue reference, or by rvalue
-  reference. Neither works as a virtual parameter: take it by value, which is
-  cheap, or by const reference.
+| A virtual parameter is declared as `virtual_ptr<Node>&` or
+  `virtual_ptr<Node>&&`. A method can take a `virtual_ptr` only by value,
+  `virtual_ptr<Node>`, which is cheap, or by const reference,
+  `const virtual_ptr<Node>&`.
 
 | `std::shared_ptr cannot be passed by non-const lvalue reference`
 | Pass a `std::shared_ptr` or a `shared_virtual_ptr` by value, or by const
