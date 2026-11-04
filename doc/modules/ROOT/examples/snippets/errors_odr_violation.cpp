@@ -29,6 +29,6 @@ BOOST_AUTO_TEST_CASE(conflicting_definitions) {
     });
 
     BOOST_TEST(
-        cerr.str() ==
+        without_struct_keys(cerr.str()) ==
         "conflicting definitions of boost::openmethod::default_registry\n");
 }

@@ -50,7 +50,7 @@ BOOST_AUTO_TEST_CASE(final_construct) {
     });
 
     BOOST_TEST(
-        cerr.str() ==
+        without_struct_keys(cerr.str()) ==
         "invalid call to final construct: static type = Animal, dynamic type = "
         "Dog\n");
 }
