@@ -18,17 +18,18 @@ using boost::openmethod::virtual_ptr;
 
 BOOST_OPENMETHOD(postfix, (virtual_ptr<const Node> node, std::ostream& os), void);
 
-// tag::call_via_ref[]
-void call_via_ref(const Node& node, std::ostream& os) {
+// tag::call_method_via_ref[]
+void call_method_via_ref(const Node& node, std::ostream& os) {
     postfix(node, os);
 }
-// end::call_via_ref[]
+// end::call_method_via_ref[]
 
-// tag::call_via_virtual_ptr[]
-void call_via_virtual_ptr(virtual_ptr<const Node> node, std::ostream& os) {
+// tag::call_method_via_virtual_ptr[]
+void call_method_via_virtual_ptr(
+    virtual_ptr<const Node> node, std::ostream& os) {
     postfix(node, os);
 }
-// end::call_via_virtual_ptr[]
+// end::call_method_via_virtual_ptr[]
 // end::content[]
 
 int main() {

@@ -23,8 +23,8 @@ shows that one function:
 
     dev/ce_link.py \\
         --column doc/modules/ROOT/examples/dispatch_virtual_function.cpp:call_virtual_function \\
-        --column doc/modules/ROOT/examples/dispatch_open_method.cpp:call_via_ref \\
-        --column doc/modules/ROOT/examples/dispatch_open_method.cpp:call_via_virtual_ptr
+        --column doc/modules/ROOT/examples/dispatch_open_method.cpp:call_method_via_ref \\
+        --column doc/modules/ROOT/examples/dispatch_open_method.cpp:call_method_via_virtual_ptr
 
 An example that includes a Boost header gets the Boost release that Compiler
 Explorer offers in its Libraries dropdown, not the headers of this tree.
@@ -47,7 +47,8 @@ FILTERS = {
     "demangle": True,
     "labels": True,
     # CE takes a function whose every instruction comes from a header for
-    # library code: `call_via_virtual_ptr` is the inlined dispatch, all of it.
+    # library code: `call_method_via_virtual_ptr` is the inlined dispatch, all
+    # of it.
     "libraryCode": False,
     "directives": True,
     "commentOnly": True,
