@@ -15,11 +15,16 @@ regenerated from the example whenever the example changes:
 The source is the tagged region the page includes - `tag=content` by default -
 so the reader gets exactly the code shown above the link.
 
-With `--beside`, the two examples are compiled side by side, each in its own
-compiler pane, to compare the assembly:
+With `--column EXAMPLE:TAG`, given once per column, the link opens the
+examples side by side, each source above its assembly, to compare the code
+generated for several functions. A column holds the tagged region of its
+example, minus every region nested in it except `TAG`, so that its assembly
+shows that one function:
 
-    dev/ce_link.py doc/modules/ROOT/examples/dispatch_open_method.cpp \\
-        --beside doc/modules/ROOT/examples/dispatch_virtual_function.cpp
+    dev/ce_link.py \\
+        --column doc/modules/ROOT/examples/dispatch_virtual_function.cpp:virtual_function \\
+        --column doc/modules/ROOT/examples/dispatch_open_method.cpp:method_via_ref \\
+        --column doc/modules/ROOT/examples/dispatch_open_method.cpp:method_via_virtual_ptr
 
 An example that includes a Boost header gets the Boost release that Compiler
 Explorer offers in its Libraries dropdown, not the headers of this tree.
@@ -42,15 +47,16 @@ FILTERS = {
     "demangle": True,
     "labels": True,
     # CE takes a function whose every instruction comes from a header for
-    # library code: `call_via_virtual_ptr` is the inlined dispatch, all of it.
+    # library code: `method_via_virtual_ptr` is the inlined dispatch, all
+    # of it.
     "libraryCode": False,
     "directives": True,
     "commentOnly": True,
 }
-TAG_DIRECTIVE = re.compile(r"\s*// (tag|end)::\w+\[\]\s*$")
+TAG_DIRECTIVE = re.compile(r"\s*// (tag|end)::(\w+)\[\]\s*$")
 
 
-def tagged_region(path, tag):
+def tagged_region(path, tag, only=None):
     begin, end = f"// tag::{tag}[]", f"// end::{tag}[]"
     lines = path.read_text().splitlines(keepends=True)
     starts = [i for i, line in enumerate(lines) if line.strip() == begin]
@@ -60,9 +66,31 @@ def tagged_region(path, tag):
         sys.exit(f"{path}: expected exactly one `{begin}` ... `{end}`")
 
     # Like Asciidoctor, drop the directives of the tags nested in the region.
-    region = lines[starts[0] + 1 : ends[0]]
+    # With `only`, also drop the regions of the nested tags other than `only`.
+    kept, nested, skipping = [], set(), None
 
-    return "".join(line for line in region if not TAG_DIRECTIVE.match(line))
+    for line in lines[starts[0] + 1 : ends[0]]:
+        directive = TAG_DIRECTIVE.match(line)
+
+        if directive:
+            kind, name = directive.groups()
+            nested.add(name)
+
+            if only and name != only:
+                skipping = name if kind == "tag" else None
+        elif not skipping:
+            kept.append(line)
+
+    if only and only not in nested:
+        sys.exit(f"{path}: no `// tag::{only}[]` inside `{begin}`")
+
+    source = "".join(kept)
+
+    if only:
+        # A dropped region leaves the blank lines that surrounded it.
+        source = re.sub(r"\n{3,}", "\n\n", source).rstrip() + "\n"
+
+    return source
 
 
 def uses_boost(source):
@@ -98,7 +126,7 @@ def editor(id, source):
     return component("codeEditor", id=id, lang="c++", source=source)
 
 
-def beside_state(base, source, compiler):
+def columns_state(sources, compiler):
     def column(id, source):
         return {
             "type": "column",
@@ -117,7 +145,9 @@ def beside_state(base, source, compiler):
             ],
         }
 
-    return {"content": [{"type": "row", "content": [column(1, base), column(2, source)]}]}
+    columns = [column(id, source) for id, source in enumerate(sources, 1)]
+
+    return {"content": [{"type": "row", "content": columns}]}
 
 
 def clientstate_url(state):
@@ -133,21 +163,34 @@ def clientstate_url(state):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("example", type=Path)
+    parser.add_argument("example", type=Path, nargs="?")
     parser.add_argument("--tag", default="content")
     parser.add_argument(
-        "--beside", type=Path, help="compile this example beside, for the assembly"
+        "--column",
+        action="append",
+        metavar="EXAMPLE:TAG",
+        help="a column showing the function in the nested region TAG",
     )
-    parser.add_argument("--beside-tag", help="the tag of the other example (default: --tag)")
     parser.add_argument("--compiler", default=COMPILER, help="CE compiler id")
     args = parser.parse_args()
-    source = tagged_region(args.example, args.tag)
 
-    if args.beside:
-        other = tagged_region(args.beside, args.beside_tag or args.tag)
-        state = beside_state(other, source, args.compiler)
+    if bool(args.example) == bool(args.column):
+        parser.error("give either an example or --column, not both")
+
+    if args.column:
+        sources = []
+
+        for spec in args.column:
+            path, sep, only = spec.rpartition(":")
+
+            if not sep or not path or not only:
+                parser.error(f"--column {spec}: expected EXAMPLE:TAG")
+
+            sources.append(tagged_region(Path(path), args.tag, only))
+
+        state = columns_state(sources, args.compiler)
     else:
-        state = session_state(source, args.compiler)
+        state = session_state(tagged_region(args.example, args.tag), args.compiler)
 
     print(clientstate_url(state))
 

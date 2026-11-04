@@ -14,7 +14,7 @@ function call:
 
 [source,c++]
 ----
-include::{examplesdir}/dispatch_virtual_function.cpp[tag=call_virtual_function]
+include::{examplesdir}/dispatch_virtual_function.cpp[tag=virtual_function]
 ----
 
 Clang compiles this function to the following assembly on the x64 architecture:
@@ -31,7 +31,7 @@ Let's look at a method call now:
 
 [source,c++]
 ----
-include::{examplesdir}/dispatch_open_method.cpp[tag=call_via_ref]
+include::{examplesdir}/dispatch_open_method.cpp[tag=method_via_ref]
 ----
 
 This compiles to (variable names are shortened for readability):
@@ -65,8 +65,8 @@ a single virtual argument _via_ _a_ _reference_ is between 30% and 50% slower
 than calling the equivalent virtual function, with an empty body and no other
 arguments. In most real programs, the overhead would be unnoticeable.
 
-*However*, `call_via_ref` does two things: it constructs a `virtual_ptr<Node>`
-from a `const Node&`, then it calls the method.
+*However*, `method_via_ref` does two things: it constructs a
+`virtual_ptr<Node>` from a `const Node&`, then it calls the method.
 
 The construction of the `virtual_ptr` is the costly part. It performs a lookup
 in a perfect hash table, indexed by pointers to `std::type_info`, to find the
@@ -85,7 +85,7 @@ If we already have a `virtual_ptr`:
 
 [source,c++]
 ----
-include::{examplesdir}/dispatch_open_method.cpp[tag=call_via_virtual_ptr]
+include::{examplesdir}/dispatch_open_method.cpp[tag=method_via_virtual_ptr]
 ----
 
 A method call compiles to:
@@ -96,7 +96,7 @@ mov	rax, qword ptr [rip + postfix::fn+88]
 jmp	qword ptr [rdi + 8*rax]         # TAILCALL
 ----
 
-link:https://godbolt.org/clientstate/eNrNU1tr2zAU%2FisHDYpL3Uu8hzL38tAusJfFg%2FZtKUGx5VYgHxlJ9haM99t3ZDup03ZrO1ZoAol0vu9c9Z2GpRqdQMdi%2BN4wtyoFnZjRP1gIT2OpVlWBf4GLUqM3h6PLjBcDmolpJp02W%2FCV487jDZMZ%2FU0IUxxvO4%2B9PU%2B1ujJpF%2BKDxFRVmYBTqa0zghfnc5wjHavUwYwSQDNHoE8tjau4gl%2FeGOxC027bJTqouao8Rr1YB2dwdLLNqbXMoKREufwZWJfF8ZB0B7TddmtPfB2dQ8qVWgwhFnmFqZMag57si9kBpN8QHgccSvfwwTot2X34ObK2DeHloy5KqcSzg95M9ompb2J4k8eij5MjDyi5tP7db%2BisS9%2Bdv7J9auiMfCfHsJ9EnphL5YSxfUqSi6ITvRT1zjJRUEQl7i2KL4Wyo7tcGm5WlzQMMuZc2c5PGkEDrcWISYUW1F6CajUY27a9eTCtN9dt9DLdLjU97KEuBRbC3ens4K4sScNvL%2BxeoZWVeAtdESS%2BTRVxvBZs6UxHvEiSq%2BtF8m06%2Bzq9%2FpJ8DgZBhhCMqKf3sj7%2Fk6zDbo92Hy0IXxiRv2Yv1ivR0zaL8TDqqLzXlvpMpv%2B%2BgtFYJNE%2FrGDDcEjXPamH6p4%2B%2BRSx9p1vqP%2F%2BBlxDKSs%3D[Compare the three calls on Compiler Explorer^]
+link:https://godbolt.org/clientstate/eNrtU1tr2zAU%2FisHDYpL3UuchzL38tA2sJfFg%2FZtKUGx5VYgS0KSvQXj%2FfYd2U7ibN3WDLKXNYFEOt%2B56Zzvq0mqpGPSkRg%2B18QtNcMTMeoLCeFlLFWiLORv4EIr6c3h4DKlRY9mbJJxp8wWfO%2Bo83hNeIZ%2FI8QElU9txNGRd7WqNGmb4h2XqSgzBpdcWWcYLa5ncibxWKYOplgA6pkE%2FFTcuJIK%2BOaNwSHUzbadSwcVFaXH8C3WwRWcXWz7VIpnoLFQzr8G1mVx3Bc9AGW3w5oL30cb0EfP81KmjisZdH6%2BjwOQ%2BBvCz7n6rj18sqqIdp95JknThPD6KReaC%2FbHGa%2BH%2BsLA1zm8yWPReHTmAcEX1q%2F8Ec9K%2B9f5KznGB11h7OgcjpPIO%2BZcOGZsVxKZIvCES8K3k4wVmFGwjUXQBRN2cOcLQ83yFoeBxpwK28Zxw3CgFRt4YqMFPi%2BRYtkbm6Z5%2FGFae6ds9DrKLhQu9lRpJgvmnlV28qw10nf%2FnO7IWVoun6BtAsm37iKOV4TVzrSON0ly%2FzBPPk2mHycPH5K7oCdkCMHA9XJD6%2Btf0TpsJXS40UZXcl5xOjcs30UZK1F0bvuTRjRcXvQX0qiJ7Mu1o%2FZQ1bmP3kekeVPOcNrjN%2BXsrpxBql3T%2Fms1jYcLHf93avLf78akGxU%3D[Compare the three calls on Compiler Explorer^]
 
 `virtual_ptr` arguments are passed through the method call, to the overrider,
 which can use them to make further method calls.
