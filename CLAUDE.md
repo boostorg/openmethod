@@ -725,6 +725,27 @@ compiles each generated header after the root, checks that each one *fails* on i
 and runs the `ce/*.cpp` examples against the generated tree. Those examples are also ordinary
 tests in the CMake build (`ce/CMakeLists.txt`), so they cannot rot silently.
 
+### Compiler Explorer links in the documentation
+
+**A link from a doc page uses the normal includes, not the flattened headers.** The example
+includes `<boost/openmethod.hpp>` as it would locally, and the link selects Boost from CE's
+Libraries list. The flattened headers are for the `ce/` examples only.
+
+`dev/ce_link.py` generates the link from the tagged region the page includes, as a
+`godbolt.org/clientstate/<base64>` URL that carries the source itself:
+
+```bash
+dev/ce_link.py doc/modules/ROOT/examples/ast.cpp
+```
+
+Its constants fix the compiler (x86-64 clang 23.1.0), the options (`-std=c++17 -O2`) and the Boost
+release (1.92). The NOTE at the top of `performance.adoc` states all three, so change them together.
+
+- **A link runs the Boost release CE offers, not this tree.** An example that uses something newer
+  than that release breaks its link. Compile it against that release's headers before linking it.
+- **Nothing regenerates a link.** When an example changes, its link keeps the old code until
+  `dev/ce_link.py` is re-run and the new URL pasted into the page.
+
 ### Custom RTTI
 When `<typeinfo>` is unavailable or insufficient, use static_rtti or implement custom RTTI. See `doc/modules/ROOT/examples/custom_rtti/` and policies in `include/boost/openmethod/policies/`.
 
