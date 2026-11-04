@@ -120,6 +120,6 @@ int main() {
     std::cout << " = " << e.value() << "\n"; // 2 3 + 4 * = 20
 }
 
-void call_method_via_ref(const Node& node, std::ostream& os) {
+void method_via_ref(const Node& node, std::ostream& os) {
     postfix(node, os);
 }

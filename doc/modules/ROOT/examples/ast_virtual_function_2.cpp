@@ -51,6 +51,6 @@ int main() {
 }
 // end::all[]
 
-void call_virtual_function(const Node& node, std::ostream& os) {
+void virtual_function(const Node& node, std::ostream& os) {
     node.postfix(os);
 }

@@ -114,6 +114,6 @@ int main() {
     std::cout << value(e) << "\n"; // 2 3 + 4 * = 20
 }
 
-auto call_method_via_ref(const Node& node) {
+auto method_via_ref(const Node& node) {
     return value(node);
 }

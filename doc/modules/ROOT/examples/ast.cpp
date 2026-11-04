@@ -85,11 +85,10 @@ int main() {
 }
 // end::content[]
 
-void call_method_via_ref(const Node& node, std::ostream& os) {
+void method_via_ref(const Node& node, std::ostream& os) {
     postfix(node, os);
 }
 
-void call_method_via_virtual_ptr(
-    virtual_ptr<const Node> node, std::ostream& os) {
+void method_via_virtual_ptr(virtual_ptr<const Node> node, std::ostream& os) {
     postfix(node, os);
 }
