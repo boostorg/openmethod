@@ -14,3 +14,8 @@
 
 BOOST_OPENMETHOD(postfix, (virtual_std_any, std::ostream&), void);
 // end::content[]
+
+void call(Plus& plus) {
+    virtual_std_any node = plus;
+    postfix(node, std::cout);
+}

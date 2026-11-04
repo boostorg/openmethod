@@ -18,3 +18,7 @@ struct Expr {
 
 BOOST_OPENMETHOD(postfix, (virtual_ptr<Expr>, std::ostream&), void);
 // end::content[]
+
+void call(Expr& expr) {
+    postfix(expr, std::cout);
+}

@@ -14,3 +14,7 @@
 
 BOOST_OPENMETHOD(postfix, (shared_virtual_ptr<Node>&, std::ostream&), void);
 // end::content[]
+
+void call(Plus& plus) {
+    postfix(plus, std::cout);
+}

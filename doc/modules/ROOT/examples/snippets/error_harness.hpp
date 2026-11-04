@@ -14,6 +14,7 @@
 #define BOOST_OPENMETHOD_SNIPPETS_ERROR_HARNESS_HPP
 
 #include <iostream>
+#include <string>
 #include <variant>
 
 #include "capture.hpp"
@@ -42,6 +43,18 @@ auto reporting(F&& f) -> void {
         f();
     } catch (const reported&) {
     }
+}
+
+// Removes the `struct ` that MSVC writes before a class name, where gcc and
+// clang write the name alone.
+inline auto without_struct_keys(std::string text) -> std::string {
+    for (
+        auto pos = text.find("struct "); pos != std::string::npos;
+        pos = text.find("struct ", pos)) {
+        text.erase(pos, 7);
+    }
+
+    return text;
 }
 
 #endif
