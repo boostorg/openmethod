@@ -27,3 +27,18 @@ foreach (cpp ${cpp_files})
     add_test(NAME ${test_target} COMMAND ${test_target})
     add_dependencies(tests ${test_target})
 endforeach()
+
+# Two translation units that disagree on BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS:
+# the other one sits in a subdirectory, out of the glob's reach.
+target_sources(boost_openmethod-snippet_errors_odr_violation PRIVATE odr_violation/other.cpp)
+
+# minimal_cover_hash needs BMI2 in the translation unit that names it.
+# BOOST_OPENMETHOD_HAS_BMI2 is the cached result of test/CMakeLists.txt's probe;
+# without it, the snippet compiles to an empty test.
+if (BOOST_OPENMETHOD_HAS_BMI2)
+    if (MSVC)
+        target_compile_options(boost_openmethod-snippet_errors_too_many_bits PRIVATE /arch:AVX2)
+    else()
+        target_compile_options(boost_openmethod-snippet_errors_too_many_bits PRIVATE -mbmi2)
+    endif()
+endif()
