@@ -345,6 +345,15 @@ BOOST_AUTO_TEST_CASE_TEMPLATE(
         BOOST_TEST(p.vptr() == nullptr);
     }
 
+    {
+        // copy-assign from an empty smart pointer lvalue
+        auto p = smart::template make_virtual<Dog>();
+        const dog_ptr empty;
+        p = empty;
+        BOOST_TEST(p.get() == nullptr);
+        BOOST_TEST(p.vptr() == nullptr);
+    }
+
     static_assert(!construct_assign_ok<dog_virtual_ptr, const Dog&>);
     static_assert(!construct_assign_ok<dog_virtual_ptr, const Dog*>);
 }
