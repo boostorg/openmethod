@@ -1872,7 +1872,8 @@ class virtual_ptr<
     virtual_ptr& operator=(const Other& other) {
         obj = other;
         vp = detail::box_vptr<use_indirect_vptrs>(
-            detail::acquire_vptr<Registry>(*other));
+            other ? detail::acquire_vptr<Registry>(*other)
+                  : detail::null_vptr);
 
         return *this;
     }
