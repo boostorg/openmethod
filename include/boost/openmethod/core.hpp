@@ -1344,6 +1344,9 @@ class virtual_ptr {
     //!
     //! @li @c Other* must be constructible from @c Class*.
     //!
+    //! @li @c other must not be null: the object is read to find its class.
+    //! Construct from `nullptr` to make a null `virtual_ptr`.
+    //!
     //! @par Errors
     //!
     //! The following errors may occur, depending on the policies selected in
@@ -1451,6 +1454,8 @@ class virtual_ptr {
     //! @li @c Other must be a polymorphic class, according to the @c rtti
     //! policy of @c Registry.
     //! @li @c Other* must be constructible from @c Class*.
+    //! @li @c other must not be null: the object is read to find its class.
+    //! Assign `nullptr` to make a null `virtual_ptr`.
     //!
     //! @par Errors
     //!
@@ -1872,7 +1877,8 @@ class virtual_ptr<
     virtual_ptr& operator=(const Other& other) {
         obj = other;
         vp = detail::box_vptr<use_indirect_vptrs>(
-            detail::acquire_vptr<Registry>(*other));
+            other ? detail::acquire_vptr<Registry>(*other)
+                  : detail::null_vptr);
 
         return *this;
     }
