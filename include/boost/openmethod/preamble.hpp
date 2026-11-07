@@ -502,6 +502,11 @@ struct trace {
     //! Returns a `trace` object with `on` set to `true` if the environment
     //! variable `BOOST_OPENMETHOD_TRACE` is set to the string "1", and false
     //! otherwise.
+    //!
+    //! @note The trace prints the addresses of type ids, v-tables and
+    //! overriders, which defeat address space layout randomization. A program
+    //! that runs with more privileges than the user who sets its environment
+    //! should not hand the decision to the environment.
     static trace from_env();
 };
 

@@ -2339,6 +2339,14 @@ void registry<Policies...>::compiler<Options...>::print_slots() {
 //! registered.
 //! @li The registry's policies may report additional errors.
 //!
+//! @par Thread safety
+//!
+//! `initialize` writes to the registry's state, and performs no
+//! synchronization. It must not overlap with a method call, or with the
+//! construction of a `virtual_ptr`, in another thread; nor may two threads
+//! initialize the same registry at the same time. Any number of threads may
+//! dispatch concurrently once it has returned.
+//!
 //! @par Exception safety
 //!
 //! If `initialize` throws - because a policy's `initialize` does, or an

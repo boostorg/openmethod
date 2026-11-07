@@ -58,3 +58,23 @@ struct throw_error_handler : error_handler {
 
 } // namespace boost::openmethod::policies
 ```
+
+## Runtime Checks
+
+Only a registry that contains the cpp:runtime_checks[] policy diagnoses a
+call that passes an object of an unregistered class, a call made before
+`initialize`, or a cpp:final_virtual_ptr[] whose static and dynamic types
+differ. Without the policy, nothing stands between the mistake and the
+dispatch: the v-table pointer is read from a slot that `initialize` never
+filled - a null one, or one past the end of the table - and the word found
+there is called as a function. The call does not fail cleanly; where it
+lands depends on what happens to be in memory at that address.
+
+`default_registry` contains the policy only if
+xref:reference:BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS.adoc[BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS]
+is defined, which the CMake build does for debug builds. A program that
+dispatches on objects it does not fully control - from a plugin, or built
+from external input - should consider keeping the policy in release builds
+too. The cost is a test of the initialized flag per call, and, with a
+`type_hash` policy, one load and compare per virtual argument, against the
+table of registered type ids.

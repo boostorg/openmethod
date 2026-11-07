@@ -114,6 +114,23 @@ A program can also load a shared library after it has started - a plugin,
 typically - and the library can add classes, methods and overriders to the
 registry. Call `initialize` again after loading or unloading a library.
 
+Call it *before* anything is dispatched: a library's overriders are copied
+into the dispatch tables as plain function pointers, and, once the library
+is unloaded, every call that reaches one jumps into memory that is no longer
+mapped, or into whatever a later load has mapped there. The
+cpp:runtime_checks[] policy does not catch this by itself: the registry still
+counts as initialized. Calling cpp:finalize[] before unloading, and
+`initialize` after, makes a registry that has the policy refuse every call
+made in between.
+
+The library does not synchronize anything. `initialize`, `finalize`, and
+the loading and unloading of a library that registers classes, methods or
+overriders, write to the registry's state, and must not overlap with a
+method call or the construction of a `virtual_ptr` in another thread. Two
+threads loading libraries at the same time race on the registration lists
+as well. Dispatch itself only reads, and any number of threads may dispatch
+concurrently between those operations.
+
 The program is then the natural owner of the state: it must work before the
 library is loaded, and whether or not it is. The `dynamic_loading` example uses
 a header like the one above. The program defines `OWNS_REGISTRY_STATE`,
