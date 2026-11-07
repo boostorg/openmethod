@@ -272,6 +272,16 @@ registry with the cpp:runtime_checks[] policy diagnoses a call made in the
 meantime; without it, the call dispatches through the previous tables, which -
 after a `dlclose` - may point into unloaded code.
 
+The dispatch tables are built at run time, so they live in ordinary writable
+memory - a vector in the registry's state - and so do the classes' static
+v-table pointers, unlike the v-tables the compiler emits for virtual
+functions, which the linker places in read-only memory. A program that
+hardens itself against memory corruption should know that overwriting one
+word of that vector redirects every call that goes through it. The tables
+are never written between two calls to cpp:initialize[]; a program may make
+the vector read-only with the facilities of its platform once
+cpp:initialize[] has returned.
+
 A registry can also be created by copying an existing registry's policies,
 using the cpp:with[] and cpp:without[] nested templates. For example,
 `indirect_registry` is a tweak of `default_registry`:
