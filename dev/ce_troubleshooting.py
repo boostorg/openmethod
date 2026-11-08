@@ -7,7 +7,7 @@
 """Link every example of the troubleshooting page to Compiler Explorer.
 
 Each `*Example*` label of `doc/modules/ROOT/pages/troubleshooting.adoc` gets a
-link that opens the example on Compiler Explorer, with the source and the
+link that opens the example on Compiler Explorer, with the source above the
 output of the compiler - and of the program, for an error reported at run time
 - and no assembly. Run it from the root of the repository whenever an example
 changes; it rewrites the links in place:
@@ -38,7 +38,7 @@ import textwrap
 import urllib.request
 from pathlib import Path
 
-from ce_link import BOOST, COMPILER, clientstate_url
+from ce_link import BOOST, COMPILER, clientstate_url, component, editor
 
 PAGE = Path("doc/modules/ROOT/pages/troubleshooting.adoc")
 EXAMPLES = Path("doc/modules/ROOT/examples")
@@ -172,30 +172,27 @@ def compiler_for(source, path):
     return COMPILER, OPTIONS
 
 
-def session_state(source, compiler, options):
+def layout_state(source, compiler, options):
+    # A layout rather than a session, which would put the panes side by side:
+    # the source above the output, so that the long lines of a diagnostic get
+    # the whole width of the window.
+    executor = component(
+        "executor",
+        source=1,
+        lang="c++",
+        compiler=compiler,
+        libs=[{"name": "boost", "ver": BOOST}],
+        options=options,
+        compilationPanelShown=False,
+        compilerOutShown=True,
+        argsPanelShown=False,
+        stdinPanelShown=False,
+        wrap=False,
+    )
+
     return {
-        "sessions": [
-            {
-                "id": 1,
-                "language": "c++",
-                "source": source,
-                "compilers": [],
-                "executors": [
-                    {
-                        "compiler": {
-                            "id": compiler,
-                            "libs": [{"id": "boost", "version": BOOST}],
-                            "options": options,
-                        },
-                        "compilerVisible": False,
-                        "compilerOutputVisible": True,
-                        "arguments": "",
-                        "argumentsVisible": False,
-                        "stdin": "",
-                        "stdinVisible": False,
-                    }
-                ],
-            }
+        "content": [
+            {"type": "column", "content": [editor(1, source), executor]},
         ]
     }
 
@@ -338,7 +335,7 @@ def main():
 
         source = source_for(path, tags)
         compiler, options = compiler_for(source, path)
-        url = clientstate_url(session_state(source, compiler, options))
+        url = clientstate_url(layout_state(source, compiler, options))
         page_lines[i] = f"*Example* - link:{url}[Compiler Explorer^]"
 
     if not args.print:
