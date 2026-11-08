@@ -64,7 +64,7 @@ include::example$troubleshooting/preamble.hpp[tag=content]
 
 #### `method has no virtual parameters`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUlFr2zAQ%2FitCg%2BCQNFm6hzK1zUNpYC%2BrAyt7aUpQ5It9VJaEJWUtwfvtO7nO4q0O2Lnvu%2B87ne6O3IP3aI3ngj0dORb0XUwZ19KUUZZAIVeTCSfI29ioDviERulYALtB60MDsl5uzMac4SoE58V8vrPE26aclRiquJuhnVsHpoZQ2eKdHQCzyrnOKHo0JTOyBu%2BkAtYlCnHOvE5ZVDmqwB4sVTxuDKPngE2IUrPfCczG7JYVsJdRBxK0Q9FaR89Er%2F2Hqd%2B2DZRI0Rsl9PK%2FkBC%2FqJMbZzUqBC9EE03AGraqAvXilyezuzz%2F8bjN16uH76vHb%2Fl95qiDPb5OWZZqjqbMh4I6er%2B90XjKDhaLcadN%2F5iSWmfplCPm6D0%2Bddj7ZAnsTZSNISnbjUljUrZ2qKHpJvpMALyCijSFfsQnnqJ%2B3lylaV9%2BWXxOeo274TLw7vITcSBP2pSELb5e8jZ5Wxf65eEXdJhbWpXFFW8Hx%2FiJHnc6rc1eag8DJo%2FBxXDm6f4TLZsy1mBCZ8qHwEcrKonmlNcF%2F%2BW0z%2FT7AyJ%2F%2FYE%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -89,7 +89,7 @@ include::example$troubleshooting/fix_no_virtual_parameters.cpp[tag=content]
 
 #### `virtual_traits not specialized for type`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUsFO4zAQ%2FRXLK6FUdFvKHlaY0gMCiQsEaRGXLapcZ5qM1rGt2C6gKvvtjENKAyRSknlv5o0nb3bcg%2FdojeeC%2Fd1xLOg9GzOupSmjLIFCro6POUHexkZ1wA80SscC2BytDw3IerE0S3OAqxCcF9Pp2hJvm3JSYqjieoJ2ah2YGkJli3d2AEwq5zqh6NGUzMgavJMKWJcoxCHzPGVR56gCu7PUcbc0jK4tNiFKzf4nMBuxC1bARkYdqKAdFt3r6Jnoaz8x9euqgRIpeqWEvvwDEuKZJpk7q1EheCGaaALWsFIVqH9%2BsRe7zPM%2FD6v8%2Fvru9vrhJr%2FKHE2wwZcxy%2Fozruap%2BWLMfChotPffeDQas63FYtSJpC%2BmpNZZOu4Rc%2FQc7UftBbME9iLKxpAq26VJfilbO9TQdNY%2BEQAvoCLZ0Xu95ynqjecq2X76a3aS6jWuh1vBOxcSsSVNWpmEzc5OeZu0rQv9FvGfdJgL2pnZb94OjvGIHtc67c9Gag8DJo%2FBxXDgyYhEy6aMNZjQifIh8F2KWqLZ53XBl5z2ie43RO4BSg%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -113,7 +113,7 @@ include::example$troubleshooting/fix_virtual_by_value.cpp[tag=content]
 
 #### `virtual_<> parameter is not a polymorphic class...`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUlFv0zAQ%2FiuWkaZUKy0dD2im6wNiEg%2BwTGLihU6V61yTE45txXbZVIXfzjl11zDih%2Fi%2B7%2B7z2fcduAfv0RrPBft54FjRfzFlXEtTR1kDhVxdXnKCvI2dGoA3aJSOFbAlWh86kO1qbdbmDDchOC%2Fm860l3nb1rMbQxO0M7dw6MC2ExlZHdgTMGucGoejR1MzIFryTCtiQKMQ582PKopOjCuzO0omHtWH07bELUWr2J4HFhN2wCnYy6kAF%2FbjoXkfPRK79h2mfNx3USNEzJeTyF0iI33STpbMaFYIXoosmYAsb1YD65VevxL5igI76yeinsvz%2BsCnvb%2B%2B%2B3T58KT8Xju61w6cpK3Lnm2UuuVhNmQ8VXfr4wBeTKdtbrCaDUNoxJbUuTulMHzeT01Nk6SLjWU3ZGJJEvzZppMq2DjV0w%2FQfCYAnUJEmlu1w4inK3uAqOePq%2FeJdqte4HRuHD4NKxJ40yVUJW1xf8T5pWxey0fhbauaGbLX4wPtRGz%2FQ41Yni%2B2k9jBiyhhcDGeenjfRsqtjCyYMonwM%2FC9FR6I55Q3Bq5z%2BkdZfS2EOqw%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -138,7 +138,7 @@ include::example$troubleshooting/fix_virtual_non_polymorphic.cpp[tag=content]
 
 #### `virtual_ptr<> must be passed by value or by const reference`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUl1v0zAU%2FSuWkapUKy0dD4is6wNiEi8sk5h4oVPlOrfJFY5t%2BaNsqsJv59pNaRiJlMTnnPuVe47cg%2FdotOcl%2B3HkWNN7OWNcCd1E0QAduby64gR5E53MwBvUUsUa2AqNDw5Et97ojb7AbQjWl4vFzhBvXDNvMLRxN0ezMBZ0B6E19YkdAfPW2pwoetQN06IDb4UEloVleVHeJBVVjjKwe0MVjxvN6DqgC1Eo9juBxZTdshr2IqpAAf046EFFz8oh9h%2Bme9k6aJBOLyQYwv9CZfmLJllZo1Ai%2BLJ0UQfsYCtbkD%2F9%2BpzsU1V9e9xWD3f3X%2B8ev1SfC0sT7PF5xoqhx60NbpXqrycz5kNN451%2B5WQ6YweD9TQnSl9MCqWK1PKEWXpOX417ScV0mjtrbk6SoW6RiKGONDEkut%2FotFZpOosKXHbAEwHwDDLS1gZLnHk6Df7gMrnj%2Bv3yXYpXuBubh%2BdlJeJAOclZCVt%2BvOZ9ym1sGMzG31Izt2St5Qfej9r4jh53KtlsL5SHEVPFYGO48LSvRAvXxA50yEn5GPg%2FFZVEfdblwytN%2F0T3H5z%2BDsQ%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -164,7 +164,7 @@ include::example$troubleshooting/fix_virtual_ptr_by_reference.cpp[tag=content]
 
 #### `virtual_ptr<> takes a class or a smart pointer: virtual_ptr<Node>, not virtual_ptr<Node*>`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUl1v2zAM%2FCuCBgzOmiZL91BMS%2FMwrMBeVhdYsZelCBSZsYnKkqCPrEXg%2FfZRrtN4rQ3Y5h15FH088AAhoDWBC%2Fb7wLGi92LKuJamTrIGCrk6O%2BMEBZu86oF3aJROFbAl2hA9yHa1NmtzgpsYXRDz%2BdYSb309qzE2aTtDO7cOTAuxsdUzOwJmjXO9UApoamZkC8FJBaxPFOKU%2BSVnUeekIrux1PGwNoyuPfqYpGZ%2FM1hM2BWrYCeTjlTQjYtudQpMDLX%2FMe3TxkONFD1RwlD%2BAgnxhyZZOqtRIQQhfDIRW9ioBtRDWB3Fvpblz7tNeXt98%2BP67nv5rXA0wQ4fp6wYzrhx0S9z%2Fw%2BrKQuxovGef%2BX7yZTtLVaTXih%2FMefRxKJPZoaek%2BO8g2qRwUFF2RRzabc22TRlW4cafO%2FvPQHwCCqRJ4PhR56iwX2usvcXnxYfc73G7Xg1eG9FJvakSXuTscXnC95lbevisEr8nA5zRYuzuOTd6Bi%2FMOBW5yXaSR1gxJQpuhRPPLmRaenr1IKJvSgfA2%2BlqCWaY14fvMrp7un%2BB4ITAwU%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -190,7 +190,7 @@ include::example$troubleshooting/fix_virtual_ptr_of_raw_pointer.cpp[tag=content]
 [#override_not_found]
 #### `BOOST_OPENMETHOD_OVERRIDE: cannot find '...' method that accepts the same arguments as the overrider`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNptUsFu2zAM%2FRVBA4YETZOlOwzz3ByGBtgOrYuu6GUuDEVWbGKyJJhS1iLIvn2UYy9eW%2Btg8D3ykaLenqNCBGuQJ%2BznnkNJ%2F%2BWMcS1MFUSlKOTy7IwThDa0sgPegZE6lIqlYNG3SjSr3OTmBNfeO0wWi40l3rbVvAJfh80c7MI6ZRrla1se2REwr53rhAKCqZgRjUInpGJdYpKcMr%2FELOocpGc3ljruc8Po20Hrg9DsTwQnU3bJSrUVQXsqOIyLbnVAlvS1%2FzHNc9GqCih6poS%2B%2FB%2BUJL%2FpJqmzGiQoTJI2GA%2BNKmSt5C9cDWJSC0R2DeZVm69Z9uO%2ByG7XN9fr%2B2%2FZ1cTR3bbwNGOTfvrC%2BTaNJasZQ1%2FSvY87fj%2BdsZ2FcvqmTpE9rO%2Fuvl%2BtJ8dVvC3bTfRSl1kcpIdFWmRpynJ%2BnvO4utxEA0jbONCq7bzySIB6UjLQ%2B%2FbmGXiKeidxGX108XH5IdZr2IxtxrtnjcSONMmDEVt%2BvuCHqG2d723Jz2naSzLh8hM%2FjMZ4AISNjobcCo1qxGTBu%2BBPPL1spEVbhUYZ34nyMfBailqCGfK64EXO4ZHOXxRZGoI%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -258,7 +258,7 @@ include::example$troubleshooting/fix_override_private_base.cpp[tag=content]
 [#overrider_discards_const]
 #### `overrider parameter discards const qualifier`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNptUk1v2zAM%2FSuCBgwJkiVLdximuTkMDbAdVhdd0ctcGIqs2MRkSdBH1iJIf%2Fsox168rtbB4Hvkk0i%2BA%2FXSezDaU0Z%2BHihU%2BF%2FNCVVc15HXEkMqZjOKkDfRiQ54A1qoWEmSgfHBSd6uC13oM9yEYD1bLrcGeePqRQ2hidsFmKWxUrcyNKY6sSNg0VjbCUUPuiaat9JbLiTpEhk7Z35OWXhzFIFcG7zxUGiC3x5ciFyR5wROpuSSVHLHowpYcBwX3ajoCetr%2F2Hap9LJGjB6woS%2B%2FC%2FE2G%2FsJLNGgQDpGXNRB2hlKRopfvn1IPYlz3%2FclfnN5vr75u5rfjWx2MEOHudk0r%2BxtMFlAgd%2F6mA9Jz5U2ONpnm%2Bnc7I3UE1fVSvz%2B83t7berzeTU9uviqceXssT4QXmYmfEky0hBZwVNUyp02rUwrQUlXWeLBwTkoxQRV9n7ZOAx6k1DRbLMxYfV%2B1SvYDt2FO02mIg9aqLdErb6dEGPSdvY0DuQvsPXXqLfVh%2FpcfSMe%2FCwVcl7O668HDF5DDaGM49LTDR3dWylDp0oHQP%2FS%2BGVoIe8LniRc3zA8wdH7xM2[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -288,7 +288,7 @@ include::example$troubleshooting/fix_overrider_discards_const.cpp[tag=content]
 
 #### `virtual_ptr<> is required in overrider in same position as in method`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNptUk1v2zAM%2FSuCBhQJkiVLdximuTkMDbAdVhdd0UtdGIqs2MRkSdBH1iJIf%2Fso1268btbB4Hvkoyi%2BA%2FXSezDaU0buDxQq%2FK%2FmhCqu68hriSEVsxlFyJvoRAe8Ay1UrCTJwPjgJG%2FXhS70CW5CsJ4tl1uDvHH1oobQxO0CzNJYqVsZGlO9sCNg0VjbCUUPuiaat9JbLiTpEhk7ZX5JWdg5ikCuDHY8FJrgtwcXIlfkOYGTKbkgldzxqAIWHMdF1yp6wvrav5j2qXSyBoyeMKEvf4UY%2B42TZNYoECA9Yy7qAK0sRSPFL78exL7m%2Bc%2FbMr%2FeXP3Y3H7LLycWJ9jB45xM%2BjuWNrgs9V%2FPiQ8VTvfykmfTOdkbqKb%2F1Snzu83NzffLzUgwzXL2RoQYP%2BgMb2M8yTJS0FlB02sUOu1UmNaCkq5b%2FwMC8lGKiCvr%2FTDwGPXmoCJZ4%2Fzj6kOqV7AdO4d2m0rEHjXRVglbfT6nx6RtbOidRt%2FjbS%2FQV6tP9Di6xh142KrksR1XXo6YPAYbw4nHZSWauzq2UodOlI6Bf6WwJeghrwve5Bwf8PwBiSAKlQ%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -312,7 +312,7 @@ include::example$troubleshooting/fix_overrider_plain_reference.cpp[tag=content]
 
 #### `different virtual_ptr<> reference categories`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNptUk1v2zAM%2FSuCBhQJkiVLdximuTkMDbAdVhdd0ctcGIqs2MRkSdBH1iJIf%2Fsox168btbB4Hvkoyi%2BA%2FXSezDaU0Z%2BHChU%2BF%2FNCVVc15HXEkMqZjOKkDfRiQ54A1qoWEmSgfHBSd6uC13oM9yEYD1bLrcGeePqRQ2hidsFmKWxUrcyNKY6sSNg0VjbCUUPuiaat9JbLiTpEhk7Z35KWdg5ikBuDHY8FJrgtwcXIlfkJYGTKbkildzxqAIWHMdFtyp6wvrav5j2uXSyBoyeMaEv%2FwMx9gsnyaxRIEB6xlzUAVpZikaKn349iH3O8%2B%2F3ZX67ufm2uf%2BSX08sTrCDpzmZ9HcsbXBZ6r%2BeEx8qnO70khfTOdkbqKb%2F1Snzh83d3dfrzeQ08FlW4A4DGYunGdcXr9SJ8UOD4dGMJ1lGCjoraHqmQqdlC9NaUNJ1vnhEQD5JEXGXvVEGHqPeNVQkz1y%2BX71L9Qq2Y0vRboWJ2KMm%2Bi1hq4%2BX9Ji0jQ29BelbvO0VGm71gR5H13gAD1uVzLfjyssRk8dgYzjzuMVEc1fHVurQidIx8K8UtgQ95HXBq5zjI57fBmITXA%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -337,7 +337,7 @@ include::example$troubleshooting/fix_overrider_reference_category.cpp[tag=conten
 [#overrider_pointer_kind]
 #### `different virtual_ptr<> pointer kinds`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUstu2zAQ%2FBWCBQobdq06PRRVFB%2BKGGgPjYI0yCUKBJqipUUpkuDDTWA4396lLMVK2lulg7Azu7PUcPbUCedAK0dTcr%2BnUOF3OSdUMlUHVgssKZ%2FNKEJOB8s74B0oLkMlSAbaeStYuypUoU5w471xaZJsNPLa1osafBM2C9CJNkK1wje6OrIjYNEY0wkFB6omirXCGcYF6RrT9NR5Hrtwc%2BCeXGncuC8UwWcH1gcmyXMEJ1NyQSqxZUF6HDiMh65lcCTtZ18x7VNpRQ1YPWFDP%2F4Cpelv%2FJPMaAkchEtTG5SHVpS8EfyXWw1i%2F2tFAsoLq03ifFW6hllRlcbbF4e%2B5vnP2zK%2FXl%2F9WN9%2Byy8nBue38Dgnk96D2J7F%2F1vNCYqge8ebej%2Bdk52Ganr%2BL50yv1vf3Hy%2FXE%2BOhp5k%2B0OM1aOJb9WJdsOC4VK0I1lGCjoraLyGQsUwcd0akMJ2uXtAQDwKHtCgPogDj1WfSspjJs8%2BLT%2FGeQmbcWRpZ2AkdqiJeY7Y8ssZPURtbXwfcfoBT3uBgV5%2BpofRMe7AwUbGcG%2BZdGLE5MGb4E88piTSzNahFcp3onQM%2FC2FK0ENfV3xpufwgO8fdqY4sA%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -363,7 +363,7 @@ include::example$troubleshooting/fix_overrider_smart_virtual_ptr.cpp[tag=content
 [#overrider_parameter_type]
 #### `non-virtual parameter types must match exactly`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNptUl1P2zAU%2FSuWJ6FW7dqVPUwzoQ8TlbYHCALEC0GR67jJ1Rzbiu0Cqspv5zpNaNhoHqp7zr3H9%2BPsqJPOgdGOMvKwo1Dg%2F2JKqOK6DLyUGFIxmVCEnAmNaIEvoIUKhSQJGOcbyetlpjN9hCvvrWPz%2Bdogb5pyVoKvwnoGZm6s1LX0lSkO7ACYVda2QsGBLonmtXSWC0naRMaOmWcxC18OwpMrgy%2FuMk3wt4XGB67IawRHY3JOCrnhQXks2A%2BLrlVwhHW1H5j6JW9kCRi9YEJX%2Fg4x9oSTJNYoECAdY03QHmqZi0qKv27Zix1XsRks6Fea3t7l6fXq6nJ19zu9GFmcawPPUzLqOs%2Btb5LY1XJKnC9w5kP5yXhKtgaK8dlnOnl6v7q5%2BXOxGh3W8LlsnPldtmvrhBjXS%2FdLNI4kCcnoJKNxbZmOxxemtqBk0%2FrkEQH5LEXA23bG6XmMOhdRET10%2Bn3xLdYrWA8tRtuTRmKLmui%2FiC1%2BntJ91DbWd5akX7HdczTg4gfdD9q4BwdrFc244crJAZMGb4M%2F8njVSPOmDLXUvhWlQ%2BB%2FKXwSdJ%2FXBv%2Fk7B%2FxewMsExl8[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -388,7 +388,7 @@ include::example$troubleshooting/fix_overrider_parameter_type.cpp[tag=content]
 
 #### `overrider return type is not convertible to method return type`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNptUstu2zAQ%2FBWCvdiwY9fpoSjr%2BFDEQHtoFKRBLlVg0NRGWpQiCT7cBobz7V0qcqymkQ7CzuzsQzt7HiAEtCZwwX7uOVb0XUwZ19LUSdZAIVeTCSco2ORVB7xDo3SqgC1D9GjqVWlKcwLREgyyfQU3Mbog5vOtJd76elZjbNJ2hnZuHZgWYmOrZ3YAzBrnukIpUCdmZAvBSQWsSxTilPk5Z1HnpCK7stRxXxpGzw59TFKzpwyOxuyCVfAgk44kOAxF1zoFJnrtP0z7uPFQI0WPlNDLXyAhftMmS2c1KoQghE8mYgsb1YD6FVbHYl%2BK4sftprheX31f334tLkc7qRNM2aifcOOiX%2Bbuq%2FGUoYnjN1Wb4m59c%2FPtcv2mPO%2BQ5SFWQjxfZ3z8ER5i8oaVfFLyvHtp8lmVbR1q8J0D7gmAP6ASHai3xJGnqPcHV9kd5x8W77Ne43ZoHt7dJRM7qknOytji0zk%2F5NrWxd5s%2FIxGvCBrLT7yw2CMOwy41dlmD1IHGDBFii7FE0%2BnybT0dWrBxK4oHwL%2Fl6KWaI55XfAq53BP719B7Q2a[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -416,7 +416,7 @@ include::example$troubleshooting/fix_overrider_returns_string.cpp[tag=content]
 
 #### `virtual_<> is not allowed in overriders`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUl1P20AQ%2FCunq4SCSJOGPiBc44eKqO1DMYKoLw2ynPPGXnG%2BO91HCorS3949x2AX7AfrZmd2d3yz5w6cQ60cT9jvPceKvosp47JUdShroCMXZ2ecIKeDFR3wAZWQoQKWonbeQtlma7VWA9x4b1wyn2801bWtZzX6JmxmqOfagGrBN7o6VkfArDGmaxQcqpqpsgVnSgGsIybJwPwSWTQ5CM9uNE3crxWjZ4fWh1KyvxGcnLIrVsG2DNKT4DAW3crgWNJr%2F6u0z4WFGun0TIRe%2FgolyR9ykhotUSC4JLFBeWyhEA2IR5e9aWZo7y0%2BFRg3PrrqIVrtaCUdOFO201hNehNFGrc7yabM%2BYrMH3%2F0yWnWDYjM1%2FaG3Ayy6O29rFN9zfP7VZHfLm9%2BLlff8%2Bvibvntx%2F1qeTfpW5FgB9ZiBem4eRblMQNCtwYl2C4uDwTAE4hAV9zn56VOpz5MXMQonX9efIp6iZtx0nh3s7FAU2MMI7a4POeH2Fsb3yeTfyQzV5TDxQU%2FjNb4hQ43MmZyW0oHo0oevAl%2BqNN9xHJp69CC8l1TPgbet6KRqF543eEN5%2FBA7z9q1yLk[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -443,7 +443,7 @@ include::example$troubleshooting/fix_core_overrider_virtual.cpp[tag=content]
 
 #### `method parameter must be an unambiguous accessible base of corresponding overrider parameter`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNp1Ul1v00AQ%2FCunQ0KJmiakPCCM6wdEBDy0qdqIF1xZznljrzjfne4jtIrCb2fPcRqnCPvB2pndmdvz7LgD51ArxxP2c8exou98wrgsVR3KGqjk4uKCE%2BR0sKID3qASMlTAUtTOWyjbLFe5OsGN98Yls9laE69tPa3RN2E9RT3TBlQLvtHVgR0A08aYTig4VDVTZQvOlAJY15gkp85PsYucg%2FDsVpPjLleMni1aH0rJ%2FkRwNGbXrIJNGaSngf1w6E4Gx5J%2B9oxpnwsLNVL1TA39%2BAuUJL9pk9RoiQLBJYkNymMLhWhA%2FHLZUUzI0jl2g%2Bp%2FNoY22uBTgXGXw749RIc%2BLJmeeiZsq7Ea9esVxts0amYT5nxFF3P4CW%2FHWWcRe18M2niGs8nuVK9HmXbj4y1qx9KU5fwy5%2FHeouTn5fJhVSzvFrc3i9W35ZfifvH1%2B8NqcT%2FqfUhpC9ZiBemZczYmiZgeoVuDEmwXtEcC4AlEoHD0yTvyVPUx5CKG8Or9%2FF2cl7geZpR3mYgE2cYAR2z%2B8Yrvo7Y2vs80v6Q1rynB8w98PzjGD3S4ljHNm1I6GDDL4E3wJ57%2BV6RLW4cWlO9E%2BRD4V4osUR37uuJVz%2F6R3r%2BdKTaW[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -468,7 +468,7 @@ include::example$troubleshooting/fix_core_overrider_private_base.cpp[tag=content
 [#call_non_polymorphic]
 #### `no matching function for call to '_method_'`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUtFqwjAU%2FZWQwajY6XQPY9X5MBS2h1lx4ss6pNZYL6RJaBKRSf99N7XO6nxbCw055%2BTc25uzp5ppDVJoGpDPPYUVrh2fUB6L1MYpwy1Nmk2KkJY2T0rgBkTC7YqRPkhtchZng0hE4gRvjFE6aLeXEnmZp60UzMYuWyDbUjGRMbORqwNbA1obpQb%2Ft2mDAAMxh29WOUbCahApKZVBcJIGwRZyY2O%2BUCbvOSH%2Bjk0MGUusvy%2Fq0IRbTYIz5iUMP2aLcDIav49mr%2BHQU%2Bi%2Fhp1PvJpv3x0Z%2BEQbrFfN67bhk62EVeOqzyKcj6bTt%2BHIiwTB57qta%2BjSlkh9dCb7w2GpSb9PItqMKBYrXD0QhmQxCO9XdGUypyl6hy6drhyCwk%2FvrDPPQVUribSmcajkUpPITAFneRmwLwTYjiUWb7NK3JHHXRU%2FmrjwdR869%2B48h2U9m7Ts1BFb9MTgOqzz1KWF85bKVFmmd9jMMya380iLWhtz0LDkLsXrmGtWY0JrlDUnHm%2Fd0XGe2owJU5rSOvDXCkuCOOrKzYWm%2BML3B23jLOw%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -535,7 +535,7 @@ Passed a `Node&` that refers to a `Plus`, `final_virtual_ptr` makes a
 
 #### `class must be an accessible unambiguous base, repeated inheritance is not supported`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNptUslOwzAQ%2FRXLXECUlsIBYRaJpRIHIIgiLhRVrjNNRji2Fdssqsq3Mw6BhiU5RPM2J3mz4B68R2s8F%2BxhwTGn57DHuJamiLIAGrna3OQEeRtr1QBraJSOObBDtD7UIKvjiZmYFVyG4LwYDGaWeFsX%2FQJDGWd9tAPrwFQQSpt%2Fsh2gXzrXBEWPpmBGVuCdVMAaoRAr5UFS0clRBXZt6cTFxDC6nrEOUWr2nsD1DXbEcpjLqAMZll3TjY6eidb7g6nepjUUSNMbCVr7NyTEC33JobMaFYIXoo4mYAVTVYJ68se%2Fwi5hHn4c0%2BK3WJT%2FEqc2lIQnX69VtYmnWTa%2Bm2Y3o%2Bur0d1Fdj49uzwZj0fj9ZTR6zp6TcoGuVJrylYONdRNwY8EwCuoSKW0jX%2FxNLX1c5XK39kdbie%2Fxll3N3jTRSKeKZMWJ2HD%2FR2%2BTNnWhXaX%2BJYP%2BRFtznCPLzuvcY8eZzpt0VxqDx0mi8HFsOLphyRa1kWswIQmlHeBv1F0JJovXTP80iwf6f4A2e4Cgg%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -561,7 +561,7 @@ include::example$troubleshooting/fix_diamond_inheritance.cpp[tag=content]
 
 #### `use_classes: a class is incomplete`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUstO6zAQ%2FRXLdwOitBQWV5iHBNxKdwGkUhEbiirXGZIRjm3FNg9V5dsZm0ADJItozjnzPFlxD96jNZ4LdrfiWNJ3PGBcS1NFWQGFXO3scIK8ja3KwB80SscS2DFaH1qQzenczM0GrkNwXoxGS0u8bathhaGOyyHakXVgGgi1LT%2FYHjCsncuFokdTMSMb8E4qYFkoxEZ5lFTUOarAri11XM0No%2BcJ2xClZm8J3NpmJ6yEBxl1oIR1P2mqo2eiy%2F3GNK%2BLFiqk6JUEXfoXJMQzbXLsrEaF4IVoownYwELVoB796Y9iV0i7ZOC8KGY3i2I6ub6a3Pwv%2Fi0uLs9ms8lsK40wyPMMPuTbpE%2FnVrZxqKHNztwTAC%2BgIl2zs%2BqTp6jzjavk2v7BeC%2Fla1z2TeX5iIl4oprkeMLGh%2Ft8nWpbF7qfgO%2F6UJ6Q5eO%2FfN0b4xY9LnWy%2F0FqDz2miMHFsOFp9UTLtooNmJCL8j7wuxS1RPOpy8EPzfqe3nfkEuqM[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -584,7 +584,7 @@ include::example$troubleshooting/fix_classes_forward_declared.cpp[tag=content]
 
 #### `a registry must be the last element of the list`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUcFuGjEQ%2FRXLvQSFQEkPVdyA1CZIPbTZSES5FISMd9gdxWtba5skQvTbO3aWsG3Xh9W8N%2B%2BNPW%2FPPXiP1ngu2K89x5L%2BkyHjWpoqygqo5Or8nBPkbWxVBj6gUTqWwK7R%2BtCCbGZLszQnuA7BeTEebyzxtq1GFYY6bkZox9aBaSDUtnxje8Codi4bRY%2BmYkY24J1UwHKjEKfOL6mLJkcV2J2lifulYfTtsA1RavY7gWcDNmUlbGXUgQSHvuheR89Ep%2F2LaV7XLVRI1Ss1dPJ3SIhnesm1sxoVgheijSZgA2tVg3rys6PZt6JYPKyL%2B%2Fndz%2FnD9%2BJ2ffPj62IxX5z17Id5%2FDDfZUCqtGNlG4ca2hzHigB4ARVphV0%2BR56qLiyuUlSXnyYfk17jpp8kz5tLxI48KeaETa4u%2BSF5Wxe65PmFD%2BWUcp585ofeNR7R40anzLdSe%2BgxRQwuhhNPy0u0bKvYgAnZlPeB%2F61oJJpjXy7%2B6Tms6PwBSOjmng%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -607,7 +607,7 @@ include::example$troubleshooting/fix_classes_registry_first.cpp[tag=content]
 
 #### `do not wrap an object that has a boost_openmethod_vptr overload in a virtual_ptr...`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUstu2zAQ%2FBWCAQoHae04OQRhHX9Cm0OQSx0IFLWRFqVIgly6DQz327NU5Fh53CoBEnZmdpZczE4mSAm9S1KJXzuJDf%2BXX4W02rVZt8ClNGdnkqHkczQDcILO2NyAWKFPFEH3643buCPcEYWkFovaM%2B9jO2%2BRulzP0S98ANcDdb55YSfAvAthMMoJXSuc7iEFbUAMQqWOyu9FxZOzIfHD88Tdxgl%2Bthgpayv%2BFXB2Km5EA486W%2BKG%2FbTp1uYk1Nj7humfqggtcvXEgrH9FVLqD99kFbxFg5CUitkR9lCZDszvtD6Y%2Fe8qFuiC5atX20DxdS%2FjEe8g9ny2qaSqdYJVIdYfdlHQT3ex9diIENHRrGi%2BCOLv6bv%2Bit1H4zAbBKV%2F40oijO8DWohDeB4YgL9gMt9yTNOB52qMljQlWBeXy%2FPSb7Ge5k4OWyjElj05lAVbXl%2FIffH2gcacym%2BJmhtO5fJK7ifHuMeEtS0JfdQ2wYT5mSlkOvK8x0Lr2OYeHA2mcgp8tOKR6A66oXin2T%2Fw%2BwxeBSgL[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -632,7 +632,7 @@ include::example$troubleshooting/fix_wrap_inplace_vptr.cpp[tag=content]
 
 #### `class must inherit from inplace_vptr_base`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUstOAjEU%2FZWmbjQgCC6MFfkDHys3YkjpXGdu7LRNHygh%2BO3e1gFGXTpdTO45577as%2BUBQkBrAhfsecuxov9kyLiWpk6yBgq5Ggw4QcEmrwpwgkbpVAGboQ3Rg2znC7MwR7iJ0QUxHq8s8dbXoxpjk1YjtGPrwLQQG1t9sz1g1DhXCqWApmZGthCcVMCKUIij8iarqHNSkd1b6rhdGEbfGn1MUrPPDJ6esVtWwatMOlLCrp%2F0qFNgosv9wbSbpYcaKdqQoEs%2FQEK80yYzZzUqhCCETyZiC0vVgHoL832x%2F17FGI3TtPpy7aI%2F3Es34h2aw%2FRD1lcuK%2FC4hmpWJMOi6GbKL6hs61CDL4%2F9QgB8gEo0Vff6e56izgpcZSNMLycXOV%2Fjqu8TXqbOxJpqkokyNrme8l2ubV3sfMXPQ6xuyUWTK77rjfGEAVc6O%2BpV6gA95iFFl%2BKRp70zLX2dWjCxFOV94G8paolmryvBL83uhc4X%2Ft0MWA%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -657,7 +657,7 @@ include::example$troubleshooting/fix_inplace_vptr_derived_not_base.cpp[tag=conte
 
 #### `registry can be specified only for root classes`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUstOwzAQ%2FBXLXECUlpYDwpR%2BAiCBuNCqcpxtssKxLT8KqCrfzjqkbShHkkO0M7OzXmc2PEAIaE3ggr1uOJb0HQ8Y19JUSVZAJVfn55ygYJNXLXCCRulUApuiDdGDbGZzMzcHuI7RBTEaFZZ466thhbFOxRDtyDowDcTalj9sDxjWzrVGKaCpmJENBCcVsFYoxEF5m1U0OanI7i1N3MwNo2eNPiap2VcGT8%2FYHSthJZOO1LDtNz3qFJjoen8xzefSQ4VUfZKga99DQrzTJlNnNSqEIIRPJmIDS1WDeguzndl%2Fr2KExmlafbl20e%2FvpTviM%2FiGztaXLAsZYJqJ2dE%2BTylrMzP43VGCxzWUUxIMOr63e2eT%2F7uyjUMNvo3IggD4AJVoly4zO56qLkBc5fhMrsaXuV9j0U8Xb3fNxJo8KXoZG99M%2BDZ7Wxe7NPKLEMs7yt74mm97x3jBgIXOOVxJHaDHPKToUjzwdAGZlr5KDZjYmvI%2B8NeKRqLZ6driSLNd0PsNIL0gqQ%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -681,7 +681,7 @@ include::example$troubleshooting/fix_inplace_vptr_derived_registry.cpp[tag=conte
 
 #### `the rtti policy deems this class polymorphic, so it must provide dynamic_type`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqNU21v2jAQ%2FiuWJ1WgtjC6D9NSyE%2FYpgnty6gi45jkNMe27DMrQtlv39kNJbB%2BaJBI%2FDz35rt7jjyoEMCawAv268ihpvfijnEtTBNFo%2BjI5e0tJyjY6GUGPoCROtaKLfHgVIVeAIZyYy5xMDtL4BgGG9Ar0V3BLaILxXy%2BtcRb38wawDZuZ2Dn1inTKWxt%2FcKOgFnrXA4UA5iGGdGp4IRULBsWxdnyMVlR5iiRfbWU8bgxjJ49eIxCs78JnEzZitVqJ6JGcujHTt91DKwYfC%2BY7lB51QCdDmQwuL9CRfGHbrJ0VoMEFYrCR4PQqUq2Sv4O5RvBEIECjTwSMNSLqnNaoFpKLUJgP4Ys5Qs7BNmZcyHh5PmG97o8UwEFgmSS9gDVs%2FOphZpBqKiOQ2e9a4ldkVldFJdotV%2Buy3yH96cREe3wXaVFoc7flyyvEtTjitPjFUZv2E3eqHqynj6e%2Bf7ls78eV%2BrZO8YytPt1CntL6Z0Hg5M06Rtm6H96tSyVQ79M9N1lmpK5SbZPxWxMEoy0nQOtfNbWEwHqWUm6ux%2FEduLpNCiPy6S7h0%2BLj8lfw3YsS573OhF7ikmaTdjiywPvU2zrcJAxv6c5rUi0i8%2B8H5XxEwJsdRLwTuigRsy3iC7imacuJlr4JnbKYA7Kx8D%2FoSglmJNdPlzZ9E%2F0%2Bwd4toXp[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -707,7 +707,7 @@ include::example$troubleshooting/fix_rtti_without_dynamic_type.cpp[tag=content]
 
 #### `the rtti policy does not deem this class polymorphic`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUsFOwzAM%2FZUoSGgI2BgcEAH2BQg4cWFoylLTWqRJlDiDaRrfjlM6VqA9tH7Pfo7zvJEJUkLvklTieSOx4u%2F0REirXZ11DRxKc3wsGUo%2BR9MBB%2BiMzRWIG%2FSJIuh2Nndzt4cbopDUZLL0zPtYj2ukJi%2FH6Cc%2BgGuBGl99swNg3ITQCeWErhZOt5CCNiC6RKX2mdcliztnQ%2BLec8fN3Al%2BVhgpays%2BCzg6EreigledLXHBdlj0aHMSqq%2F9xbTrRYQaOVpzQl%2F%2BAyn1zpPcBG%2FRICSlYnaELSxMA%2BYtzf6I3SFB5PP06MpjJUJER6OeORT2%2B%2BdoN8L%2Fjl2z9aDnKlCcKVWt%2BYbQLEo42smUQeeu2GV8G9BC7Jx9YQA%2BwGR2o7d6x3PU%2By5Ncf38YnpW6i0uh0shOxMKsWJN3piCTa%2FO5bZo%2B0D9EsnTRNUtr8z0Um4Hx3jChEtb1udV2wQD5iFTyLTn%2BeoKrWOdW3DUicoh8F%2BKW6Lb5XXBn5ztC79f6x0FIA%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -739,7 +739,7 @@ how a class, a parameter and a method come to belong to a registry.
 [#registry_mismatch]
 #### `registry mismatch`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUl2P0zAQ%2FCuWkU6pLrT0eECYXh8QJ%2FHC5SROvNBT5TrbZIVjW%2F4od6rCb2edpjRAIiXamd3ZtXeOPEAIaE3ggn0%2FcqzpvywZ19I0STZAIVfX15ygYJNXA%2FAKjdKpBrZCG6IH2a03ZmMucBujC2Kx2FnirW%2FmDcY27eZoF9aB6SC2tj6xE2DeOjcIpYCmYUZ2EJxUwIZEIS6ZH3IWdU4qsntLHY8bw%2Bg5oI9JavYrg8WM3bIa9jLpSAX9tOhBp8DEWPsX071sPTRI0QsljOV%2FICF%2B0klWzmpUCEEIn0zEDraqBfUjrM9iH6vq6%2BO2eri7%2F3L3%2BLn6VJzmc3SOPT6XrBgn3broV3mKdclCrOmMp%2Fu8mpXsYLEup%2FPMBukMMyW1LvIhrpij7%2Bx8AWODIoOjorIp5sp%2BY%2FIWle0cavDDwp8IgGdQiZY0OuDMUzTagatshpu3yze5XuNu6hU%2B7CYTB9IkI2Vs%2Bf6G91nbujh6i7%2BmYW7JSct3vJ%2BM8Q0D7nR21V7qABOmStGleOFpPZmWvkkdmDiI8inwvxS1RHPOG4J%2Fcvonen8DQBcI9A%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -765,7 +765,7 @@ include::example$troubleshooting/fix_registry_mismatch.cpp[tag=content]
 
 #### `registry mismatch: the parameter belongs to another registry`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUlFr2zAQ%2FitCg%2BJQL1m6hzE3ycNYYC%2BrCyt7WYpR5IstJkvCkrKU4P32nhSndhMbbO777r67k74jtWCt0MrSjPw5UlHif54SKpmqPKsAQ8pvbylCVvuWR%2BCDUFz6EshCaOtaYM1qozZqgGvnjM1ms61GXrfVtBKu9tup0DNtQDXgal2e2BEwrY2JQt4KVRHFGrCGcSAxMcuGzPuQhZ09d%2BRBY8fjRhF89qJ1nknyP4DJhCxJCTvmpcOCblz0KL0lWV%2F7jmleihYqgdELJvTlb1CW%2FcNNFkZLwQXYLGu9cqKBgtfA%2F9rVhdj6YNqr2QJ4MVvgT0vHVYth02GY5Xi0t32%2B5fmvpyJ%2FXD%2F8XD%2F9yL8nJzGDKjtxSEnSty0Woe3NKiXWlXiUp2u7maRkr0WZXi06ieqBI5xJmcRqAvidnBfqeyQB7GW59i5UdhsVHMN1Y4SENprrGQE4APdoiN5tZx6j3nqUB%2BPdfZ5%2FCvVSbMe%2BpPFwArFHTTRtwOZf72gXtLVxvY%2FpRxxmia6df6HdaIzfwoqtDA7eMWlhxOTeGe8GHm8v0KytfAPKRVE6Bq6lsKVQ57wYXOR0z%2Fi%2BAhUrL%2FU%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -789,7 +789,7 @@ include::example$troubleshooting/fix_registry_mismatch_parameter.cpp[tag=content
 
 #### `registry mismatch: a class declares an affinity for another registry`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUstu2zAQ%2FBWCvSSIa9fpoSgbB%2BjDQA9tFEBBL3Ug0NRGWpQiCT7SBIb77V3KSqXa0kHYmZ3ljjg7HiAEtCZwwX7uONb0Xc4Y19I0STZAJVcXF5ygYJNXPfAKjdKpBnaFNkQPsrvemI0Z4TZGF8RisbXEW9%2FMG4xt2s7RLqwD00FsbX1gJ8C8da4flAKahhnZQXBSAesbhRg7P%2BQuOjmpyG4snbjbGEbPI%2FqYpGZ%2FMnh2zlashgeZdCTBfiq61SkwMWj%2FY7rnykODVD1TwyD%2FBwnxm5xcOatRIQQhfDIRO6hUC%2BpXuD4atn5y%2FmS3DB7tlvmD6d5qNTodl1lNVzv2U6aOtj0cdyA%2BFUV5VxW365vv67uvxZfq87ePZbkuz3LTLAtmJ%2B7OSZlvWtnOoQbfh%2BKeAHgClegih5S88FQNkeEqB%2Bby7fJN1mvcTvPEe1OZeKSZFLaMLd9f8n2ebV0c8sdfh1ivKG3Ld3w%2FWeMHBtzqnLwHqQNMmCJFl%2BLI08%2FItPRN6sDEfiifAqej6Eg0L319cdSzv6f3L9NzF3g%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -813,7 +813,7 @@ include::example$troubleshooting/fix_registry_mismatch_classes.cpp[tag=content]
 
 #### `virtual parameters carry conflicting registries`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUl1r2zAU%2FStCg%2BDQLFm6hzEvycNYYC%2BrCyt7WYpRZNW%2BTJaEPrqW4P32XslO7aU2yNY59557r3RO1AnnQCtHc%2FL7RKHC73pBqGSqDqwWuKX86ooi5HSwPAHvQHEZKkE2oJ23grW7gzqoEW68Ny5frY4aeW3rZQ2%2BCccl6JU2QrXCN7rq2QmwbIxJQsGBqolirXCGcUFSYJ6PkV9iFFYO3JMbjRVPB0XweQTrA5PkXwSzOdmSSjywID0mdNOkWxkcyYfc%2F5j2ubSiBtw9Y8CQ%2Fgrl%2BV%2BcZGO0BA7C5bkNykMrSt4I%2FsftLsT2T8a%2B6S2CF71Fvh86jVqOk47NbKetvc7ztSh%2B3pXF7f7mx%2F7ue%2FEt68WMBeUXJBuKlsbbTRx2tyBTKLaCkPMVnm5%2Fk7M5hmio5kk%2B%2FhHOpMziic2IwXWRxpoRgev8PF0qmPV0JAZRroOPSt1BRQtx3RqQwia33SMgngQP6JDBfmced4MXKY9OvP64%2FhDzJRynRqXptCLxiJro4oitP1%2FTLmpr4wdj0%2FfYzBZtvP5Eu0kbv8DBUUZLPzDpxIQpgjfBjzxeZ6SZrUMrlE%2BidAq8lcKSoM5xaXMR093j%2BwKJJTVu[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -840,7 +840,7 @@ include::example$troubleshooting/fix_registry_conflicting_carriers.cpp[tag=conte
 
 #### `the classes carry conflicting registry affinities - list the registry to say which one is meant`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUk1P4zAQ%2FSuWuYDothQOCEORlqUSh11SqWgvFEWuMyTWOrblDz5Uld%2FO2ASSLckhmvfejOfFb0M9eC%2BN9pSR%2Bw2VFX6nI0IV13XkNWBJxeEhRcib6EQG9qQWKlZALqTxwQFvL1d6pXu4CcF6NpmsDfLG1eNahiaux9JMjAXdQmhM9cEOgHFjbR4UvdQ10bwFb7kAkoWM9crzpMKTowjk1uCJm5Um%2BDxJFyJX5C2B%2BwdkRip45FEFbNgOmxYqesK63v%2BY9rV0UEusXlHQtX9BjD2jkwtrlBQSPGMu6iBbKEUD4p%2B%2F3Bk2f7Hu224J3Nkt8R%2Bms9Wyd9ovMxuu9uXnqiiWd2WxmN%2F%2Bmd%2FdFNflr98%2Fl8v5cj9ZG2Wfo7zGAcrTLQrTWqnA5Qt%2FQABeQES8pC4BnzxWXRyoSGE4PpkepX4l18Os0LxwIp5wJgYpYdOzY7pNs40NXbboDx%2BqGSZpekq3gzX%2BSi%2FXKqXqkSsPA6aIwcbQ8%2FhHE81dHVvQIQ%2BlQ%2BD7KDxS6k9dLnY02wd83wHakwm2[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -867,7 +867,7 @@ include::example$troubleshooting/fix_registry_conflicting_affinities.cpp[tag=con
 
 #### `cannot tell which registry this class belongs to...`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqdU01v2zAM%2FSuCBgzJ6iZLdxjqpTkMC7DLmgINdlkKw5EZm5gsCfrIUgTZbx9lu43r3GYfDL1H8j3K5JE7cA61cjxlv44cC%2FrOEsZlrsqQl0BHLq6uOEFOBysa4B0qIUMBbI7aeQt5vdiojTrDlffGpdPpVhOvbTkp0VdhO0E91QZUDb7SRcv2gEllTFMoOFQlU3kNzuQCWBOYpufILzGKlIPw7F6T4nGjGD17tD7kkv2N4GjM7lgBuzxITwmnftKDDI6lXe4bpn7OLJRIp2cK6NJfoTT9Q53MjZYoEFya2qA81pCJCsRvtxgUWx6MvfAWwYG3yO8sgipYHrxuG87O%2Fb7qj2LyhzG7XvSNDrtbg60vZCP437IxuZUd3shQ%2BzHUdG%2FRZtL5aOmvq9XjOls9LO9%2FLNffV99GhrR2eEjYqLOYGW%2FnlL5ImPMF%2Fe52tN6PE7bXWIypTBxDoWuDEmwzsU8EwAEEubfdCL%2FwdOrmmYs4zTefZh9jvsRtf9h503Qk9lSTNiFis9sbfoq1tfHdcvBrMnVHqzD7zE89Gz%2FR4VbGtdjl0kGPWQVvgj%2FzdD%2BRzm0ZalC%2BKcr7wGUpkkT1EtccBjGnJ3r%2FATBeTv0%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -891,7 +891,7 @@ include::example$troubleshooting/fix_registry_ambiguous_bases.cpp[tag=content]
 
 #### `boost_openmethod_registry must return a registry`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUk1v2zAM%2FSuCBhQJmiVLdyjmJTkMC7DL6gIrelkKQ5EZm6gsCfrIUgTZby%2FluLOXWgeD75GPpPSO3IP3aLTnGft95FjSfz5hXAldRVEBhVxeX3OCvIlOtsAH1FLFEtgCjQ8ORLPa6I3u4ToE67PZbGuIN66aVhjquJ2imRkLuoFQm%2FLMDoBpbW0rFD3qimnRgLdCAmsTs6zP%2FJqyqHOUgd0Z6njcaEbfHl2IQrG%2FCRyN2ZKVsBNRBSo4DYvuVfQs62r%2FY5qXwkGFFL1QQlf%2BD8qyP7TJwhqFEsFnmYs6YAOFrEE%2B%2B9WF2Ppg3bvZEngxW%2BLPS7erFv2m%2FTBLhrrf41ue%2F3oo8vv13c%2F1w4%2F8%2B8hS3Q4PEzbqGhU2uEXqtZowH0q6vvNTXY0nbG%2BwHJNOelZpGosKXOuAJwLgADLSq3WWeOMp6vzBZXLHzef5p1SvcDs0D283SMSeNMlZCZt%2FueGnpG1s6MzGP9JQS7LW%2FJafBmM8osetSjbbCeVhwOQx2Bh6nq440cJVsQEdWlE%2BBN5LUUvUb3ltcJFzeqLzCr9oEB4%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -914,7 +914,7 @@ include::example$troubleshooting/fix_registry_not_a_registry.cpp[tag=content]
 
 #### `this class declared its registry affinity after it was first mentioned...`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUu9r2zAQ%2FVeEBsWhWbJ0H8bcJB%2FGAvvSutCyL0sxinyxxWRJ6EeaEty%2FvSfHqd3EBtv33t270%2FkdqAPnhFaOpuTfgYoC37MxoZKpMrASMKT8%2Bpoi5HSwvAW%2BCMVlKIDMhXbeAquXa7VWPVx5b1w6nW408tqWk1L4KmwmQk%2B1AVWDr3RxZAfApDKmFQpOqJIoVoMzjANpE9O0z7yNWdg5cE%2FuNXY8rBXBayesD0yStwgmI7IgBWxZkB4LmmHRgwyOpF3tJ6Z%2BzS2UAqNXTOjKP6A0fcGTzI2WggtwaWqD8qKGnFfA%2F7vlmdhqb%2BzFbBE8m23A58bbeUxZEgX7E3ncSLuHvF9DP%2BliOPfHYX9l2eNTnj2s7u9WT3%2By34nB%2Bq3Yj0ly0W1MnC9wx8f%2FeTUak50WxajViV%2BEMymTmHpFAJ%2Bj07k6zSSCnQjXwcfKZq2icbiujZBgW489IwB74AF90ZnuxGPUOZDy6L%2Bb77NvsV6KzdCetF1DJHaoid6N2OznDW2itja%2BszP9isMs0LyzH7QZjPFXOLGR0chbJh0MmCx4E3zP40%2BMNLNlqEH5VpQOgUspbCnUKa8NznKaZ7zfAbcDMws%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -939,7 +939,7 @@ include::example$troubleshooting/fix_registry_declared_late.cpp[tag=content]
 
 #### `std::shared_ptr cannot be passed by non-const lvalue reference`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUl1v0zAU%2FSuWkapUKw0dD2ih6wNiEi8sk5h4oVPkOrfJFY5t%2BaNsqsJv5zpL1wweSaQk95x7ju2bc%2BQevEejPS%2FYjyPHmt6rBeNK6CaKBqjk8uKCE%2BRNdHIA3qCWKtbA1mh8cCC6zVZv9RluQ7C%2ByPOdId64ZtlgaONuiSY3FnQHoTX1MzsBlq21g1H0qBumRQfeCglsaCyKc%2BfH1EUrRxnYraEVj1vN6DqgC1Eo9juB2Zxdsxr2IqpAgn4qulPRs2LUvmK6p8pBg1Q9UcMof4GK4hedZG2NQongi8JFHbCDSrYgf%2FrNyex%2FR5GjDuCMzX2oK98KB3Vlg3uZ0Key%2FHZflXc3t19v7r%2BUnzNL%2Bj0%2BLlg2do%2BjSKp1OuZmtmBkRlN8%2FmOz%2BYIdDNbzYb%2Fpi0mhVJYmM2OWnvPTVEfvLIGjiTQxJGW%2F1Ska0nQWFbghRQ8EwCPISMcdY3XiqRozxmVK2OX71bukV7ibBpAP40jEgTwpnQlbXV3yPnkbG8bA8re0mWuK5%2BoD7yfb%2BI4edypFdS%2BUhwlTxmBjOPP0zxMtXBM70GEw5VPgXytaEvWpbyj%2B6ukf6P4DLp4qhw%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -964,7 +964,7 @@ include::example$troubleshooting/fix_shared_ptr_by_reference.cpp[tag=content]
 
 #### `cast only allowed to a shared_ptr`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlU8tu2zAQ%2FBWCBQwbdq06PRRlFB2KGGgPjYI0yKUKBJqiJaIUSfDhJjCcb%2B9SlmLV6a3SQdiZ3Vlyd7THjjsntHKYoJ97LCr4rhYIS6rqQGsOIWbzOQbI6WBZB7wTislQcZQK7bzltM0KVagT3HhvHEmSjQZe23pZC9%2BEzVLoRBuuWu4bXR3ZEbBsjOmEghOqRoq23BnKOOoSCTllXsYs6ByYRzcaOu4LheDZCesDleglgtMZukIV39IgPRQcxkW3MjhE%2Btq%2FmPa5tLwWED1DQl%2F%2BChHyG26SGi0FE9wRYoPyouUlazj75bJB7H9HkQjludUmcb4qXUMtr0rj7euEvuT5j%2Fsyv13ffF%2Fff82vp8f7G1DZiqcFmvaTKFMGu%2FUIZAg56aTx4tkkWxyJfomT2QLttKhml%2F9qUeYP67u7b9frN73OxeNwswky8DlrgLQbegwr0w6lKSrwvMBxSYWKVmO6NUJy27nyEQD%2BxFmA8fU2HXiIes9iFh178XH1IdZLsRkbGnfjjcQONMHtEVt9vsCHqK2N738A%2FB5OewV2X33Ch9ExHoQTGxmtv6XS8RGTB2%2BCP%2FHgoUhTW4eWK9%2BJ4jHwVgpaCjXkdcFZzuER3j%2FxykHZ[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -989,7 +989,7 @@ include::example$troubleshooting/fix_shared_ptr_overrider.cpp[tag=content]
 
 #### `a std::weak_ptr cannot be wrapped in a virtual_ptr; use weak_virtual_ptr`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUstu2zAQ%2FBWCvThIa9XpISjj%2BBPSnnqpA4Om1tIiFEmQS7uB4X57l4wcK2lvlQAJOzP74HKOMkFK6F2SSvw8Smz5v%2FgopNWuy7oDDqW5vpYMJZ%2BjqcAHdMbmFsQSfaIIelit3dpd4J4oJNU0W8%2B8j928Q%2Brzdo6%2B8QHcANT79oWdAPM%2BhFooJ3SdcHqAFLQBUYVKXZR3RcWdsyHx4Lnjce0EP3uMlLUVvws4uxL3ooWdzpY44TRN%2Bm5zEmrMfcMMz5sIHXL0zIIx%2FRVS6sAnWQZv0SAkpWJ2hANsTA%2FmKa3Oxf53FQ06guhDk6jdHEA%2FbQLF1%2F3sPbbioMn0M%2BZ5plGwLOdZCcffq3crqfQ%2FxCsRZlVfNrR25Z6NHwJaiNUSjwzALzCZZx89cuY5Gg0jTbHLzZfF55JvcTt1k6xnK8Sea7LVCrb4eiNPpbYPNLpPfuLx7tlri1t5mozxAxNubfHdTtsEE%2BZbppDpwvMFFlrHLg%2FgqBaVU%2BDvUtwS3VlXg3ea0yO%2FfwBPARnT[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1014,7 +1014,7 @@ include::example$troubleshooting/fix_weak_ptr_in_virtual_ptr.cpp[tag=content]
 
 #### `a weak pointer cannot be a virtual parameter; call lock() first`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUstu2zAQ%2FBWCBQIZca06PRRVHR2KBuilcYAGvdSBQFNriQhFEnw4CQz127Nk6Fh93CodqJ2d2V2u5kAdOCe0crQiPw9UtHgu54RKprrAOsCQ8vNzipDTwfIEvBGKy9ACWQntvAU21Bu1USe49964qiy3GvPadotO%2BD5sF0KX2oAawPe6fclOgEVvTCoUnFAdUWwAZxgHkohVdWJ%2BiizsHLgn1xo7HjaK4LMX1gcmya8IFjNySVrYsSA9Csap6EYGR6qs%2FS0zPDUWOoHRExKy%2FBWqqge8ycpoKbgAV1U2KC8GaHgP%2FN7Vx2L%2Fu4pSKA9Wm9L5tnkAdt8Yb1%2F383m9%2Fn7brG%2Burr9d3X5dfykMqnficU6KvIFmhUIcNitX8aJ1PScJzf%2FsbDYney3aWZo4fhHOpCw4usG%2FMF3PLLSpQtxYfUYMHrPjunPb4h%2B9ikTMDbkOPnYZNyoaievBCAk2ee4OAXgEHnA52YTHPEbZkZRHP168X76Leim2U7vStLyY2GNN9HLElh8v6Bhra%2BOzvelbHOYSzbz8QMfJGD%2BEE1sZjb1j0sEksw7eBH%2FKo0NimtkuDKB8KkqnwN%2BlsKVQR14K%2FuCMd%2Fg%2BA1jjOxU%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1042,7 +1042,7 @@ xref:interop_type_erasure.adoc[Interoperation with Boost.TypeErasure].
 
 #### `requires standard RTTI`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlU02P2jAQ%2FSuWK61Am0LZHqq6LIeqK%2FXSZaWueimryDgmjOrYlj%2FoIpT%2B9h0HB1J6qpYciN%2BbeTMZzztQL70Hoz1l5OeBQoX%2Fs4JQxXUdeS3xSMX1NUXIm%2BhEB7wBLVSsJJmD8cFJ3ixWeqXP8DYE69l0ujbIG1dPagjbuJ6AmRordSPD1lRHdgBMttZ2QtGDronmjfSWC0m6QMbOkZ9SFFaOIpB7gxUPK03wtwMXIlfkTwJHY3JLKrnhUQVMaIdJDyp6wnLuX0yzL52sAU97DMjpJ4ix3%2Fglc2sUCJCeMRd1gEaWYivFL7%2FoxV47imlfYeoDDyBKFwLk%2BbxaG3SQzliUrkqu96ex5wn0Ff9jCoMmTyP4vFx%2BfyyXD3f33%2B4evy6%2FjI5XZLGZDTwXZJQvq5wLXL9UtmIM27laFMf3vFpX44LsDFTFZWPjrkyiiOBKjS5kiMbLHfebkcuOEpj1hYkhabQrndZbmMaCkq5zwhMC8lmKiGPN1uh5PGWfUJFccvN%2B9i7lK1gPTUS7sSdih5rosITNPt7QNmkbG7Lp6Fts5hYtNvtA20EbP8DDWiW7bbjycsAsY7AxnHm8tURzV8dG6tCJ0iHwrxSWBN3HdYeLmPYJnxeNwXRS[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1068,7 +1068,7 @@ include::example$troubleshooting/fix_any_custom_rtti.cpp[tag=content]
 
 #### `virtual_any must be passed by reference`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUl1v0zAU%2FSuWkaZUKw0dD4hs3QNiEi8sk5h4oVPkOrfJFY5t%2BaOsqsJv5zpN1zAeSaQkPufcc%2B2bc%2BAevEejPS%2FYjwPHmt7LOeNK6CaKBmjJ5eUlJ8ib6OQAvEEtVayB3aDxwYHobtd6rc9wG4L1RZ5vDPHGNYsGQxs3CzS5saA7CK2pj%2BwEWLTWDkbRo26YFh14KySwQVgUZ%2BV1UlHnKAO7N9TxsNaMrh26EIVivxOYzdiK1bAVUQUq6KdFDyp6Voy1fzHdvnLQIK32JBjLX6Ci%2BEUnubFGoUTwReGiDthBJVuQP%2F3tyex%2FR5GjDuCMzX2oK6H3L6P5VJbfHqvy4e7%2B693jl%2FJzZqlwi89zlo2Hr8aSOaMPGtrxB13M5mxnsJ4N20tfTAqlsjSIC2bpOXs1xJMP02lIq0FzfVSMPbPEjG2kiSF592udsiJNZ1GBG2L1RAA8g4x0%2FjFnJ55WY%2Bi4TJG7er98l%2BoVbqaJ5MN8ErEjT4prwpYfr3ifvI0NY4L5W9rMivK6%2FMD7yTa%2Bo8eNStndCuVhwpQx2BjOPIUg0cI1sQMdBlM%2BBf61opaoT7ph8UrTP9H9B%2F7vMAk%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1092,7 +1092,7 @@ include::example$troubleshooting/fix_method_takes_virtual_any_by_value.cpp[tag=c
 
 #### `an owning type_erasure::any must be passed by reference`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqdU02L2zAQ%2FStChSVh06TZHkq1Tg6lC710s9Cll2YxijxxRGVJ6CNNWNLf3pGtxO7updQBO3rvzRtpRvNMPXgvjfaUkR%2FPVFb4nU8IVVzXkdeASyqurylC3kQnWuCN1ELFCkghjQ8OeLNc67Xu4V0I1rPZbGOQN66e1jLs4mYqzcxY0A2Enak6dgBMd9a2RtFLXRPNG%2FCWCyCtkLFeeZtUmDmKQO4NZnxea4LPXroQuSK%2FEzgakwWpYMujChhwGgY9qOgJy7F%2FMc2xdFBLXB1RkMMvEGO%2F8CSFNUoKCZ4xF3WQDZRiB%2BKnX57N%2BlJ0h2ysmu1BYC3yIV8KwtFCCY776GDG9fFfZJsoVZD6lfT%2Fqj%2BTOoAztiPKYaZLY%2FqWBMDi5r4Mpbd9%2F%2FAUpU4FXnTNCcAYYkWOwpIw1tWkSJQw9lgKk%2FsgNwqK5aQNcqD4AarlsjX%2FtFp9eyxXD3f3X%2B8ev6w%2BjyzabeVhQka5%2FWVxTo0GPlR4c7pbejWekL2R1bg1Sv%2BI4EqN2qyX%2FV6R9B6f71S2HyUw2wkTQ%2FI4rXUaDGEaKxW4doaeEIADiIjnykN15nGVJ4yKNF837%2BfvUrySm%2BH40bZAidijJ85mwuYfb%2BgpeRsb8rjSt7iZBQ7n%2FAM9DbbxXfpUPVRsufIwYFYx2Bh6HiudaO7q2IAOrSkdAq%2BtMKXUZ127eKE5PeHvD0CtiPc%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1116,7 +1116,7 @@ include::example$troubleshooting/fix_method_takes_erased_by_value.cpp[tag=conten
 
 #### `do not wrap a virtual_any in a virtual_ptr...`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUk1PwzAM%2FStRkNAmYGVwQIRtPwE4cWGoylLTWqRJlI%2FBNI3fjlM6VsaR5lD5vWc7dt6WBwgBrQlcsOctx4r%2B03PGtTR1kjVQyNXZGSco2ORVB5ygUTpVwGZoQ%2FQg28XSLM0BbmJ0QRTFyhJvfT2pMTZpNUFbWAemhdjY6psdAJPGua5QCmhqZmQLwUkFrBMKcVDeZRV1Tiqye0sdt0vD6Fujj0lq9pnB0ZjNWQWvMulICbth0qNOgYk%2B9xfTbkoPNVK0IUGf%2FgMJ8U6TzJzVqBCCED6ZiC2UqgH1Fhb7Yv9dRYEmgreuCLEqpdn8rGZtsWLOEz3qhy17ySkzNM34aBWli352pFwwN%2Bq0eStLk99W2dahBt%2FZ4IUA%2BACV6L69L%2FY8Rb1JuMoWubqeXuZ8jauhg3g3TybWVJPslbHp7RXf5drWxd5x%2FIKuNCd%2FTW%2F4bnCNJwy40tlrr1IHGDAPKboUDzw9Wqalr1MLJnZF%2BRD4W4paotnruuBIs3uh8wXKgBZy[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1139,7 +1139,7 @@ include::example$troubleshooting/fix_wrap_virtual_any.cpp[tag=content]
 
 #### `use of deleted function ... final_virtual_ptr`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUttO4zAQ%2FRXLK62KWBrKPqzWXD4BeOKFosh1pslonbHlS6GqyrczDinNwiPxQzTnzJwZj89ORogRHUWpxONOYsP%2FxS8hraY26xY4lOb0VDIUXQ5mAH4gGZsbEFfoYgqg%2B5slLekIdyn5qKpq5Zh3oZ23mLq8mqOrnAfqIXWueWcnwLzzfhDKEakVpHuIXhsQQ6JSx8zLksWds0ni1nHH3ZIEfxsMKWsrXgs4OxHXooG1zjZxwX5adG9zFGqs%2FY%2Fpt3WAFjnacsJY%2FgEp9cw3ufLOokGISoVMCXuoTQfmX7w5iH13FRVSguB8FVNTa9p%2BrGbjsBE%2BMD1jSinmfgria5wcdrBG0rYeN1H7FGYDXTawpPKOxvUeLYThyZ8YgBcwmWcbPXDgORoNIU2xw8XvxXmpt7iaukUOsxdiw5pspYIt%2Fl7IfdF2Po3ukmc88DV7afFH7idjPGDElS2%2BWmsbYcLc5eRzOvL8QIXWoc09UBpE5RT4KsUtkQ55Q%2FApZ%2F%2FE5w0Y8w4o[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1167,7 +1167,7 @@ include::example$troubleshooting/fix_final_virtual_ptr_any.cpp[tag=content]
 
 #### `no matching function for call to ...cast`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUtFu2yAU%2FRXEpChRsmTpHqZSNw9TI20Pq6uu6ktdWQQT%2B2oYkIGsUZR9%2By6O3Xjd3mYerHvOvQc4nAN10jkw2lFGng4UCvwvZ4QqrsvAS4klFdMpRciZ0IgWeAdaqFBIkoBxvpG8XmU602e48t46tlhsDPKmKecl%2BCps5mAWxkpdS1%2BZ4sQOgHllbSsUHOiSaF5LZ7mQpG1k7Nx5Fbtw5yA8uTW44yHTBL8dND5wRX5FcDwh16SQWx6Ux4HjcOhOBUdYN%2FsHU%2B%2FzRpaA1R4buvFXiLGfeJPEGgUCpGOsCdpDLXNRSfHDrXqx%2F7ViAdrLxtgTkXO9fzXnc5p%2Bf8jTu%2FXtt%2FXDl%2FRmbLFjCy8zMu6unycCH9T3tuHwaDUjzhdo4em5RpMZ2RkoJlf%2FUszTx%2FX9%2Fdeb9UA6GjZ6I0KM63X6BzCOJAnJ6DSj0fJMx%2BAIU1tQsmkz9oyAfJEioBld6Hoeqy6BVMT8XXxcfojzCjbDeNL2XpHYoSZmN2LLywt6jNrG%2Bi7O9D2e9hrDu%2FxEj4NjPIKDjYpB3nLl5IBJg7fBn3lMRKR5U4Zaat%2BK0iHwtxRuCbrva4s3PcdnXL8BcV8w7A%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1197,7 +1197,7 @@ See xref:registries_and_policies.adoc[Registries and Policies].
 
 #### `+the `state` of a policy that defines `initialize` must be copyable...+`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlVMGO0zAQ%2FRUrSKtWW1K6HBDZbiRYKnGAzYquuNBV5TpuOsKxQzwuW6rw7YzdtAmFAxLtoZ03b96Mn8beR1ZaC0bbKGFf9hHk9DsZsUhxXTheSAojcXkZEWSNq0UAnoEWyuWSTdFVSqYLvdAdBsZiLXl5Bm8QK5uMxytDeVMXcQG4casYzNhUUpcSNyY%2FZHtAvKmqIOQs6IJpXkpbcSFZICZJx7z2LOrsBLI7Qx33C83os4UaHVfspwcHQ3bDcrnmTiEVNP2ie%2BUsS9ra3zLlblnLAijaEaEtP0FJ8p1OMq2MAgHSJkntNEIpl2IjxVebHsU6K0pZmnqX%2Fr87Y9CAwBX8kCej2pkFp%2FbLMNTuaMXBQ8FRFtSfnOiTwoyehbKsFHGmQnFr2af2mOkh28qv9VG0B1qksj5%2ByOVJ4jR8c9QJ6yloTFnOkV93vObU%2FC8D3BqN8glHLIRxHLOsQr%2ByaX8AjiDY1kDOOk8Gglh4FLgghRCHicLmTlslEk0vhv3Jm8Pf5nxJgmP5P6xD39rTCrzNsvnDMruf3X2cPbzP3i1vP7yZz2fzgV%2B6UdjA0XmLYag8nWxwGrM75%2FSsJB34IjqCv7bClBUoWYcb%2FkiAfJLC0Y61V%2F6Yp6i9%2F5Hwt%2F%2Fq5eSFr1ew6j8OUdhBn9iSJpnnscnrq6jx2ubgp8eek8039HRMXkVNb4zPYGGl%2FDOy5srKXiZzWDns8mS4T%2FO6cKXUGESjPvCnFLUEfeSF4IzTPNL3Fx4ntPk%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1222,7 +1222,7 @@ include::example$troubleshooting/fix_policy_state_not_copyable.cpp[tag=content]
 
 #### `+the `state` of a policy that defines `initialize` must be nothrow move-assignable...+`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlVF1v0zAU%2FStWkKaOdSkdD4jQRoJRiQdYJjrxQqfKddzEwrEjf4x1VfjtXDtuk2YCIZE%2BNPfce879iH33kaZaMyl0lKDv%2B4jl8D8do4hjUVhcUDAjcnERAaSlVcQDL5gg3OYUzYytOU1XYiU6jEltFMXVAC6NqXUymWwk%2BKUq4oKZ0m5iJieypqKippR56%2B0BcVnXXshqJgokcEV1jQlFPjBJush3LgoyW2LQjYSM%2B5VA8DwwZSzm6JcDR%2BdojnK6xZYbIDR90i23GiWBe%2BKpdmtFCwbWDgIC%2FQglyU%2FoZFZLzgijOkmUFYZVdE1KSn7o9CD2v6OYMMEMw5w90eNUQoEEQ661r2B36LsdGMGGFhLqnp8E%2BYJclKFVzSFmRjjWGn0NPaWtN8hvxUG0B2oDtD7e%2BgAcDPm5n8B5CwJnf47F1kgE7SsMM5oPSJdpeD2h%2F1WgjT%2FhDqp3j6LGKoFempLpQUFNZzYnyQZDvJbC0EczRt6M4xhltXF3LO0PERtG0INkOeq%2Ba2gyCJyBQmg6TxJ%2F1WZBCURT6KRXfyiuGZ5q%2F9Xzfzi%2F%2FeNxPLMfsmx5t85uFzdfFnefso%2Fr68%2Fvl8vFcuRuydhfmfEwxblnHjsbHcvs%2BpwNKOnIkaAFt2eIrGrGqfIr6R4A%2BkgJfEoVdtTBD1ZYWBFx6%2Brq9fSV43O26W%2BzyN8j53gATRiew6Zvr6LGact2ng67hDHPYddN30RNr4xvTLMNd3tvi7mmPU9mTW1N54eBOzdWha2oMF406gPPpSAlE4c4bwximnv4%2FQZcTeOv[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1246,7 +1246,7 @@ include::example$troubleshooting/fix_policy_state_move_may_throw.cpp[tag=content
 
 #### `two or more stateful policies in this registry share the same nested state type...`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNq9U11v2jAU%2FSuW99KqDEr3MC0FpH0g7WFrqlH1pVSRcS6JNceO%2FNENofS379pJSqCa9jZ4QD7n3OOD7bOnFqwVWlmakIc9FTn%2BTkeESqYKzwrAJeUXFxQhq73hEXgjFJc%2BBzIT2joDrFqs1Vod4NK52iaTyUYjr00xLoQr%2FWYs9ETXoCpwpc5bdgCMy7qORt4KVRDFKrA140CiMEkOyuugwp09d%2BRG4477tSL4eRLGeSbJcwDPzsmc5LBlXjocaIZDt9JbknSzR0y1ywwUAlc7FHTjL1CS%2FMJ%2FMqu1FFyATRLjlRMVZLwE%2FtMuTsy4RhpMH08oRxSGujyNw5mUNouuu17cHgJnDgqNWeZHojgcVA6qWqJmxiWzlvzoci5atrPfqt70YGwdTgXXNuJ1yzenycAYbf4Z7Uj137JFGvWDC2uVf7m14QGOjjO%2FXNynNF3dZent8ub78u5r%2BiX7%2FO3jarVcnYWnMorvZvR643OcDRXhuqqFBBPb9IgA%2FAbusQFdvXoeV13XKA9Nu3o3vQzzUmyGRaTx4QfiCT2xpQGbfriiTfDWteuKS99al8%2BxptP3tBnEuBdWbGSo7JZJCwMm9a727sDjgQaamcJXoFw0pUPgtRVuKVSvi4sTTfOI3z8%2B1ISL[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1271,7 +1271,7 @@ include::example$troubleshooting/fix_policy_shared_state.cpp[tag=content]
 
 #### `+the type_hash policy must appear before vptr_vector in the registry's policy_list+`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUstu2zAQ%2FBWCvSSIa8XpoSjrGOjDQA9tFMBBL3Ug0NRaWoQiCZFMaxjut3cpy7aa5BbqIOzMPgez5R68R2s8F%2BzXlmNJ%2F8mIcS1NFWUFFHJ1ccEJ8ja2qgPeoFE6lsCmaH1oQTazpVmaE1yH4LzIspUl3rbVuMJQx9UYbWYdmAZCbcs9OwDGtXNdo%2BjRVMzIBryTCliXKMQp82PKoslRBXZjaeJ2aRi9R2xDlJr9TeDZObtmJaxl1IEKdsOiWx09E33tf0yzKVqokKINJfTlR0iI33TJ1FmNCsEL0UYTsIFC1aAe%2FOzQ7LVSZIcJWYMGG6kLB%2B0aVChq6eujUP3OCYNysPdejZeXtzEM9g8bB13PWX%2FavjS9U9JLO0xnx2M%2F5%2Fnirshv5zc%2F5nff8q%2FFl%2B%2BfFov54izJO%2Bq0Hj3d8Zwqk6mUbRxqaDv%2F3RMAf0BFEqo35IGnqHcnV8mbV%2B8ml6le42poXd4JmYhH6km%2BTtjkwxXfpd7Whd7q%2FK0P5TUZe%2FKe7wZr%2FESPK51Mvpbaw4DJY3AxnHhSPtGyrWIDJnRN%2BRB43opGojnkdcGTnN09ff8AdmBAow%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1297,7 +1297,7 @@ include::example$troubleshooting/fix_policy_order.cpp[tag=content]
 
 #### `minimal_cover_hash needs BMI2...`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUk1vEzEQ%2FSuWubRqyJJyQJg0Eh%2BROEC3UioupFo53unuCK9tre1CFaW%2FnbG7SRZy4MD6sJr35vPpbbkH79EazwX7vuVY0382YVxL00TZAIVcXVxwgryNvcrACzRKxxrYHK0PPchusTZrc4TbEJwXRbGxxNu%2BmTYY2riZoi2sA9NBaG39zI6AaetcbhQ9moYZ2YF3UgHLiUIcM9%2BlLJocVWDXliZu14bR94B9iFKzpwSenbMrVsO9jDpQwW5cdKOjZ2Ko%2FYPpHqseGqTokRKG8gMkxE%2B6ZO6sRoXgheijCdhBpVpQP%2Fxi3%2Bx%2FpSj2E4oODXZSV8o%2BQF%2B10rcHmYaNMwP1aO1nMf65%2B2nr%2BeJwwYeyXN1W5c3y%2Buvy9nP5qfr45f1qtVydJc0mWcDJyehzKk1WUbZzqKHPrrojAH6BinT%2BYLM9T9HgOa6S4y5fz16leo2bsSF5licRNC65NWGzt5d8l3pbFwYD85c%2B1Fdk19kbvhut8Q09bnSy7r3UHkZMGYOL4ciToomWfRM7MCE35WPgtBWNRLPPy8FfObs7er8Bi9MyqA%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1330,7 +1330,7 @@ The examples need a compiler that supports reflection, such as GCC 16 with
 
 #### `a group holds reflections of namespaces, classes or registries`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUUtP20AQ%2Fiur7QVESRQOSGxDDlWjtodiBBGXBqzNemKPut5d7YOCIvPbmTUOMW18iOZ7jT3fjgcIAa0JXLDfO44V%2Fc8%2BM66lqZOsgUauTk44QcEmr3rgExqlUwVsjjZED7JdrM3aHOAmRhfEdLqxxFtfT2qMTdpM0E6tA9NCbGz1xo6ASeNcH5QCmpoZ2UJwUgHrhUIclF%2ByijYnFdmVpY27tWH0e0Qfk9TsJYNHx%2BySVbCVSUcydGPTtU6BicH7gWmfSw810vRMgsH%2BDgnxl75k7qxGhRCE8MlEbKFUDag%2FYbEP%2B1oUt6uyuF5e%2FVqufhTfypvl95%2B3q%2BXN0VsS%2BFJpGej4893DA5rYLY7JmM%2BsbOtQg%2B8buScAnkAluuJQ0Z6naeiL17PzWbZq3Ix75P3dMvFIcVRyxmYXZ7zLsdbFoXd%2BGmJ1SS2fnbPTrYetBpU53o1e5w4DbnSufyt1gBFTpOhSPPB0x0xLX6cWTOw38DHwfxTtR7PX9cM%2Fmu6enleUP%2Buy[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1354,7 +1354,7 @@ include::example$troubleshooting/fix_register_classes_not_a_class.cpp[tag=conten
 
 #### `a group holds one kind of reflection...`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUk1v2zAM%2FSuCdmnRNkF6KDAtzaFYsO6wumiDXZbGUGTGJipLgj66FYH320e5zuKt1kHge%2BQjzac9DxACWhO4YD%2F2HCu6Z%2BeMa2nqJGugkKuzM05QsMmrHviARulUAZujDdGDbBdrszZHuInRBTGdbi3x1teTGmOTthO0U%2BvAtBAbW72xI2DSONcLpYCmZka2EJxUwPpEIY6Zn3IWdU4qsjtLHfdrw%2Bh7QR%2BT1Ox3Bk9O2TWrYCeTjlTQjYvudQpMDLX%2FMO1r6aFGil4pYSj%2FCwnxk%2F5k7qxGhRCE8MlEbKFUDajnsDiI3RTF46os7pd335ar2%2BJz%2BbD88vVxtXw4eVMCXyotAy1%2Fvt9s8hjnbLPJU%2BV7NEO3OCXBvH5lW4cafO%2FUEwHwC1Si7Q7WHXiKBh95Pbua5VKN27G%2FvN9nJl5IjszP2OzjJe%2ByrHVxeA%2F8IsTqmty%2FvGIXOw87DSpzvBuN8x0DbnV%2BFjupA4yYIkWX4pGn%2FWZa%2Bjq1YGLfgY%2BB91LUH80hrw%2F%2By%2Bme6PwBIkz0Xw%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1377,7 +1377,7 @@ include::example$troubleshooting/fix_register_classes_mixed_group.cpp[tag=conten
 
 #### `order the groups as namespaces, classes, registries`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUstu2zAQ%2FBWCvSSIY8M5BCjr%2BFDUaHtoFCRGL3Us0NRaWpQiCT7SBob67V0qcq2k0kHYmdlZaocHHiAEtCZwwX4cOFb0nU8Y19LUSdZAJVcXF5ygYJNXPfAOjdKpArZAG6IH2S43ZmNOcBOjC2I221nira%2BnNcYm7aZoZ9aBaSE2tnphR8C0ca43SgFNzYxsITipgPVCIU7KD1lFk5OK7NbSxMPGMHqe0MckNfuTwbNzdsMq2MukIzV046Y7nQITQ%2B8rpn0uPdRI1TMJhvZ%2FkBC%2F6E8WzmpUCEEIn0zEFkrVgPoZlkezj0XxsC6Lu9Xtt9X6S%2FGpvF99%2FvqwXt2fvTiBL5WWgZa%2FOGy3o5ndhBGQzzVh220%2BZrc8J8scgLKtQw2%2Bz%2BqRAPgNKtF%2Bh%2FCOPFVDkryeX89zq8bdOGHebzQTT2RH8Wds%2Fv6Kd9nWujjcCH4ZYnVD%2BV9ds8u9h70GlTnejY7zHQPudL4Ye6kDjJgiRZfiiacNZ1r6OrVgYj%2BBj4H%2FrWg%2BmqOuL95oukd6%2FwJ9p%2FVX[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1400,7 +1400,7 @@ include::example$troubleshooting/fix_register_classes_group_order.cpp[tag=conten
 
 #### `a listed class must be complete`
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNplUk1PGzEQ%2FSuWewEBicIBCTfkUDWiPcAiiHppyMrxTnZHeO2VP6Ao2v72js3SbOn6sJr3Zt7Y82bPPXiP1ngu2M89x4r%2Bs1PGtTR1lDVQyNXJCSfI2%2BhUBj6hUTpWwOZofXAg28XarM0BbkLovJhOt5Z46%2BpJjaGJ2wnaqe3AtBAaW72xI2DSdF0Wih5NzYxswXdSAcuJQhwyP6cs6hxVYLeWOu7XhtH3jC5EqdnvBB4dsytWwU5GHaigHxfd6eiZGGr%2FYdrX0kGNFL1SwlD%2BFxLihV4y76xGheCFcNEEbKFUDagnv%2FggdoP0lgx8KYqHVVncLW9vlqtvxdfyfnn9%2FWG1vD96kwZXKi09uTHfbzbpXqdss8n1%2FeKYJJIDyrYdanDZrEcC4BeoSAMe3HvnKRqs5PXsYpZKNW7HFvM80kQ8kxz5n7DZ5Tnvk6ztwrAS%2FMyH6ooW4PyCne0c7DSoxPF%2BdJ0f6HGr02bspPYwYooYuhgOPE0l0dLVsQUTcgc%2BBv6Xov5o3vNy8CGnf6TzB4fY9aE%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1478,7 +1478,7 @@ xref:reference:BOOST_OPENMETHOD_CLASSES.adoc[BOOST_OPENMETHOD_CLASSES]. So must
 the class of every object passed as a virtual argument. cpp:initialize[]
 detects the first two omissions:
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUl1vm0AQ%2FCur6wtWXKjTh6o4iZTWSK3UliqO8pJE1gEXvMpxh%2B7DqWrR3949jG2U%2Bq3wADuzM%2Byxs2VWWItaWZbC%2FZZhRc%2FZFJjkqva8FlSy8uyMEWS1N2UPvEFVSl8JuFg719o0SQqtrdOmjmt0a1%2FEqBPdCtUIt9bVjh0B8bptrx7U%2F9okqNAhl%2FhbDI5jT%2BsMqroHvaU3ULwRtuWlgN4oTY9O89BFAl86uFbYcAnbBwV0bdA4T%2BWfHRxN4BIq8cS9dCTq5gfZQteQHsRd7%2Fgpz5e3q%2Fxn9uN7dvslX6w%2Bf7teLrNlRM2TOSTJvh8tNGjDlKdkUaufxRSiYZZV68zFTng1mcJGYzU5%2Fbn8Lru5%2BbrIThnQCAf1%2FrA0UBzHdKzghspBw1FFY5oX2jgLL7QeEMZoA%2FRPLeUkBa%2BelX5RUEpu7XCwne64pigMSu4hTqVuWpTC9Ml7JED8EqWn7Q9R3PNUDblkZUjl%2BfvZu6CXWIxDy%2FqlBmJDnpTogM0%2BnrMueOvWDSFnb62rLinSsw%2BsG41xhxYLGeL9xKUVIyb3rvXuyNO%2BA81N7RuhXG%2FKxsC%2FVvRJVPu%2BvnjV0z3S%2FReOuDN3[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1487,7 +1487,7 @@ include::example$snippets/errors_missing_class_method.cpp[tag=classes]
 include::example$snippets/errors_missing_class_method.cpp[tag=init,indent=0]
 ----
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlUl1v00AQ%2FCur48VRg03KA8JpKxUSCSTAqKn60lbR2b46q57vrPtIEZH57ezZTmKVvBE%2FxDuzM7fnnR2zwlrUyrIU7ncMS%2FqfTYFJrirPK0ElK87OGEFWe1N0wBtUhfSlgIuNc41NkyTX2jptqrhCt%2FF5jDrRjVC1cBtd9uwIiDdNc%2FWg%2FtcmQYUOucTfYnAce1pnUFUd6C29geK1sA0vBHRGaXp0mocuEvjCwbXCmkvYPSig3xaN81T%2B6eFoApdQiifupSNROz%2FIFrqC9CBuO8dPWba6XWc%2Flz%2B%2BL2%2B%2FZIv152%2FXq9VyFfVtkzkkSSdECzXaMOUpWdToZzGFaJhl3Thz0TtcTaaw1VhOTh%2BX3S1vbr4ulqcM6NiDen9ZmiaOY7pWcEPloOaoojHNc22chRdaDwhjtAH6ppZykoJXz0q%2FKCgktzbcqhcddxSFKck6ZKnQdYNSmC52jwSIX6LwtPohh3ueqiGUrAiRPH8%2Fexf0EvNxYlm30UBsyZPiHLDZx3PWBm%2FduCHh7K115SXlefaBtaMx7tBiLkO2n7i0YsRk3jXeHXladqC5qXwtlOtM2Rj414qORLXv64pXPe0jPX8Brb8yPw%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1500,7 +1500,7 @@ The third one can be detected only during the call, and only if runtime checks
 are enabled. Otherwise, the call reads a v-table pointer that was never set up,
 and the behavior is undefined: it may call the wrong overrider, or crash.
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlU11vmzAU%2FSuW%2B0LUDJbuYRr9kPKB1GptmELWl6VCDrjkqsZG2E6nRdlv3zUkBLV9GzyAz7nn%2BNr33h3VXGtQUtOQ%2FNpRyPE7GhIqmCwsKzguaXZ%2BThHSytZZA5zl%2FBkkJ5M4TpZp%2FCOaP0TL23iWRvPx5D5KFz%2Fny7uHKJ3eRtPvyUqu5BnITNick6uNMZUOg2CtlDaqLvwCzMaufVCBqrgsudmovGV7gL%2Bpqpv%2FtwlAggEm4A8%2FOPY9talBFg1oNf4RyUquK5Zx0hiF4cnp0kWhwGaGjCWUTJDdShJ8tlAbi8u%2FLewNyDXB%2B2JWGBTtLzvZTBUk7MQ9YmKFyBvShTTMSgZBh4MmJWiX4Uq%2BK8H0fpwkUeK1vkNnMWgM3kZ6lXrhQ%2BId8k0rU1%2B1opvBkGwV5B%2Fr0vgxWizuZtFHBrhbpz5eCGbu%2Bz4e3bmBNKRkIL2OPpXEazd04PGoG55hdTsYrdha1UaTVyw34XWtaoI10tipIbHyRapXSTLBtD5atEKXqteauU0wFdfRmSorELxumv8JAf6bZxZjDtNw5HF1GA2aucG4%2BDL67PQC1v25oU2XOGKLnjhUDht9u6B7560qc5gz%2Bkmb%2FBqnavSV7ntpPIKGtXAT9syE5j0mtqay5sRjnzia1YUtuTSNKe0D761wS5DHuGbxJmb%2FhO8%2F0z5fMQ%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1535,7 +1535,7 @@ that are registered separately are unrelated, as far as OpenMethod is
 concerned. If an overrider implies that one derives from the other,
 `initialize` reports it:
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlU9tu00AQ%2FZXR8uKoqU3KA8JJKxUSCSTAqKn6QqtobU%2FtEfautZdCCeHbmXVuVql4wX6w53LOzO6cWQuL1pJWVqTwdS2o5O9kDKKRqvKyQjZFcXIi2GW1N0XveEGqaHyJMKud62yaJLnW1mlTxRW52ucx6UR3qFp0tS630YEjrrvu4lb9L01CihzJhn7ijnHIaZ0hVfVOb%2FkPlGzRdrJA6InS9Mg0DVkM8IWDS0WtbGB9q4CfBzLOs%2Fl7645GcA4l3kvfOAZtpgfYXFeQHsCbnjFJwGBF1qHBEix20kiHzeMYrAZXI5Cq0ZCTipsiCwof0HAeMvZtli2vV9mXxedPi%2Bv32Xz17uPlcrlYRtsSo%2Bk%2FUriXUd%2FA04yo099wDNHuVKvOmdmW72I0hgdN5fO4VXazuLr6MF88R8DVDuj9tfHJ4zjmCwpspBy0klQ0DMtcG2fhOw8a0BhtgKdjWXEptGT7geXS4v5GT2e%2FwhVv4ce5R6FfLhL0Wei2owZNL%2BU7duAPLDzLaaftfZytndBFEWR%2B9mryMuAbyodbIHqVhAAPJaxI8E3enIlN4Nad222NOLWuPOcdmbwWm0EbN2Qpb8K%2B3MvG4iCSedd5d4yzgEJYmsq3qFxPKoaOv6m4JKl9Xm88ydnc8fsHN11PHQ%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1565,7 +1565,7 @@ Error type: cpp:no_overrider[].
 
 No overrider is applicable to the dynamic types of the virtual arguments:
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlU01vm0AQ%2FSur7QUrDtTpoSr5kNIYqZXaUsVRLnFkLbDGoy67q%2F1wo1jub%2B8sYIxS3woHNO%2FNe7MDjx213FpQ0tKUPO0oVPicTQkVTNae1RxLWp6dUYSs8qZsgXcgS%2BErTq42zmmbJkmhlHXK1HENbuOLGFSiNJcNdxtVdewIiDda3yzl%2F9okIMEBE%2FDKe8el9BZkTSRruNWs5KTVpOlRdBm6rDO%2BdORWQsME2S0lwWsLxnks%2F3RwNCHXpOJr5oVD0f5ykM1VTdJBPCLumHtDLOXnPF88rPKf2Y%2Fv2cOXfL66%2B3a7WGSLqGubBrdpUE5Otkda%2FeJTEvWHW2lnrjrlzWRKtgqq07pV%2Fpjd33%2BdZ6cMcOSgPmyfJCSOY9wzuIF0pGEgo4E%2BvuqoGxjAsO%2BaC3gZEHRhhTLOkt%2F4BQk3RhmC38JilFIilSPQaMEbLh2vOkk4X9S6BGMcH7JWqkaD4KaN5TMC%2FIWXHqPR5%2FTAY9WHlpYhshcfZu%2BDXkAxTjRtYxCILXpi3AM2%2B3RB98Fbadf%2FAfTcuuoa8z77SPejYzyChUKE7K%2BZsHzE5N5p7448BiHQzNQ%2BLNma0jHwrxWOBHnoa4s3PftnvP8Cn607wA%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1600,7 +1600,7 @@ Error type: cpp:ambiguous_call[].
 Several overriders are applicable, and none of them is more specialized than
 all the others:
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlU9tunDAQ%2FRXLfWEVCt30oSq5SGkXqZXaUmWjvGSjlQEHRgLb8iW9rOi3dwwsS9pV1arwgObMnDNjM2dHDTcGpDA0IXc7CiV%2BlyGhDROVYxXHkBYnJxQhI50ueuAZiKJxJSfntbXKJHGcS2ms1FVUga1dHoGMpeKi5baW5ZCdAVGt1OVG%2FK9MDAIssAa%2B81FxI5wBURHBWm4UKzjpOUlyIJ35KmO1Kyy5EtCyhuw2guDzCNo6DH8McLAgF6TkD8w1Fknd2URbyYokE7nrFd9k2fpmm31OP31Mb95lq%2B3bD1frdboOhrLQkxZHK4OWcxuSYGy%2FVVafD6TLkBwBF4hKKI%2BLbbPb9Pr6%2FSr9a1Wca5Lc30QckyiK8Mz%2F3MKr%2FXHqoy1AWNIyEMGUPvzZYDioB%2F29GyGl%2BhaSmhe4KFMK5VgutTXkC24O4VpLTXAHDK5wQlibQ%2BWkM0Oxnzt4KuSb4Ch%2BzQvZKmi47h1xjwD%2FyguHNaNF9nmMRr%2FQwrvl9OXyhec3kM%2FNRPsN9IlH1ESneWz5%2BpR2XlsqO5qPPje2vECrLV%2FRbjbGLRjIG2%2B7B9YYPstkzipnD3lcTp9munItF7YXpXPgdylsCWJf1we%2F1HT3%2BP4EOIBl2A%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1652,7 +1652,7 @@ Error type: cpp:not_initialized[].
 
 A method was called before cpp:initialize[]:
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqNU11vmzAU%2FSuW%2B0LUjCzdwzT6IaUJUqu1YQpZX5YKGXDI1cC2sJ19RNlv3zWQBK15GDzAPfecY1%2F5eEc11xqk0DQg33YUcvyOh4SWTBSWFRxLml1eUoS0tHXWABewFjlfk%2FsoipdJ9CWcP4fLh2iWhPPJ%2FVOYLL7Ol4%2FPYTJ9CKef45W4QDII%2Fv98LnJYrwT%2BgchKm3NyszFG6WA0SqXURtaFX4DZ2NQHOZKKi4qbjczbbg%2FwN0rdOSOrQRREsIprxTJOGmIQnJjXjqVNbTNDJgIqVpLdShB8tlAbi%2BWfFvYG5JbgQMyWBkX766NsJgsSHMX7xvHNyNOnSRyHsdfShk40OMv0lPzOh8Trlk%2BUqW9a0d1gSLYS8vO6JHoJF4vHWXjOAFc7qg%2FzjUbE932cxLmBMKRiILx%2BGwQYYCX85ghvmCZCGpJyLkjGypLnLdGNr4WU6lezr07LUlkbTX7gaRFe17ImeAQakxU0LifrzsVt2mtt3Hy4KZe9TFYKSl43MX1FgP%2FkmcUcdLk99LHqQkwzF%2BGrD%2BP3Tl9C2k84bY7fNbboifF32PjTFd07b6lMdyPoO23yW8z%2F%2BCPd97bxAhrS0t2FNSs173Uia5Q1pz4mw7VZXdiKC9OY0j7w1gqXBHHgNcU%2FnP0rvn8ByxM7hA%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1687,7 +1687,7 @@ Error type: cpp:final_error[].
 cpp:final_virtual_ptr[] takes the static type of its argument for its dynamic
 type, without checking it, unless runtime checks are enabled:
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqlU1FvmzAQ%2FisnKk1EzWDpHqaRplKaIrVaG6Yk68tSIQccchrYCJt0WZT99p2BELTmYdLgAfzdfd%2F5zv72luJKoRTK8uD73sKYvoM%2BWCkTSckSTksrury0CFKyLKIKuMC1iPkaboNgvgiDr%2F70yV%2FcB3ehPx3fPvrh7Nt08fDkh5N7f%2FJlvhQXlIyC%2F3s%2BFzGul4L%2BUERpGXO43midK891V1IqLYvESVBvypWD0pU5FxnXGxnX0Q7gbPL85v9lXBSokaX4izeKS1EqFAkIlnGVs4hDxfG8E2lospQuykjDWGDGUtgvBdCzxUKXtPxdw3YPRkAjYmWqiXQYtrQ7mYDXkg%2BV4pshTh7H87k%2Ft%2Bu0viH1zmbaufzB%2B2A35cNcF9c16abXh63E%2BDwvDJ792ezhzj8nQNVa9rE%2F1wXHcagTo4ZCQ8ZQ2G34NEy7LmhA06oSUua7YQ3UO3sHrO5%2BdIq2RdhKFlrBKx0h8KKQBdBhKLq1XpuCYkuVYohYmoKWQPeQxCLZTNgDpZnGCPQu51TjOMN4Rwd7gmlztaIZgF1phJ0h2PUee6Yb6tmYJZJZjikvKl%2B9EMB%2F8qikG9cY7RinVeM6KzKeu%2Fo4%2BGD4Ka66lrSq22UCW9Ikvxps8PnKOhhtmevGwtZ7peMRGXbwyTp0tvGMClepMe%2BapYp3IkGp81Kf4jQWE2ZFUmZc6ErU6gJvpagkimNetfgr5%2FBC7x%2BvYHrz[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1763,7 +1763,7 @@ With the default limits, the first three are unlikely with ordinary type ids,
 and cannot be provoked by a small program. The last two policies take their
 limits as template arguments, so it takes a registry configured to fail:
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqtU9tu00AQ%2FZXR8pKqaZwEUFU3jVRoJB6AIKXihVTRZr2xR1rvrvZSKJH5dmadmxV4A%2FvB3jNzzlx2Zsu89B6N9iyHb1uGBX1HfWCK6zLyUtKRictLRpA30YkWeIVaqFhImFQhWJ9n2doYH4wrByWGKq4HaDJjpa5lqEyxs3aAQWXtdKn%2FVSazRqFA6bMaNdZcrax0GynCquK%2B%2Bl9BSDogV%2FhT7hW7mj441GULRk9%2FoHktveVCQiuU5yel2%2BRFhCgC3Lf5wnapgZ5ndCHS8dcO7l3AHRRyw6MKRGpuj7QHU0J%2BJDddxVSyLFZOlkjIy044P8gc8Tz%2FTlVPDp3L87%2B1bvKmDzdv%2BzCcTg9R3s3ni8fV%2FMvs86fZ44f5w%2Br9x%2FvFYrbo7ZLpp9T650lctFTUAWqOmsra15tlwNfGBQ8pGZDOGQfUN08Dlx9dhImqAG0CWJUaOobwYiVg4YFvgnRAEVLLh1BThWgVSud37NOdTc5SmvZSUs1Sp4kWpraoiJWG%2F4kA%2BUOKSLOx34aDnU771WAiLcb49WiY%2BArX3b1h7ZUnwzNp0lIlbHQzZk3SNjbs94xd%2BVDc0VaNrlnTSeMrelyrtGEbrrzsWOYx2BhOdrryZOaujLXUoRVlXeBPKQqJ%2BuDXHs58mid6fwPspmpF[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -1772,7 +1772,7 @@ include::example$snippets/errors_hash_search.cpp[tag=classes]
 include::example$snippets/errors_hash_search.cpp[tag=init,indent=0]
 ----
 
-*Example*
+*Example* - link:https://godbolt.org/clientstate/eNqtU01v2kAQ%2FSuj7YUoBAM9VN0QpLRB6qEtlYh6KRFa24M9kr1r7UfSNCK%2FvbPGgBWOLT7gfTPvzcx63otw6BwZ7YSEXy%2BCcv6fDEFUShdBFchHkV1eCoacCTZrgXeksyrkCLPS%2B8bJJEmNcd7YYlSQL0M6IpOYBnWNvjT5PtoDRmXTzNf6X2WSxlSUEbqkJk21qjaZeUS7KZUr%2F1cJFvakKvqDnWJf03lLumjB4PgNtKrRNSpDaIWkPCldxywmhMzDbdstvKw18O%2BRrA98fN3Dgwu4gRy3KlSeSbvrI%2B3OFCCP5F1fsR0c843Fghh63ivLg84Rl%2FKJx54dLk7K85ubjefzg%2Fqn5XJ1v1n%2BWHz%2Ftrj%2FsrzbfP56u1otVoN9E8PY0vCs%2BEXLJe2hVqR5nm7QJAGVGusdxCYArTUW%2BMIc75k8pvgSwbF4hc5DSt1sYLYwBf%2FcIFDugBxMYjBK5TiE2lhkptItfQxMN0%2BY70VP33D2ttX5IDa7W%2Bu44JmpG6rQtl54YAB%2FYxZ4WTpzHOJ86pwisuiT6fvJOPIrSvs2Eu0OxADXjB6L2OTjVOyitml8Zztx5Xx%2BwyabfICrOq2JM3rd%2FCRHaRV9t1WVw15kGXwT%2FCnOqxDDyhahRu1bbdEHzqW4MulDXnt4k7N74Ocv7pJyCg%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
