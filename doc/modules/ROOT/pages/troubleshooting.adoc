@@ -1,8 +1,20 @@
 :toc: macro
-:toclevels: 2
+:toclevels: 3
 :toc-title: Contents
 
 [#troubleshooting]
+
+// The theme draws a rule in a very light grey; on this page, rules separate
+// the entries, so they need to stand out.
+++++
+<style>
+.boostlook .doc hr {
+    border: 0;
+    border-top: 2px solid var(--border-border-quaternary, #8e9399);
+    margin: 2rem 0;
+}
+</style>
+++++
 
 toc::[]
 
@@ -52,16 +64,32 @@ include::example$troubleshooting/preamble.hpp[tag=content]
 
 #### `method has no virtual parameters`
 
+*Example*
+
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_no_virtual_parameters.cpp[tag=content]
 ----
 
 A method dispatches on the parameters declared with `virtual_` or
-`virtual_ptr`. Without one, it is an ordinary function. Here, the first
-parameter is `virtual_<Node&>` or `virtual_ptr<Node>`.
+`virtual_ptr`. Without one, it is an ordinary function.
+
+Declare the parameters to dispatch on as virtual. Here, the first parameter is
+`virtual_<Node&>` or `virtual_ptr<Node>`. The method then selects an overrider
+from the dynamic type of the node.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_no_virtual_parameters.cpp[tag=content]
+----
+
+'''
 
 #### `virtual_traits not specialized for type`
+
+*Example*
 
 [source,c++]
 ----
@@ -69,10 +97,23 @@ include::example$troubleshooting/compile_fail_virtual_by_value.cpp[tag=content]
 ----
 
 A `virtual_` parameter is a reference, a pointer, or a smart pointer that
-OpenMethod supports: `virtual_<Node&>`, not `virtual_<Node>`. Dispatching on an
-object passed by value would slice it.
+OpenMethod supports. Dispatching on an object passed by value would slice it.
+
+Pass the object by reference: `virtual_<Node&>`, not `virtual_<Node>`. The
+method then sees the object itself, with its dynamic type.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_virtual_by_value.cpp[tag=content]
+----
+
+'''
 
 #### `virtual_<> parameter is not a polymorphic class...`
+
+*Example*
 
 [source,c++]
 ----
@@ -80,11 +121,24 @@ include::example$troubleshooting/compile_fail_virtual_non_polymorphic.cpp[tag=co
 ----
 
 The default registry finds the dynamic type of an object with `typeid`, which
-yields it only for a polymorphic class. Give the root of the hierarchy a
-virtual destructor. See also <<call_non_polymorphic>>, the same mistake made
-with `virtual_ptr`.
+yields it only for a polymorphic class. See also <<call_non_polymorphic>>, the
+same mistake made with `virtual_ptr`.
+
+Give the root of the hierarchy a virtual destructor. It makes the class
+polymorphic, and `typeid` then yields the dynamic type.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_virtual_non_polymorphic.cpp[tag=content]
+----
+
+'''
 
 #### `virtual_ptr<> must be passed by value or by const reference`
+
+*Example*
 
 [source,c++]
 ----
@@ -95,22 +149,48 @@ A method takes a `virtual_ptr` by value - it is a pair of pointers, cheap to
 copy - or by const reference. It cannot take it by non-const reference, or by
 rvalue reference, because it may have to build one from its argument.
 
+Take the `virtual_ptr` by value, or by const reference. The method can then
+build it from any argument that converts to it, including a `virtual_ptr` to a
+derived class, or a reference to the object.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_virtual_ptr_by_reference.cpp[tag=content]
+----
+
+'''
+
 #### `virtual_ptr<> takes a class or a smart pointer: virtual_ptr<Node>, not virtual_ptr<Node*>`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_virtual_ptr_of_raw_pointer.cpp[tag=content]
 ----
 
-A `virtual_ptr` is a pointer already. Its argument is the class, or a smart
-pointer to it: `virtual_ptr<Node>`, `virtual_ptr<std::shared_ptr<Node>>`. The
-method declaration compiles, but the first use of `virtual_ptr<Node*>` does
-not.
+A `virtual_ptr` is a pointer already. The method declaration compiles, but the
+first use of `virtual_ptr<Node*>` does not.
+
+Name the class: `virtual_ptr<Node>`. A `virtual_ptr<Node>` is built from a
+`Node*`, so the call does not change. To dispatch through a smart pointer, name
+the smart pointer instead: `virtual_ptr<std::shared_ptr<Node>>`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_virtual_ptr_of_raw_pointer.cpp[tag=content]
+----
 
 ### Overriders
 
 [#override_not_found]
 #### `BOOST_OPENMETHOD_OVERRIDE: cannot find '...' method that accepts the same arguments as the overrider`
+
+*Example*
 
 [source,c++]
 ----
@@ -122,8 +202,7 @@ not take the method as an argument: it finds the method by overload resolution,
 looking for a method of the same name that can be called with the overrider's
 arguments. Here `Minus` derives from `Node` _privately_ - `class` makes the
 inheritance private unless told otherwise - so a `virtual_ptr<Minus>` does not
-convert to a `virtual_ptr<Node>`, and `postfix` cannot be called with one. The
-fix is `class Minus : public Node`.
+convert to a `virtual_ptr<Node>`, and `postfix` cannot be called with one.
 
 The other causes of the same message are:
 
@@ -161,8 +240,25 @@ The other causes of the same message are:
 When the overrider and the method differ only by their registry, the message
 says so instead: <<registry_mismatch>>.
 
+In the example, make the inheritance public: `class Minus : public Node`. A
+`virtual_ptr<Minus>` then converts to a `virtual_ptr<Node>`, and overload
+resolution finds `postfix`. For the other causes, make the overrider callable
+the same way: declare the method first, correct the name, or match the
+parameters to the method's.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_override_private_base.cpp[tag=content]
+----
+
+'''
+
 [#overrider_discards_const]
 #### `overrider parameter discards const qualifier`
+
+*Example*
 
 [source,c++]
 ----
@@ -172,25 +268,51 @@ include::example$troubleshooting/compile_fail_overrider_discards_const.cpp[tag=c
 The method takes a `virtual_ptr<const Node>`: it promises not to modify the
 node. The overrider for `Plus` takes a `virtual_ptr<Plus>`, through which it
 could. When the method calls the overrider, it casts its argument to the type
-of the overrider's parameter, and a cast cannot remove `const`. The fix is
-`virtual_ptr<const Plus>`.
-
-The same applies to references and pointers: an overrider for
-`virtual_<const Node&>` takes a `const Plus&`. Clang follows the message with
-the error from the cast itself, which names the two classes:
+of the overrider's parameter, and a cast cannot remove `const`. Clang follows
+the message with the error from the cast itself, which names the two classes:
 `dynamic_cast from 'const Node' to 'Plus &' casts away qualifiers`.
 
+Make the overrider's parameter `const` as well: `virtual_ptr<const Plus>`. The
+cast then keeps the `const`, and the overrider keeps the promise of the method.
+The same applies to references and pointers: an overrider for
+`virtual_<const Node&>` takes a `const Plus&`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_discards_const.cpp[tag=content]
+----
+
+'''
+
 #### `virtual_ptr<> is required in overrider in same position as in method`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_overrider_plain_reference.cpp[tag=content]
 ----
 
-Where the method takes a `virtual_ptr`, the overrider takes one too:
-`virtual_ptr<Plus>`.
+The method takes a `virtual_ptr<Node>`, and the overrider a `Plus&` in the same
+position. Where the method takes a `virtual_ptr`, the overrider takes one too.
+
+Take a `virtual_ptr` to the class of the overrider: `virtual_ptr<Plus>`. The
+method passes its argument on, cast to that class.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_plain_reference.cpp[tag=content]
+----
+
+'''
 
 #### `different virtual_ptr<> reference categories`
+
+*Example*
 
 [source,c++]
 ----
@@ -198,22 +320,50 @@ include::example$troubleshooting/compile_fail_overrider_reference_category.cpp[t
 ----
 
 The method takes the `virtual_ptr` by value, and the overrider by const
-reference. Use the same form in both.
+reference.
+
+Use the same form in both: here, by value, as the method does. The overrider
+then receives the `virtual_ptr` the way the method passes it.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_reference_category.cpp[tag=content]
+----
+
+'''
 
 [#overrider_pointer_kind]
 #### `different virtual_ptr<> pointer kinds`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_overrider_smart_virtual_ptr.cpp[tag=content]
 ----
 
-The method takes a plain `virtual_ptr`, and the overrider a smart one. Use the
-same kind in both: `virtual_ptr<Plus>` for `virtual_ptr<Node>`,
-`shared_virtual_ptr<Plus>` for `shared_virtual_ptr<Node>`.
+The method takes a plain `virtual_ptr`, and the overrider a smart one.
+
+Use the same kind in both: `virtual_ptr<Plus>` for `virtual_ptr<Node>`,
+`shared_virtual_ptr<Plus>` for `shared_virtual_ptr<Node>`. A plain pointer
+cannot be turned into a smart one, so the overrider takes what the method
+holds.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_smart_virtual_ptr.cpp[tag=content]
+----
+
+'''
 
 [#overrider_parameter_type]
 #### `non-virtual parameter types must match exactly`
+
+*Example*
 
 [source,c++]
 ----
@@ -224,7 +374,21 @@ The non-virtual parameters of an overrider have the same types as the
 method's. Here, `std::ostream&` would have to be cast to `std::ofstream&`,
 which cannot be done safely.
 
+Declare the parameter with the type of the method: `std::ostream&`. The
+overrider then receives the argument as the caller passed it.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_parameter_type.cpp[tag=content]
+----
+
+'''
+
 #### `overrider return type is not convertible to method return type`
+
+*Example*
 
 [source,c++]
 ----
@@ -233,20 +397,53 @@ include::example$troubleshooting/compile_fail_overrider_returns_string.cpp[tag=c
 
 An overrider returns the method's return type, or a type that converts to it,
 such as `Plus*` for `Node*`. If the method returns `void`, so does the
-overrider.
+overrider. Here, the method returns an `int`, and the overrider a
+`std::string`, which does not convert to `int`.
+
+Return the type of the method, `int`, from the overrider. The method returns
+what the overrider returns, so it must be able to convert it to its own return
+type. If the overrider is right and the method is wrong, change the return type
+of the method instead.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_returns_string.cpp[tag=content]
+----
+
+'''
 
 #### `virtual_<> is not allowed in overriders`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_core_overrider_virtual.cpp[tag=content]
 ----
 
-An overrider takes the plain type: `Plus&` where the method takes
-`virtual_<Node&>`. This message comes from the core API, as above. Through
-`BOOST_OPENMETHOD_OVERRIDE`, the same mistake gives <<override_not_found>>.
+`virtual_` marks the parameters that a method dispatches on. An overrider does
+not dispatch: it is called once the dispatch is done. This message comes from
+the core API, as above. Through `BOOST_OPENMETHOD_OVERRIDE`, the same mistake
+gives <<override_not_found>>.
+
+Take the plain type in the overrider: `Plus&` where the method takes
+`virtual_<Node&>`. The method casts its argument to that type when it calls the
+overrider.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_core_overrider_virtual.cpp[tag=content]
+----
+
+'''
 
 #### `method parameter must be an unambiguous accessible base of corresponding overrider parameter`
+
+*Example*
 
 [source,c++]
 ----
@@ -256,17 +453,29 @@ include::example$troubleshooting/compile_fail_core_overrider_private_base.cpp[ta
 The same mistake as in <<override_not_found>>, made with the core API, which is
 given the method instead of looking for it.
 
+Make the inheritance public, as there: `class Minus : public Node`. The method
+can then cast a `virtual_ptr<Node>` to a `virtual_ptr<Minus>`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_core_overrider_private_base.cpp[tag=content]
+----
+
 ### Classes and virtual pointers
 
 [#call_non_polymorphic]
 #### `no matching function for call to '_method_'`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_call_non_polymorphic.cpp[tag=content]
 ----
 
-[cols="1,3"]
+[%autowidth,cols="1,3"]
 |===
 | Compiler | Diagnostic
 
@@ -289,11 +498,22 @@ no `static_assert` here, because the mistake is not in a declaration that the
 library sees: it is the absence of a conversion. For the same reason,
 `virtual_ptr<Node> p(plus)` reports that no constructor matches.
 
-The usual fix is to make the root of the hierarchy polymorphic by giving it a
-virtual destructor - which it needs anyway, if objects are ever deleted through
-a pointer to it. Alternatively, cpp:inplace_vptr_base[] gives a class a v-table
-pointer of its own, and a custom RTTI policy can find the dynamic type of
-non-polymorphic classes: see xref:custom_rtti.adoc[Custom RTTI].
+Make the root of the hierarchy polymorphic by giving it a virtual destructor -
+which it needs anyway, if objects are ever deleted through a pointer to it.
+`typeid` then yields the dynamic type of a `Node`, and the object converts to a
+`virtual_ptr`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_call_non_polymorphic.cpp[tag=content]
+----
+
+Where the classes must stay non-polymorphic, there are alternatives.
+cpp:inplace_vptr_base[] gives a class a v-table pointer of its own, and a
+custom RTTI policy can find the dynamic type of non-polymorphic classes: see
+xref:custom_rtti.adoc[Custom RTTI].
 
 Where the caller knows the exact class of the object, cpp:final_virtual_ptr[]
 makes a `virtual_ptr` without looking for the dynamic type. It takes the static
@@ -311,7 +531,11 @@ class, OpenMethod has no way to find out, even with runtime checks enabled.
 Passed a `Node&` that refers to a `Plus`, `final_virtual_ptr` makes a
 `virtual_ptr` to a `Node`, and the call dispatches on `Node`.
 
+'''
+
 #### `class must be an accessible unambiguous base, repeated inheritance is not supported`
+
+*Example*
 
 [source,c++]
 ----
@@ -319,30 +543,71 @@ include::example$troubleshooting/compile_fail_diamond_inheritance.cpp[tag=conten
 ----
 
 `Both` inherits `Node` twice, through `Left` and through `Right`, so a pointer
-to a `Both` cannot be converted to a pointer to a `Node`. Derive `Left` and
-`Right` from `Node` virtually. A private base gives the same message.
+to a `Both` cannot be converted to a pointer to a `Node`. A private base gives
+the same message.
+
+Derive `Left` and `Right` from `Node` virtually. A `Both` then contains a
+single `Node`, and the conversion is unambiguous. If the base is private
+instead, make it public.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_diamond_inheritance.cpp[tag=content]
+----
+
+'''
 
 #### `use_classes: a class is incomplete`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_classes_forward_declared.cpp[tag=content]
 ----
 
-A class is registered where it is only declared. Register it after its
-definition.
+A class is registered where it is only declared.
+
+Register it after its definition. The library needs the complete class to find
+its bases among the other classes of the list.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_classes_forward_declared.cpp[tag=content]
+----
+
+'''
 
 #### `a registry must be the last element of the list`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_classes_registry_first.cpp[tag=content]
 ----
 
-A class list names its registry last:
-`BOOST_OPENMETHOD_CLASSES(Node, Plus, my_registry)`.
+The registry is listed before the classes. A class list may end with a
+registry, and only its last element is taken as one.
+
+Move the registry to the end of the list.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_classes_registry_first.cpp[tag=content]
+----
+
+'''
 
 #### `do not wrap an object that has a boost_openmethod_vptr overload in a virtual_ptr...`
+
+*Example*
 
 [source,c++]
 ----
@@ -350,10 +615,24 @@ include::example$troubleshooting/compile_fail_wrap_inplace_vptr.cpp[tag=content]
 ----
 
 The object carries its own v-table pointer, here because it derives from
-cpp:inplace_vptr_base[]. Pass the object itself to methods, which read the
-v-table pointer from it.
+cpp:inplace_vptr_base[]. It and a `virtual_ptr` serve the same purpose, fast
+access to the v-table pointer, so wrapping one in the other is rejected.
+
+Pass the object itself to methods: declare the parameter as `virtual_<Term&>`,
+and the method reads the v-table pointer from the object.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_wrap_inplace_vptr.cpp[tag=content]
+----
+
+'''
 
 #### `class must inherit from inplace_vptr_base`
+
+*Example*
 
 [source,c++]
 ----
@@ -361,19 +640,48 @@ include::example$troubleshooting/compile_fail_inplace_vptr_derived_not_base.cpp[
 ----
 
 The bases passed to cpp:inplace_vptr_derived[] are themselves `inplace_vptr`
-classes: here, `Node` would have to derive from `inplace_vptr_base<Node>`.
+classes, but `Node` is not.
+
+Derive the root of the hierarchy from `inplace_vptr_base`: here, `Node` derives
+from `inplace_vptr_base<Node>`. The root holds the v-table pointer, and
+`inplace_vptr_derived` sets it to the v-table of `Minus`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_inplace_vptr_derived_not_base.cpp[tag=content]
+----
+
+'''
 
 #### `registry can be specified only for root classes`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_inplace_vptr_derived_registry.cpp[tag=content]
 ----
 
-Only the root of an `inplace_vptr` hierarchy names the registry, as in
+`Sum` names a registry, but it is not the root of its `inplace_vptr`
+hierarchy.
+
+Name the registry at the root instead, as in
 `inplace_vptr_base<Term, my_registry>`. Its derived classes inherit it.
 
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_inplace_vptr_derived_registry.cpp[tag=content]
+----
+
+'''
+
 #### `the rtti policy deems this class polymorphic, so it must provide dynamic_type`
+
+*Example*
 
 [source,c++]
 ----
@@ -381,11 +689,25 @@ include::example$troubleshooting/compile_fail_rtti_without_dynamic_type.cpp[tag=
 ----
 
 A custom cpp:rtti[] policy that reports a class as polymorphic must also be
-able to find the dynamic type of its objects. Give it a `dynamic_type`
-function, or make `is_polymorphic` false for that class. See
+able to find the dynamic type of its objects. See
 xref:custom_rtti.adoc[Custom RTTI].
 
+Give the policy a `dynamic_type` function that returns the `type_id` of the
+dynamic type of its argument, or make `is_polymorphic` false for that class.
+Here, `dynamic_type` uses `typeid`, which matches `is_polymorphic`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_rtti_without_dynamic_type.cpp[tag=content]
+----
+
+'''
+
 #### `the rtti policy does not deem this class polymorphic`
+
+*Example*
 
 [source,c++]
 ----
@@ -396,13 +718,28 @@ The converse. The library never asks for the dynamic type of a class that its
 rtti policy does not deem polymorphic, so this message only comes from code
 that calls the vptr policy directly, or from a custom `virtual_traits`.
 
+Ask for the dynamic type only of a class that the rtti policy deems
+polymorphic. With the default registry, that is a class with a virtual
+function: here, give `Literal` a virtual destructor.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_rtti_not_polymorphic.cpp[tag=content]
+----
+
 ### Registries
 
 See xref:registries_and_policies.adoc#registry_affinity[Registry Affinity] for
 how a class, a parameter and a method come to belong to a registry.
 
+'''
+
 [#registry_mismatch]
 #### `registry mismatch`
+
+*Example*
 
 [source,c++]
 ----
@@ -411,10 +748,24 @@ include::example$troubleshooting/compile_fail_registry_mismatch.cpp[tag=content]
 
 A `virtual_ptr`, an overrider or a `virtual_any` belongs to a registry other
 than the method's. Here, `virtual_ptr<Node>` belongs to the default registry,
-and the method to `my_registry`. Write `virtual_ptr<Node, my_registry>`, or
-declare an affinity for `my_registry` in `Node`.
+and the method to `my_registry`.
+
+Put the parameter in the registry of the method: name the registry in the
+`virtual_ptr`, as below, or declare an affinity for `my_registry` in `Node`,
+which makes `virtual_ptr<Node>` belong to it.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_mismatch.cpp[tag=content]
+----
+
+'''
 
 #### `registry mismatch: the parameter belongs to another registry`
+
+*Example*
 
 [source,c++]
 ----
@@ -424,7 +775,21 @@ include::example$troubleshooting/compile_fail_registry_mismatch_parameter.cpp[ta
 The class of a virtual parameter declares an affinity for a registry, or the
 parameter names one, and the method names another.
 
+Name the registry that the class declares on the method, or name none: a
+method that names no registry takes the one its parameters carry.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_mismatch_parameter.cpp[tag=content]
+----
+
+'''
+
 #### `registry mismatch: a class declares an affinity for another registry`
+
+*Example*
 
 [source,c++]
 ----
@@ -434,7 +799,21 @@ include::example$troubleshooting/compile_fail_registry_mismatch_classes.cpp[tag=
 A class list names a registry, and one of the classes declares an affinity for
 another.
 
+List the registry that the classes declare, or none: a list that names no
+registry takes the one its classes agree on.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_mismatch_classes.cpp[tag=content]
+----
+
+'''
+
 #### `virtual parameters carry conflicting registries`
+
+*Example*
 
 [source,c++]
 ----
@@ -442,10 +821,26 @@ include::example$troubleshooting/compile_fail_registry_conflicting_carriers.cpp[
 ----
 
 The method names no registry, and its virtual parameters belong to different
-ones: `Node` to the default registry, `Expr` to `my_registry`. Name the
-registry on the method, or make the parameters agree.
+ones: `Node` to the default registry, `Expr` to `my_registry`.
+
+Make the parameters agree: `virtual_ptr<Node, my_registry>`, as below, or
+`virtual_<Node&>`, which adopts the registry of the method because `Node`
+declares none. Naming the registry on the method is not enough here: a
+`virtual_ptr` always carries a registry, so `virtual_ptr<Node>` would then
+give <<registry_mismatch>>.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_conflicting_carriers.cpp[tag=content]
+----
+
+'''
 
 #### `the classes carry conflicting registry affinities - list the registry to say which one is meant`
+
+*Example*
 
 [source,c++]
 ----
@@ -453,10 +848,26 @@ include::example$troubleshooting/compile_fail_registry_conflicting_affinities.cp
 ----
 
 A class list mixes classes that declare different affinities, or, as here,
-classes that declare one with classes that declare none. Add the registry at
-the end of the list.
+classes that declare one with classes that declare none.
+
+Here, `Node` and `Plus` belong to the default registry, and `Expr` to
+`my_registry`. Register them in separate lists: each list then takes the
+registry its classes agree on. When all the classes are meant for the same
+registry, add it at the end of the list instead:
+`BOOST_OPENMETHOD_CLASSES(Node, Plus, Expr, my_registry)`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_conflicting_affinities.cpp[tag=content]
+----
+
+'''
 
 #### `cannot tell which registry this class belongs to...`
+
+*Example*
 
 [source,c++]
 ----
@@ -464,9 +875,23 @@ include::example$troubleshooting/compile_fail_registry_ambiguous_bases.cpp[tag=c
 ----
 
 The class inherits different affinities from several bases, or inherits one
-from a private base. Declare its affinity in the class itself.
+from a private base.
+
+Declare the affinity in the class itself. Its own declaration takes precedence
+over the ones it inherits.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_ambiguous_bases.cpp[tag=content]
+----
+
+'''
 
 #### `boost_openmethod_registry must return a registry`
+
+*Example*
 
 [source,c++]
 ----
@@ -475,7 +900,21 @@ include::example$troubleshooting/compile_fail_registry_not_a_registry.cpp[tag=co
 
 The affinity declaration names a type that is not a registry.
 
+Name a registry: a class derived from cpp:registry[], such as
+`default_registry` or `my_registry`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_not_a_registry.cpp[tag=content]
+----
+
+'''
+
 #### `this class declared its registry affinity after it was first mentioned...`
+
+*Example*
 
 [source,c++]
 ----
@@ -483,23 +922,49 @@ include::example$troubleshooting/compile_fail_registry_declared_late.cpp[tag=con
 ----
 
 `virtual_ptr<Expr>` was formed - here, inside `Expr` itself - before the
-affinity declaration was seen, and kept the default registry. Move the
-declaration up, to the top of the class, or name the registry where the class
-is first used: `virtual_ptr<Expr, my_registry>`.
+affinity declaration was seen, and kept the default registry.
+
+Move the declaration up, to the top of the class, so that it precedes every
+use of the class. Alternatively, name the registry where the class is first
+used: `virtual_ptr<Expr, my_registry>`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_declared_late.cpp[tag=content]
+----
 
 ### Smart pointers
 
 #### `std::shared_ptr cannot be passed by non-const lvalue reference`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_shared_ptr_by_reference.cpp[tag=content]
 ----
 
+A method may have to build the smart pointer from its argument, for example a
+`shared_virtual_ptr<Node>` from a `std::shared_ptr<Plus>`. The result is a
+temporary, which a non-const lvalue reference cannot bind to.
+
 Pass a `std::shared_ptr`, or a `shared_virtual_ptr`, by value or by const
 reference.
 
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_shared_ptr_by_reference.cpp[tag=content]
+----
+
+'''
+
 #### `cast only allowed to a shared_ptr`
+
+*Example*
 
 [source,c++]
 ----
@@ -507,35 +972,77 @@ include::example$troubleshooting/compile_fail_shared_ptr_overrider.cpp[tag=conte
 ----
 
 The method takes a `std::shared_ptr`, and the overrider something else in the
-same position: here, a non-const reference. It takes a `std::shared_ptr` too,
-in the same form: `const std::shared_ptr<Plus>&`.
+same position: here, a non-const reference.
+
+The overrider takes a `std::shared_ptr` too, in the same form as the method:
+`const std::shared_ptr<Plus>&`. The method casts its argument to a new
+`std::shared_ptr<Plus>`, which a non-const reference cannot bind to.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_shared_ptr_overrider.cpp[tag=content]
+----
+
+'''
 
 #### `a std::weak_ptr cannot be wrapped in a virtual_ptr; use weak_virtual_ptr`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_weak_ptr_in_virtual_ptr.cpp[tag=content]
 ----
 
+A `virtual_ptr` refers to an object that exists, so that a method can dispatch
+on it. A `std::weak_ptr` may outlive its object.
+
 Use cpp:weak_virtual_ptr[] to keep a weak reference together with its v-table
-pointer.
+pointer. Its `lock()` returns a cpp:shared_virtual_ptr[], which can be passed
+to a method.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_weak_ptr_in_virtual_ptr.cpp[tag=content]
+----
+
+'''
 
 #### `a weak pointer cannot be a virtual parameter; call lock() first`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_method_takes_weak_pointer.cpp[tag=content]
 ----
 
-A method cannot dispatch on an object that may no longer exist. Lock the
-pointer, and pass the resulting shared pointer.
+A method cannot dispatch on an object that may no longer exist.
+
+Make the parameter a `std::shared_ptr`. Lock the weak pointer before the call,
+and pass the resulting shared pointer if the object still exists.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_method_takes_weak_pointer.cpp[tag=content]
+----
 
 ### `any` and type erasure
 
 See xref:interop_any.adoc[Interoperation with any] and
 xref:interop_type_erasure.adoc[Interoperation with Boost.TypeErasure].
 
+'''
+
 #### `requires standard RTTI`
+
+*Example*
 
 [source,c++]
 ----
@@ -545,7 +1052,23 @@ include::example$troubleshooting/compile_fail_any_custom_rtti.cpp[tag=content]
 Dispatching on the content of an `any` keys on its `std::type_info`, so the
 registry uses cpp:std_rtti[], or a policy derived from it.
 
+Declare the method in a registry that uses `std_rtti`, here the default
+registry. If the rest of the program needs cpp:static_rtti[], keep the methods
+that dispatch on an `any` in a registry of their own: registries are
+independent of each other.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_any_custom_rtti.cpp[tag=content]
+----
+
+'''
+
 #### `virtual_any must be passed by reference`
+
+*Example*
 
 [source,c++]
 ----
@@ -553,29 +1076,70 @@ include::example$troubleshooting/compile_fail_method_takes_virtual_any_by_value.
 ----
 
 A `virtual_any` passed by value would copy the `any`, and its content, on every
-call. Write `virtual_std_any&` or `const virtual_std_any&`.
+call.
+
+Pass it by reference: `const virtual_std_any&`, or `virtual_std_any&` if the
+overriders modify the content.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_method_takes_virtual_any_by_value.cpp[tag=content]
+----
+
+'''
 
 #### `an owning type_erasure::any must be passed by reference`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_method_takes_erased_by_value.cpp[tag=content]
 ----
 
-The same, for a Boost.TypeErasure `any` that owns its value. The reference
-forms, `any<C, _self&>` and `any<C, const _self&>`, may be passed by value.
+The same, for a Boost.TypeErasure `any` that owns its value.
+
+Pass it by reference, as a `std::any`: `virtual_<const any_node&>`. The
+reference forms, `any<C, _self&>` and `any<C, const _self&>`, are handles that
+do not own their value, and may be passed by value.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_method_takes_erased_by_value.cpp[tag=content]
+----
+
+'''
 
 #### `do not wrap a virtual_any in a virtual_ptr...`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_wrap_virtual_any.cpp[tag=content]
 ----
 
-A `virtual_any` already carries the v-table pointer of its content. Pass it by
-reference instead.
+A `virtual_any` already carries the v-table pointer of its content.
+
+Pass the `virtual_any` itself, by reference, to a method that takes a
+`virtual_std_any&`. It plays the part that a `virtual_ptr` plays for a class.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_wrap_virtual_any.cpp[tag=content]
+----
+
+'''
 
 #### `use of deleted function ... final_virtual_ptr`
+
+*Example*
 
 [source,c++]
 ----
@@ -583,11 +1147,27 @@ include::example$troubleshooting/compile_fail_final_virtual_ptr_any.cpp[tag=cont
 ----
 
 cpp:final_virtual_ptr[] would use the v-table of the `any` class itself, not
-that of its content, so the overloads for `any` types are deleted. Use a
-`virtual_any` instead. Clang says `call to deleted function`, and MSVC
+that of its content, so the overloads for `any` types are deleted. Clang says
+`call to deleted function`, and MSVC
 `attempting to reference a deleted function`.
 
+Hold the object in a cpp:virtual_std_any[] instead of a `std::any`, and pass it
+by reference to a method that takes a `virtual_std_any&`. It acquires the
+v-table pointer of its content once, when it is built - without a lookup, when
+it is built from a value - and the method uses that pointer as it is.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_final_virtual_ptr_any.cpp[tag=content]
+----
+
+'''
+
 #### `no matching function for call to ...cast`
+
+*Example*
 
 [source,c++]
 ----
@@ -596,14 +1176,28 @@ include::example$troubleshooting/compile_fail_any_cast_mutable_reference.cpp[tag
 
 The overrider takes the content of the `any` by a kind of reference that the
 `any` cannot provide: a mutable reference to the content of a const `any`, as
-here, or an rvalue reference to the content of an lvalue `any`. Take
-`const Plus&`. MSVC says `no matching overloaded function found`.
+here, or an rvalue reference to the content of an lvalue `any`. MSVC says
+`no matching overloaded function found`.
+
+Take the content by a reference that the `any` provides: here, `const Plus&`,
+since the method takes a `const boost::any&`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_any_cast_mutable_reference.cpp[tag=content]
+----
 
 ### Policies
 
 See xref:registries_and_policies.adoc[Registries and Policies].
 
+'''
+
 #### `+the `state` of a policy that defines `initialize` must be copyable...+`
+
+*Example*
 
 [source,c++]
 ----
@@ -612,9 +1206,23 @@ include::example$troubleshooting/compile_fail_policy_state_not_copyable.cpp[tag=
 
 `initialize` saves the `state` of each policy that has an `initialize`
 function, and restores it if another policy throws. A `std::unique_ptr` member
-makes it impossible to copy: hold a `std::shared_ptr`, or a value.
+makes it impossible to copy.
+
+Hold the data in a `std::shared_ptr`, or by value, so that the state can be
+copied.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_state_not_copyable.cpp[tag=content]
+----
+
+'''
 
 #### `+the `state` of a policy that defines `initialize` must be nothrow move-assignable...+`
+
+*Example*
 
 [source,c++]
 ----
@@ -622,10 +1230,23 @@ include::example$troubleshooting/compile_fail_policy_state_move_may_throw.cpp[ta
 ----
 
 The state is restored from a destructor, while an exception is in flight, where
-throwing would terminate the program. Declare the move assignment `noexcept`,
-or let the compiler generate it.
+throwing would terminate the program.
+
+Declare the move assignment `noexcept`, or let the compiler generate it: a
+generated one is `noexcept` when those of the members are.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_state_move_may_throw.cpp[tag=content]
+----
+
+'''
 
 #### `two or more stateful policies in this registry share the same nested state type...`
+
+*Example*
 
 [source,c++]
 ----
@@ -633,9 +1254,24 @@ include::example$troubleshooting/compile_fail_policy_shared_state.cpp[tag=conten
 ----
 
 The registry keeps the states of its policies together, and finds each by its
-type. Give each policy a `state` type of its own, for example a nested struct.
+type.
+
+Give each policy a `state` type of its own, for example a nested struct. Here,
+each policy derives its `state` from `counter`, which keeps the members in one
+place.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_shared_state.cpp[tag=content]
+----
+
+'''
 
 #### `+the type_hash policy must appear before vptr_vector in the registry's policy_list+`
+
+*Example*
 
 [source,c++]
 ----
@@ -643,29 +1279,58 @@ include::example$troubleshooting/compile_fail_policy_order.cpp[tag=content]
 ----
 
 `vptr_vector` uses the hash computed by the `type_hash` policy, so it comes
-after it in the registry's policy list. `with` replaces a policy in place, so
-`default_registry::with<policies::fast_perfect_hash>` keeps the right order.
-`without` followed by `with` appends the policy at the end.
+after it in the registry's policy list. `without` followed by `with` appends
+the policy at the end.
+
+Use `with` alone. It replaces a policy in place, so
+`default_registry::with<policies::minimal_perfect_hash<>>` puts the new hash
+where `fast_perfect_hash` was, ahead of `vptr_vector`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_order.cpp[tag=content]
+----
+
+'''
 
 #### `minimal_cover_hash needs BMI2...`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_minimal_cover_hash_without_bmi2.cpp[tag=content]
 ----
 
-cpp:minimal_cover_hash[] uses the x86-64 `PEXT` instruction. Compile every
-translation unit with `-mbmi2`, or with a `-march` that implies it, or use
-cpp:minimal_perfect_hash[], which is portable. MSVC does not report the error
-for x64 builds: it compiles the instruction whatever the flags, so the program
-requires a processor that supports it.
+cpp:minimal_cover_hash[] uses the x86-64 `PEXT` instruction, and the
+translation unit is compiled for a processor that may not have it. MSVC does
+not report the error for x64 builds: it compiles the instruction whatever the
+flags, so the program requires a processor that supports it.
+
+Compile every translation unit with `-mbmi2`, or with a `-march` that implies
+it, such as `-march=haswell`. If the program must also run on processors
+without BMI2, or on other architectures, use cpp:minimal_perfect_hash[]
+instead, which is portable.
+
+*Fix*
+
+[source,cmake]
+----
+target_compile_options(my_app PRIVATE -mbmi2)
+----
 
 ### C++26 reflection
 
 The examples need a compiler that supports reflection, such as GCC 16 with
 `-std=c++26 -freflection`.
 
+'''
+
 #### `a group holds reflections of namespaces, classes or registries`
+
+*Example*
 
 [source,c++]
 ----
@@ -675,26 +1340,67 @@ include::example$troubleshooting/compile_fail_register_classes_not_a_class.cpp[t
 A group passed to `register_classes` contains a reflection of something else,
 such as a fundamental type, an enumeration or a function.
 
+List only namespaces, classes and registries: here, the classes `Node` and
+`Plus`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_register_classes_not_a_class.cpp[tag=content]
+----
+
+'''
+
 #### `a group holds one kind of reflection...`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_register_classes_mixed_group.cpp[tag=content]
 ----
 
-Put the namespaces, the classes and the registries in groups of their own:
-`register_classes<{^^Node, ^^Plus}, {^^my_registry}>`.
+A group mixes reflections of different kinds: here, two classes and a
+registry.
+
+Put the namespaces, the classes and the registries in groups of their own.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_register_classes_mixed_group.cpp[tag=content]
+----
+
+'''
 
 #### `order the groups as namespaces, classes, registries`
+
+*Example*
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_register_classes_group_order.cpp[tag=content]
 ----
 
-The groups passed to `register_classes` are out of order.
+The groups passed to `register_classes` are out of order: here, the registry
+comes before the classes.
+
+Pass the namespaces first, then the classes, then the registries.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_register_classes_group_order.cpp[tag=content]
+----
+
+'''
 
 #### `a listed class must be complete`
+
+*Example*
 
 [source,c++]
 ----
@@ -703,19 +1409,44 @@ include::example$troubleshooting/compile_fail_register_classes_incomplete.cpp[ta
 
 A class listed explicitly is only declared, not defined.
 
+Register the class after its definition.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_register_classes_incomplete.cpp[tag=content]
+----
+
 ### Platform
 
 These two do not depend on the program, so they come without an example.
+
+'''
 
 #### `This implementation requires that size_t and void* have the same size.`
 
 The platform is not supported. No x86, x86-64, ARM or AArch64 target is
 affected.
 
+There is no fix in the program. OpenMethod reads type ids as unsigned
+integers, so it needs one as wide as a pointer: `std::uintptr_t`, or
+`std::size_t` where the standard library does not provide `std::uintptr_t`. A
+target that has neither cannot use the library.
+
+'''
+
 #### `+named_static_rtti requires __PRETTY_FUNCTION__ or __FUNCSIG__+`
 
 cpp:named_static_rtti[] derives class names from the predefined function name
 of GCC, Clang or MSVC, and the compiler provides neither.
+
+Use cpp:static_rtti[] instead, if the program is a single module. The names
+are what lets `named_static_rtti` merge the copies of a class that come from
+different modules; `static_rtti` identifies classes without them, but its type
+ids differ from one module to the next. A program that shares classes across
+shared libraries needs cpp:std_rtti[], or a custom RTTI policy: see
+xref:custom_rtti.adoc[Custom RTTI].
 
 ## Runtime errors
 
@@ -747,12 +1478,16 @@ xref:reference:BOOST_OPENMETHOD_CLASSES.adoc[BOOST_OPENMETHOD_CLASSES]. So must
 the class of every object passed as a virtual argument. cpp:initialize[]
 detects the first two omissions:
 
+*Example*
+
 [source,c++]
 ----
 include::example$snippets/errors_missing_class_method.cpp[tag=classes]
 
 include::example$snippets/errors_missing_class_method.cpp[tag=init,indent=0]
 ----
+
+*Example*
 
 [source,c++]
 ----
@@ -765,12 +1500,30 @@ The third one can be detected only during the call, and only if runtime checks
 are enabled. Otherwise, the call reads a v-table pointer that was never set up,
 and the behavior is undefined: it may call the wrong overrider, or crash.
 
+*Example*
+
 [source,c++]
 ----
 include::example$snippets/errors_missing_class_call.cpp[tag=classes]
 
 include::example$snippets/errors_missing_class_call.cpp[tag=use,indent=0]
 ----
+
+Register every class, in a `BOOST_OPENMETHOD_CLASSES` that also lists its
+direct bases. `initialize` then knows the class and its place in the
+hierarchy, and sets up its v-table. Listing `Animal`, `Dog` and `Bulldog`
+together fixes all three examples.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_missing_class.cpp[tag=classes]
+
+include::example$snippets/fix_missing_class.cpp[tag=use,indent=0]
+----
+
+'''
 
 #### `missing base _B_ -<| _D_`
 
@@ -782,6 +1535,8 @@ that are registered separately are unrelated, as far as OpenMethod is
 concerned. If an overrider implies that one derives from the other,
 `initialize` reports it:
 
+*Example*
+
 [source,c++]
 ----
 include::example$snippets/errors_missing_base.cpp[tag=classes]
@@ -789,8 +1544,13 @@ include::example$snippets/errors_missing_base.cpp[tag=classes]
 include::example$snippets/errors_missing_base.cpp[tag=init,indent=0]
 ----
 
-The message names the base class first, then the derived class. The fix is to
-register the classes together:
+The message names the base class first, then the derived class.
+
+Register the two classes in the same `BOOST_OPENMETHOD_CLASSES`. A class list
+tells `initialize` which of its classes derive from which, so it learns that
+`Dog` derives from `Animal`.
+
+*Fix*
 
 [source,c++]
 ----
@@ -805,6 +1565,8 @@ Error type: cpp:no_overrider[].
 
 No overrider is applicable to the dynamic types of the virtual arguments:
 
+*Example*
+
 [source,c++]
 ----
 include::example$snippets/errors_not_implemented.cpp[tag=classes]
@@ -813,9 +1575,23 @@ include::example$snippets/errors_not_implemented.cpp[tag=use,indent=0]
 ----
 
 This is not a mistake by itself: a method may well be meant for some classes
-only. Either add an overrider for `Cat`, or one for `Animal` that serves as a
-default. See <<finding_undispatchable_calls>> to find out, at
-`initialize` time, whether any call can end like this.
+only. See <<finding_undispatchable_calls>> to find out, at `initialize` time,
+whether any call can end like this.
+
+Add an overrider for `Cat`, or one for `Animal`. An overrider for `Animal`
+serves as a default: it is called for every class that has no more specialized
+overrider of its own.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_not_implemented.cpp[tag=classes]
+
+include::example$snippets/fix_not_implemented.cpp[tag=use,indent=0]
+----
+
+'''
 
 #### `ambiguous`
 
@@ -823,6 +1599,8 @@ Error type: cpp:ambiguous_call[].
 
 Several overriders are applicable, and none of them is more specialized than
 all the others:
+
+*Example*
 
 [source,c++]
 ----
@@ -832,8 +1610,21 @@ include::example$snippets/errors_ambiguous.cpp[tag=use,indent=0]
 ----
 
 Both overriders accept two `Dog`{empty}s, and each is more specialized than
-the other in one argument. Add an overrider for `(Dog, Dog)`. See
-xref:multiple_dispatch.adoc[Multiple Dispatch].
+the other in one argument. See xref:multiple_dispatch.adoc[Multiple Dispatch].
+
+Add an overrider for `(Dog, Dog)`. It is more specialized than both of the
+others, so it is the one called for two `Dog`{empty}s.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_ambiguous.cpp[tag=classes]
+
+include::example$snippets/fix_ambiguous.cpp[tag=use,indent=0]
+----
+
+'''
 
 [#finding_undispatchable_calls]
 #### Finding the calls that cannot be dispatched
@@ -861,6 +1652,8 @@ Error type: cpp:not_initialized[].
 
 A method was called before cpp:initialize[]:
 
+*Example*
+
 [source,c++]
 ----
 include::example$snippets/errors_not_initialized.cpp[tag=classes]
@@ -869,10 +1662,23 @@ include::example$snippets/errors_not_initialized.cpp[tag=use,indent=0]
 ----
 
 This is detected only with runtime checks; otherwise, the behavior is
-undefined. Call `initialize` before the first method call, typically at the
-start of `main`. A shared library loaded at run time adds classes, methods and
-overriders, so call it again after loading one. See
-xref:shared_libraries.adoc[Shared Libraries].
+undefined.
+
+Call `initialize` before the first method call, typically at the start of
+`main`: it builds the dispatch tables that the call reads. A shared library
+loaded at run time adds classes, methods and overriders, so call it again after
+loading one. See xref:shared_libraries.adoc[Shared Libraries].
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_not_initialized.cpp[tag=classes]
+
+include::example$snippets/fix_not_initialized.cpp[tag=use,indent=0]
+----
+
+'''
 
 #### `invalid call to final construct: static type = _S_, dynamic type = _D_`
 
@@ -880,6 +1686,8 @@ Error type: cpp:final_error[].
 
 cpp:final_virtual_ptr[] takes the static type of its argument for its dynamic
 type, without checking it, unless runtime checks are enabled:
+
+*Example*
 
 [source,c++]
 ----
@@ -889,6 +1697,13 @@ include::example$snippets/errors_final.cpp[tag=use,indent=0]
 Pass `final_virtual_ptr` an object whose static type is exactly its dynamic
 type - here, `snoopy` itself - or use cpp:virtual_ptr[], which finds the
 dynamic type.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_final.cpp[tag=use,indent=0]
+----
 
 ### Builds
 
@@ -901,13 +1716,25 @@ Error type: cpp:odr_violation[].
 program, or in none. When it is defined in some and not in others,
 cpp:initialize[] reports it before anything else:
 
+*Example*
+
 [source,c++]
 ----
 include::example$snippets/errors_odr_violation.cpp[tag=init,indent=0]
 ----
 
 Define the symbol in the build system, for every translation unit, rather than
-in source files.
+in source files. In CMake, `add_compile_definitions` in the top-level
+`CMakeLists.txt`, before any `add_subdirectory`, applies to every target of the
+project. This one defines the symbol in debug builds only.
+
+*Fix*
+
+[source,cmake]
+----
+add_compile_definitions(
+    $<$<CONFIG:Debug>:BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS>)
+----
 
 ### Hash tables
 
@@ -936,12 +1763,16 @@ With the default limits, the first three are unlikely with ordinary type ids,
 and cannot be provoked by a small program. The last two policies take their
 limits as template arguments, so it takes a registry configured to fail:
 
+*Example*
+
 [source,c++]
 ----
 include::example$snippets/errors_hash_search.cpp[tag=classes]
 
 include::example$snippets/errors_hash_search.cpp[tag=init,indent=0]
 ----
+
+*Example*
 
 [source,c++]
 ----
@@ -950,7 +1781,20 @@ include::example$snippets/errors_too_many_bits.cpp[tag=classes]
 include::example$snippets/errors_too_many_bits.cpp[tag=init,indent=0]
 ----
 
-Raise the limit, or use another `type_hash` policy. The type ids that a policy
-fails on usually come from a custom RTTI policy. See
+The type ids that a policy fails on usually come from a custom RTTI policy.
+
+Raise the limit: `MaxSeeds`, the third template argument of
+cpp:minimal_perfect_hash[], or `MaxBits`, the only one of
+cpp:minimal_cover_hash[]. Here, their defaults, 16 and 24, are enough. Or use
+another `type_hash` policy: see
 xref:shared_libraries.adoc#type_ids_across_modules[Type ids across modules] for
 how the policies compare.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_hash_search.cpp[tag=classes]
+
+include::example$snippets/fix_hash_search.cpp[tag=init,indent=0]
+----

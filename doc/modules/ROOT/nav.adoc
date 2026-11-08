@@ -16,9 +16,9 @@
 ** xref:interop_any.adoc[Interoperation with `any`]
 ** xref:interop_type_erasure.adoc[Interoperation with Boost.TypeErasure]
 ** xref:shared_libraries.adoc[Shared Libraries]
-* xref:troubleshooting.adoc[Troubleshooting]
 * Reference
 ** xref:ref_headers.adoc[Headers]
 ** xref:ref_macros.adoc[Macros]
 ** xref:reference:boost/openmethod.adoc[Namespace boost::openmethod]
+* xref:troubleshooting.adoc[Troubleshooting]
 * xref:acknowledgements.adoc[Acknowledgements]

@@ -245,6 +245,19 @@ foreach(compile_fail_cpp ${compile_fail_cpp_files})
     openmethod_compile_fail_test(${testname} ${compile_fail_cpp} "${fail_regex}")
 endforeach()
 
+# The fixes the troubleshooting page shows for those errors. They only have to
+# compile: a fix that does not would send the reader from one error to another.
+file(GLOB troubleshooting_fix_cpp_files
+    "${CMAKE_CURRENT_SOURCE_DIR}/../doc/modules/ROOT/examples/troubleshooting/fix_*.cpp")
+
+foreach(fix_cpp ${troubleshooting_fix_cpp_files})
+    get_filename_component(stem ${fix_cpp} NAME_WE)
+    set(test_target "boost_openmethod-troubleshooting_${stem}")
+    add_library(${test_target} OBJECT EXCLUDE_FROM_ALL ${fix_cpp})
+    target_link_libraries(${test_target} PRIVATE Boost::openmethod)
+    add_dependencies(tests ${test_target})
+endforeach()
+
 if (TARGET Boost::dll)
     add_subdirectory(dynamic_loading)
 endif()

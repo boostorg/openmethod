@@ -17,7 +17,7 @@
 
 BOOST_OPENMETHOD(postfix, (virtual_<const boost::any&>, std::ostream&), void);
 
-BOOST_OPENMETHOD_OVERRIDE(postfix, (Plus& plus, std::ostream& os), void) {
+BOOST_OPENMETHOD_OVERRIDE(postfix, (Plus&, std::ostream& os), void) {
     os << "+";
 }
 // end::content[]

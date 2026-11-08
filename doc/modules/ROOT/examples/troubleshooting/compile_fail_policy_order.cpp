@@ -10,9 +10,11 @@
 #include "preamble.hpp"
 
 // tag::content[]
+#include <boost/openmethod/policies/minimal_perfect_hash.hpp>
+
 struct hashed_registry :
     default_registry::without<policies::type_hash>::with<
-        policies::fast_perfect_hash> {};
+        policies::minimal_perfect_hash<>> {};
 
 BOOST_OPENMETHOD_CLASSES(Node, Plus, hashed_registry);
 // end::content[]

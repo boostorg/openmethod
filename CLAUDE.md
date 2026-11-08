@@ -104,6 +104,18 @@ sit in a subdirectory because `doc/modules/ROOT/examples/CMakeLists.txt` builds 
 `*.cpp` as an ordinary example. Match a gcc curly quote (`‘postfix’`) with `.*`, not `.`: it is
 three bytes, and the regex works on bytes.
 
+**Every diagnostic the library emits has an entry on the troubleshooting page, so update the page
+whenever an error is added, removed or reworded.** That covers a `static_assert` message, a runtime
+error and its default-handler message alike. Do it in the same change: add, delete or retitle the
+`####` entry in `doc/modules/ROOT/pages/troubleshooting.adoc` whose heading quotes the message. A
+new entry takes the shape of its neighbours: an `*Example*` that reproduces the error, the cause,
+then a `*Fix*` that corrects it. For a compile-time error the two listings are
+`troubleshooting/compile_fail_<stem>.cpp`, with its `expected-error` marker, and
+`troubleshooting/fix_<stem>.cpp`, which `test/CMakeLists.txt` and `test/Jamfile` compile as a test.
+For a runtime error they are Boost.Test programs, `snippets/errors_<stem>.cpp` and
+`snippets/fix_<stem>.cpp`. Nothing checks that the page lists every message: a removed error leaves
+a stale entry, and an added one is simply missing.
+
 The tested sources behind the reference's `include:` markers live in
 `doc/modules/ROOT/examples/snippets/`, inside Antora's `examples` family, so that pages can include
 them too (`include::example$snippets/...`). Antora ignores any directory of a module that is not
