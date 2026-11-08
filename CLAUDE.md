@@ -113,7 +113,11 @@ then a `*Fix*` that corrects it. For a compile-time error the two listings are
 `troubleshooting/compile_fail_<stem>.cpp`, with its `expected-error` marker, and
 `troubleshooting/fix_<stem>.cpp`, which `test/CMakeLists.txt` and `test/Jamfile` compile as a test.
 For a runtime error they are Boost.Test programs, `snippets/errors_<stem>.cpp` and
-`snippets/fix_<stem>.cpp`. Nothing checks that the page lists every message: a removed error leaves
+`snippets/fix_<stem>.cpp`. Where the error admits a second fix - typically changing the method
+instead of the overrider - show it too, as `fix_<stem>_2.cpp` under an `*Alternative fix*` label
+introduced by a sentence saying when to prefer it. After changing an example, run
+`dev/ce_troubleshooting.py` to regenerate the Compiler Explorer link next to its `*Example*`
+label, and `dev/ce_troubleshooting.py --check` to compile them all on Compiler Explorer. Nothing checks that the page lists every message: a removed error leaves
 a stale entry, and an added one is simply missing.
 
 The tested sources behind the reference's `include:` markers live in
