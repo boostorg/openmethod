@@ -14,11 +14,11 @@ struct Node {
     virtual void postfix(std::ostream& os) const = 0;
 };
 
-// tag::call_virtual_function[]
-void call_virtual_function(const Node& node, std::ostream& os) {
+// tag::virtual_function[]
+void virtual_function(const Node& node, std::ostream& os) {
     node.postfix(os);
 }
-// end::call_virtual_function[]
+// end::virtual_function[]
 // end::content[]
 
 int main() {
