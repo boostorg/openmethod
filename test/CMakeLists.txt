@@ -72,6 +72,9 @@ endfunction()
 # precede the #define and defeat the override, so those files are left without a
 # PCH.
 #
+# target_precompile_headers needs CMake 3.16, and the library supports 3.13, so
+# the tests simply build without a PCH on anything older - slower, not different.
+#
 # Detected by scanning for the macro, or for an include of a header that carries
 # the override on the file's behalf: test_capture_errors.hpp and
 # test_checked_registry.hpp each own a whole recipe, so the tests including them
@@ -154,7 +157,8 @@ foreach(test_cpp ${test_cpp_files})
     # is compiled without the flag, and GCC then warns (-Winvalid-pch) that it
     # was "created and used with differing settings of '-mbmi2'" for every file
     # that reuses it with the flag on.
-    if (test_cpp_overrides_registry EQUAL -1 AND NOT test_needs_bmi2)
+    if (test_cpp_overrides_registry EQUAL -1 AND NOT test_needs_bmi2
+            AND NOT CMAKE_VERSION VERSION_LESS 3.16)
         if (NOT boost_openmethod_pch_owner)
             target_precompile_headers(${test_target} PRIVATE ${BOOST_OPENMETHOD_TEST_PCH_HEADERS})
             set(boost_openmethod_pch_owner ${test_target})
