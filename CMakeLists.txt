@@ -15,7 +15,7 @@
 #
 #-------------------------------------------------
 
-cmake_minimum_required(VERSION 3.16...3.20)
+cmake_minimum_required(VERSION 3.13...3.20)
 
 set(BOOST_OPENMETHOD_VERSION 1)
 
