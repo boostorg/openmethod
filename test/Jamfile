@@ -121,6 +121,12 @@ if ! [ os.environ COVERITY_SCAN_TOKEN ]
   }
 }
 
+# The fixes the troubleshooting page shows for the errors above.
+for local src in [ glob ../doc/modules/ROOT/examples/troubleshooting/fix_*.cpp ]
+{
+  compile $(src) ;
+}
+
 build-project dynamic_loading ;
 build-project implicit_shared_libraries ;
 

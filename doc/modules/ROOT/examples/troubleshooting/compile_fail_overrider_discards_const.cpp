@@ -7,19 +7,9 @@
 // Expected diagnostic, as a CMake regex (see test/CMakeLists.txt).
 // expected-error: overrider parameter discards const qualifier
 
+#include "preamble.hpp"
+
 // tag::content[]
-#include <iostream>
-
-#include <boost/openmethod.hpp>
-
-using boost::openmethod::virtual_ptr;
-
-struct Node {
-    virtual ~Node() = default;
-};
-
-struct Plus : Node {};
-
 BOOST_OPENMETHOD(postfix, (virtual_ptr<const Node>, std::ostream&), void);
 
 BOOST_OPENMETHOD_OVERRIDE(

@@ -1,18 +1,28 @@
 :toc: macro
-:toclevels: 2
+:toclevels: 3
 :toc-title: Contents
 
 [#troubleshooting]
 
+// The theme draws a rule in a very light grey; on this page, rules separate
+// the entries, so they need to stand out.
+++++
+<style>
+.boostlook .doc hr {
+    border: 0;
+    border-top: 2px solid var(--border-border-quaternary, #8e9399);
+    margin: 2rem 0;
+}
+</style>
+++++
+
 toc::[]
 
-OpenMethod catches most mistakes at compile time, and says what went wrong in a
-`static_assert`. The rest surface at run time: cpp:initialize[] reports
-inconsistencies in the registered classes, methods and overriders, and a
-method call reports a combination of arguments it cannot dispatch.
-
-This page walks through the mistakes that are made most often, then lists every
-diagnostic the library emits, with its cause and its remedy.
+OpenMethod catches most mistakes at compile time. The rest surface at run time:
+cpp:initialize[] reports inconsistencies in the registered classes, methods and
+overriders, and a method call reports a combination of arguments that it cannot
+dispatch. This page lists every error that the library reports, each under its
+message, with a short example that produces it.
 
 ## Compilation errors
 
@@ -36,27 +46,181 @@ Search the output for the message:
 | `error C2338: static assertion failed: '_message_'`
 |===
 
-Read the first one. The errors that follow it are usually its consequences.
+Read the first one. The errors that follow it are usually its consequences. In
+particular, after an error in an overrider, gcc also reports
+`BOOST_OPENMETHOD_OVERRIDE: the overrider does not match the method` or
+`virtual_ptr category mismatch`, and after an error in a method, a
+`static assertion failed` with no message. These add nothing to the first
+error.
 
-### The overrider matches no method
+The examples below start from these declarations:
+
+[source,c++]
+----
+include::example$troubleshooting/preamble.hpp[tag=content]
+----
+
+### Methods
+
+#### `method has no virtual parameters`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUt1r2zAQ%2F1eEB8GhbrJ0D2Pux8NYYC%2BLA%2BnbUoIiK%2FYxWRLSKWkI3t%2B%2Bk%2BM0KaQwG2zd70s%2B6w6JMBqlxiRnvw8J7q2kFYEqNDrJ2Ed0Y42OcHZRzHjTs6WcloDGvaMXyDHyhwRKek2IU1xXnePmJkq9CU50EZ9ACxVKyR7AeHSSN09LvdRnuEa0Ph%2BP14Z446pRBViH9QjM2FipG4m1KY%2FsBTCqre2CggddMU0f7C0XknXCPD8r76OKdg4C2Yz6YYelZnRtwWHgiv2NYDpkj6yUGx4UkqG9NM1V8Czvve%2BYZr9ysgKq9iTo7W9Qnu%2BokwdrFAiQPs9d0AiNXIlaij%2F%2B6RT2vSgWz6tiPp39mj7%2FLH6kljrYwGvG0rjnIGMeS%2Bro%2BPcGw4xtDZTDzhtXTHCl0viVA2bpOTx12OekEexDhAkYne1SJ22bsf8dBPkqRfh4DN6O%2B8ooRDko6ToocndfJp8joWDtj8Oo%2B126s4vU9iiffLtL2heqjUUwOqqTW%2BrjkaInX8%2FhPLJzrqVa1GanSbbhysuLzYuAJ4qOLjLcVf6qhfLhetjOcXsq2%2FaF7n8h9C0%2B[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_no_virtual_parameters.cpp[tag=content]
+----
+
+A method dispatches on the parameters declared with `virtual_` or
+`virtual_ptr`. Without one, it is an ordinary function.
+
+Declare the parameters to dispatch on as virtual. Here, the first parameter
+becomes `virtual_<Node&>`. The method then selects an overrider from the
+dynamic type of the node.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_no_virtual_parameters.cpp[tag=content]
+----
+
+Or as a `virtual_ptr<Node>`.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_no_virtual_parameters_2.cpp[tag=content]
+----
+
+'''
+
+#### `virtual_traits not specialized for type`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUsGO2jAQ%2FRUrlVZBm0LZHqqmLIeqSL2UILG3skLGMYlVZ2zZY1iE0m%2FvOISFlVipiRR73nvzxhPPMREGUAImOft9TPBgJe0I1KGBJGPv0Y01EOHsKpjzpmdLOSsVGveGXiLHyB8TVdIyJk5zqLqM%2B%2Fso9SY40Vl8UCB0KCWbKOPRSd5MV7CCC1wjWp%2BPRhtDvHHVsFJYh81QmZGxEhqJtSlP7BUwrK3tjIJXUDGgA3vLhWSdMM8vym9RRZWDQDanfthxBYyenXIYuGZ%2FI5gO2CMr5ZYHjZTQXictdPAs73PfMM1h7WSlKDqQoE9%2FhfJ8T51MrNFKKOnz3AVA1ci1qKX446dns%2B9FsXxaF4vZ%2FNfs6WfxI7XUwVa9ZCztz7iexOLTjHksqbXTb7wbZGxnVDnoTOKOCa51Go97xyx9B%2BdWe8M0gr2JMAFjZruCpG0z9r8TIV%2BkCO%2FPw%2Bu935iJKFdaug6K3MPn8adIaLXxp6mEvkp3iZHaneTjrw9J%2B0yxsagMRHXykfp4JOvxl4s5j%2ByCg9TL2uyBZFuuvbwqXgQ8U3SHkeGu8jdTyF%2FdNts7bs9h2z7T%2Bw8QCDD4[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_virtual_by_value.cpp[tag=content]
+----
+
+A `virtual_` parameter is a reference, a pointer, or a smart pointer that
+OpenMethod supports. Dispatching on an object passed by value would slice it.
+
+Pass the object by reference: `virtual_<Node&>`, not `virtual_<Node>`. The
+method then sees the object itself, with its dynamic type.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_virtual_by_value.cpp[tag=content]
+----
+
+'''
+
+#### `virtual_<> parameter is not a polymorphic class...`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUk9v2jAU%2FypWJlVBzWB0h2kZ5TANaYeNINHbqJBxTGLNsS37GYpQ9tn3nJhCKyo1OcTv989%2BzjsmTCvgCpKc%2FDkmcDAcVwhK36gkI2%2FRjdEqwNlFMadNZEs%2BKwVo%2B4JeAoXAHxNR4meMnKSq6hy3t0HqtLesi%2FggFJO%2B5GQitAPLaTNdqZU6wzWAcflotNHIa1sNKwG13wyFHmnDVcOh1mXPXgDD2pguyDuhKqLwwM5QxkknzPOz8ltQ4c6eAZljP%2BS4UgSfnbDgqST%2FApgOyD0p%2BZZ6CWhoL00L6R3Jo%2FcF0xzWllcCqwMKov0ZyvM9djIxWgomuMtz6xWIhq9ZzdlfN30V9ksAt3ieiH4viuXDuljM5r9nDz%2BLH6nBvrbiKSNpPPl6Ei0304w4KLHp%2FoJvBhnZaVEOuqCwIoxKmZ7kRPaLwekqYnQa8ZjGtIcQ0a5U0rYZee%2FQ8CfO%2FNsj8zwaV8YmyIXktoMCd%2Fd5%2FCkQUmxcP7gq7tL950Dtevn4613SPmKtDQitgjr5iH3cY%2FT4yzmcBnZBFZfLWu8VyrZUOn6xeeHhROGfCQy1lbtqwXxxPWxvqTmVbfuI73%2FerD5Z[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_virtual_non_polymorphic.cpp[tag=content]
+----
+
+The default registry finds the dynamic type of an object with `typeid`, which
+yields it only for a polymorphic class. See also <<call_non_polymorphic>>, the
+same mistake made with `virtual_ptr`.
+
+Give the root of the hierarchy a virtual destructor. It makes the class
+polymorphic, and `typeid` then yields the dynamic type.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_virtual_non_polymorphic.cpp[tag=content]
+----
+
+'''
+
+#### `virtual_ptr<> must be passed by value or by const reference`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNklFv2jAQx7%2BKlUkoqBmM7mGaS3mYhrSXEST6NipkHJNYc2zLPkMRyj77zkkodKLSEimJ7%2Fe%2F%2F%2FniOyXcaBAaEkp%2BnRI4WoFfGFSh1klG3sO1NTqGs6vFgtU9LcS8kGDcG7wCBpGfElnga4JMMV22GXd3UepNcLy1%2BCA1V6EQZCqNBydYPVvrtb6EKwDr6Xi8NciNK0elhCpsR9KMjRW6FlCZoqNXgVFlbWsUvNQl0bhhbxkXpBVSelE%2BRBVWDhzIAvshp7UmeO2lg8AU%2BROD6ZA8kkLsWFCACc110lIFT2if%2B4bUx40TpcTVEQV9%2BmuI0gN2MrVGSS6Fp9QFDbIWG14J%2FtvPzmbf8nz1tMmX88XP%2BdOP%2FHtqsYOdfMlI2u9xY8FNY%2F3ZICMeCmyv%2B5WDYUb2RhbD1ih%2BEc6USuOWB8Tic%2FhPuxcromPfreahk%2FR10wj6OtwEiLhZ66RpMvK%2FgyNeBA%2Fvj83reNwYnSiXSrg2FNn958mnCJTc%2Bm54dV%2BlPeuI9p188vU%2BaZ5xbSxIo6M6%2BYh9PKL15MvFnEW6ZFqoVWUOGmU7pry4Kp4HOCM86kiYK%2F3NFPSXt80Ojtnzsmme8f4LtOI%2Bcg%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_virtual_ptr_by_reference.cpp[tag=content]
+----
+
+A method takes a `virtual_ptr` by value - it is a pair of pointers, cheap to
+copy - or by const reference. It cannot take it by non-const reference, or by
+rvalue reference, because it may have to build one from its argument.
+
+Take the `virtual_ptr` by value, or by const reference. The method can then
+build it from any argument that converts to it, including a `virtual_ptr` to a
+derived class, or a reference to the object.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_virtual_ptr_by_reference.cpp[tag=content]
+----
+
+Or by const reference.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_virtual_ptr_by_reference_2.cpp[tag=content]
+----
+
+'''
+
+#### `virtual_ptr<> takes a class or a smart pointer: virtual_ptr<Node>, not virtual_ptr<Node*>`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUsGO2jAQ%2FRUrlarQTaFsD1VTlkNVpF5KkNhbWSHjmMSqM7bsMSxC6bd3HMLCSqzURIo9771544nnmAgDKAGTnP0%2BJniwknYE6tBAkrG36MYaiHB2Fcx507OlnJUKjXtFL5Fj5I%2BJKmkZE6c5VF3G3V2UehOc6CzeKRA6lJJNlPHoJG%2BmK1jBBa4Rrc9Ho40h3rhqWCmsw2aozMhYCY3E2pQn9goY1tZ2RsErqBjQgb3lQrJOmOcX5beoospBIJtTP%2By4AkbPTjkMXLO%2FEUwH7IGVcsuDRkpor5MWOniW97mvmOawdrJSFB1I0Ke%2FQHm%2Bp04m1mgllPR57gKgauRa1FL88dOz2feiWD6ui8Vs%2Fmv2%2BLP4kVrqYKueM5b2Z1xbdJNY%2F8M0Yx5Lau%2F0K98PMrYzqhx0RnHHrFOAaSdmQN%2FBud%2FeNY1g7yJMwJjariBp24z971jIZynC20Pxcvk3BiPKlZaugyJ3%2F3n8KRJabfxpNKGv0t1kpHYn%2BfjrfdI%2BUWwsKgNRnXykPh7IevzlYs4ju%2BAg9bI2eyDZlmsvr4oXAc8UXWRkuKv8zRTyV7fN9o7bc9i2T%2FT%2BAzzlMrM%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_virtual_ptr_of_raw_pointer.cpp[tag=content]
+----
+
+A `virtual_ptr` is a pointer already. The method declaration compiles, but the
+first use of `virtual_ptr<Node*>` does not.
+
+Name the class: `virtual_ptr<Node>`. A `virtual_ptr<Node>` is built from a
+`Node*`, so the call does not change. To dispatch through a smart pointer, name
+the smart pointer instead: `virtual_ptr<std::shared_ptr<Node>>`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_virtual_ptr_of_raw_pointer.cpp[tag=content]
+----
+
+### Overriders
+
+[#override_not_found]
+#### `BOOST_OPENMETHOD_OVERRIDE: cannot find '...' method that accepts the same arguments as the overrider`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUltr2zAU%2FivCg5FQN1m6hzHPzcOoYXtoHJqyl7kYRVZsMVkSuiQNwfvtO%2FKlSTcXZj%2FY53yXc%2BGcAiKFpcIGEfp5CuxRUfiDJHe1CEL0FlwrKXw6vAhWuO7RgiYFs1K%2FgjcWW4%2BfAlbAZwEYx6JsFVdXnmqk06S1eMcE4a6gKGbSWE1xvcxEJs7pylplovl8KwGXupyVzFZuO2NyLhUVNbWVLDr0IjGrlGqNnGGiRAIaNgoTilpiFJ2ZXzwLKjti0QrmQadMIHj2TFuHOfrtk5MpukUF3WHHLQiaS9GaO4OiXvsKqY%2B5piWD6AiEXv6SiqIDTBIryRlh1ESRdsKymuakouSXWQ5mhGNj0D0T%2F5T5mqabxzxdJ6v75PFbejdRMNuOPYdo0nefK6tjL1mGyNgC5u52%2FH4aor1kxXTUJ09%2FJA8P3%2B%2BSSbeKcdu2o799kTSD9bBIaVAcoyy4zgK%2FukwETROi%2Fz0x%2BkyJe%2FvAXg5p5Mg8nXGq25THbj4uPniAs63pzlz0Vdqr8NC%2Boy8%2B3wTNE8RSWSaFZwfXMOgtWC8%2Bnc2xR9dYUL6p5EEAbYe5oRfFU2cHCI7CI1iXZlQC%2Fmzc7KCxGsKmeYL3D4lISjA%3D[Compiler Explorer^]
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_override_private_base.cpp[tag=content]
 ----
 
-[source,console]
-----
-static assertion failed: BOOST_OPENMETHOD_OVERRIDE: cannot find 'postfix' method that accepts the same arguments as the overrider
-----
-
 xref:reference:BOOST_OPENMETHOD_OVERRIDE.adoc[BOOST_OPENMETHOD_OVERRIDE] does
 not take the method as an argument: it finds the method by overload resolution,
 looking for a method of the same name that can be called with the overrider's
-arguments. Here `Plus` derives from `Node` _privately_ - `class` makes the
-inheritance private unless told otherwise - so a `virtual_ptr<Plus>` does not
-convert to a `virtual_ptr<Node>`, and `postfix` cannot be called with one. The
-fix is `class Plus : public Node`.
+arguments. Here `Minus` derives from `Node` _privately_ - `class` makes the
+inheritance private unless told otherwise - so a `virtual_ptr<Minus>` does not
+convert to a `virtual_ptr<Node>`, and `postfix` cannot be called with one.
 
 The other causes of the same message are:
 
@@ -78,52 +242,316 @@ The other causes of the same message are:
 
 * The method takes a smart `virtual_ptr`, such as cpp:shared_virtual_ptr[],
   and the overrider a plain `virtual_ptr`, or one over another kind of smart
-  pointer. A plain `virtual_ptr` in the method and a smart one in the overrider
-  has a message of its own: `different virtual_ptr<> pointer kinds`.
+  pointer. The opposite mistake has a message of its own:
+  <<overrider_pointer_kind>>.
 
 * A virtual parameter of the overrider is `const` where the method's is not.
-  The opposite mistake has a message of its own: see
-  <<_the_overrider_discards_const>>.
+  The opposite mistake has a message of its own: <<overrider_discards_const>>.
 
-* A non-virtual parameter differs from the method's.
+* A non-virtual parameter differs from the method's in a way that no
+  conversion bridges. When a conversion does, the message is
+  <<overrider_parameter_type>>.
 
 * The method is in another namespace, and its arguments do not make it visible
   through argument-dependent lookup. See xref:namespaces.adoc[Namespaces].
 
 When the overrider and the method differ only by their registry, the message
-says so instead: `registry mismatch`.
+says so instead: <<registry_mismatch>>.
 
-### The overrider discards `const`
+In the example, make the inheritance public: `class Minus : public Node`. A
+`virtual_ptr<Minus>` then converts to a `virtual_ptr<Node>`, and overload
+resolution finds `postfix`. For the other causes, make the overrider callable
+the same way: declare the method first, correct the name, or match the
+parameters to the method's.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_override_private_base.cpp[tag=content]
+----
+
+'''
+
+[#overrider_discards_const]
+#### `overrider parameter discards const qualifier`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUl1r2zAU%2FSvCg5EQL1m6hzHPzcOoYXtYHJqyl7kYRVZsMVkS%2Bkgagvvbd%2BWPJh0uzH6w7znnHulI9xwQKSwVNojQ73NgT4rCH4Dc1SII0Vt0raTwcHhVrHHdswVNCmalfkVvLbaePwesgM8SOI5F2XbMZl5qpNOktXjHBOGuoChm0lhNcb3KRCYucGWtMtFisZPAS13OS2Yrt5szuZCKipraShYdewXMK6VaI2eYKJGADRuFCUWtMIouyq9eBSs7YtEa8qBzJhA8B6atwxw9e3AyRbeooHvsuIWG5rppw51BUd%2F7iqlPuaYlg%2BoEgr79BYqiIySJleSMMGqiSDthWU1zUlHyx6wGs29pun3I002y%2Fpk8fE%2FvJgoS7NlTiCb9HnNldQzXZ7oEqxAZW0DG7jzfT0N0kKyYjrrl6a%2Fk%2Fv7HXTLpYo%2Bb%2B4z%2F2iJpBufhzKRBcYyyYJYF%2FpQyETRNiP53mugTJe7tWXqZmZF58nLGqW4hz918Wn70BGc700206FdpB8BTh06%2B%2FHITNI9QS2UZnKHHPkDQW7Befr6YY89usKB8W8mjANkec0OvFk%2BdHSi4f89gXZrRFvBn42ZHjdVQNs0jvH8BzLtC5A%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_overrider_discards_const.cpp[tag=content]
 ----
 
-[source,console]
-----
-static assertion failed: overrider parameter discards const qualifier
-----
-
 The method takes a `virtual_ptr<const Node>`: it promises not to modify the
 node. The overrider for `Plus` takes a `virtual_ptr<Plus>`, through which it
 could. When the method calls the overrider, it casts its argument to the type
-of the overrider's parameter, and a cast cannot remove `const`. The fix is
-`virtual_ptr<const Plus>`.
-
-The same applies to references and pointers: an overrider for
-`virtual_<const Node&>` takes a `const Plus&`. Clang follows the message with
-the error from the cast itself, which names the two classes:
+of the overrider's parameter, and a cast cannot remove `const`. Clang follows
+the message with the error from the cast itself, which names the two classes:
 `dynamic_cast from 'const Node' to 'Plus &' casts away qualifiers`.
 
-### The class is not polymorphic
+Make the overrider's parameter `const` as well: `virtual_ptr<const Plus>`. The
+cast then keeps the `const`, and the overrider keeps the promise of the method.
+The same applies to references and pointers: an overrider for
+`virtual_<const Node&>` takes a `const Plus&`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_discards_const.cpp[tag=content]
+----
+
+If the overrider is right, and the method is meant to let its overriders
+modify the node, drop the `const` from the method instead.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_discards_const_2.cpp[tag=content]
+----
+
+'''
+
+#### `virtual_ptr<> is required in overrider in same position as in method`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUl1vmzAU%2FSuWJ1WJwpKle6jGaB6mIq0PDVFT9WVUyAEHrBnb8kfSKGK%2FfdcEGjql0uAB7jnnnut7fY84l8JSYXGIfh2xPSgKfwByVwscoI%2FoWknh4WAQLEndsQWNC2alfkevLbGeP2JWwGcOHCeibDMmEy810um8tfjERM5dQVHEpLGaknqRilSc4cpaZcLZbCOBl7qclsxWbjNlciYVFTW1lSxO7ACYVkq1Rs4wUSIBBzaK5BS1wjA8K797FVR2uUVL6AcdU4Hg2TFtHeHojwdHY3SLCroljltIaIZJK%2B4MCrvcd0x9yDQtGUQHEHTpb1AY7qGTSEnOckZNGGonLKtpllc0%2F20WvdmPJFk%2FZckqXj7ETz%2BTu5GCDrbsNUCj7oyZsjry9RcBMraA7k6TvBoHaCdZMb7okyXP8ePj%2FV08MPS9XP1jgqTpffrZSIOiCKV4kmI%2FjVTgpgnQ%2F24NfaW5%2B3hn3nbjwt54OeNUt5Dnrr%2FOv3iCs405ba7oqrQX7andST7%2Fdo2bF4ilskwKr8afodFbsJ7fnM2JZ1dEUL6u5F6AbEu4oYPiibM9BffsGaJLczEF%2FNlls70mqg%2Bb5gXev4B6OkM%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_overrider_plain_reference.cpp[tag=content]
+----
+
+The method takes a `virtual_ptr<Node>`, and the overrider a `Plus&` in the same
+position. Where the method takes a `virtual_ptr`, the overrider takes one too.
+
+Take a `virtual_ptr` to the class of the overrider: `virtual_ptr<Plus>`. The
+method passes its argument on, cast to that class.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_plain_reference.cpp[tag=content]
+----
+
+If the overriders are meant to take references, declare the parameter of the
+method as `virtual_<Node&>` instead. The overrider then takes a `Plus&`.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_plain_reference_2.cpp[tag=content]
+----
+
+'''
+
+#### `different virtual_ptr<> reference categories`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUl2L2zAQ%2FCvChSMhbtJcH0pdXx7KBdqHxuFy9KU%2BgmIrtqgsCWmVXAjub%2B%2FKHxdfyUHtB3t3Zmc1Ys5BpiQwCUFEfp0DOGmGf9gUrpJBSN6CK62kb4eDYkWrDs3ZMuegzCt4AxQ8fg54jp85YoLKopmYTDzVKmeyRuIdl5lwOSMxVxYMo9Uilam8tEsAbaPZbKcQV6aYFhxKt5tyNVOayYpBqfIWHTSmpdaNkLNcFkTiga2mGSMNMYouzC%2BehZtdBmSFfsg5lQSfAzfgqCB%2FfHM0JnckZ3vqBOBAPRxaC2dJ1M2%2BQqrT1rCCY3VCQjf%2B0oqiIzqJtRI848xGkXESeMW2Wcmy33bRi31Nks3jNlkvVz%2BWj9%2BS%2B5FGB3v%2BHJJRd8atBhP7%2FYuQWMjRXXuTN%2BOQHBTPx1d1tsnP5cPD9%2FvlqDV8kcUkWCBDce9xcfOPOlG2X9BfmrIkjkkaTNLAX1Mqg7oOyf%2FGiT2zzL0dppfQXAmUp3PBTNPy2O3H%2BQcPCL6zbaRlt6VJgIcOLX3%2B%2BTaon7BWGjg69733aPQOpeefLuLUo2sqmdiU6iiRtqfCssHyxEEPYQA8Qk1hr46gPr8udjRU92VdP%2BH7F7IFQwo%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_overrider_reference_category.cpp[tag=content]
+----
+
+The method takes the `virtual_ptr` by value, and the overrider by const
+reference.
+
+Use the same form in both: here, by value, as the method does. The overrider
+then receives the `virtual_ptr` the way the method passes it.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_reference_category.cpp[tag=content]
+----
+
+Or by const reference, in both.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_reference_category_2.cpp[tag=content]
+----
+
+'''
+
+[#overrider_pointer_kind]
+#### `different virtual_ptr<> pointer kinds`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU9uK2zAQ%2FRXhQkmIGzfbh1KvNw9lDe1D47BZ%2BlIvRrEVW1SWhC7JhuD99o58SbwlC4XaD%2FbMOXNGc9HJywU3hBsvRL9OnjlKAn%2FgZLbmno%2FegmspuHP7I2OF6x4tSFxQI9QreGOwcfjJowV8FoAxzMs2YjZzVC2syluJd5TnzBYERVRoowiulylP%2BcVdGSN1GARbAbhQ5bykprLbORWBkITXxFSi6NCRY15J2QpZTXmJOBxYS5wT1BLD8MK8dSzIbHODVlAPOqUcwbOnyljM0ItzTqboDhVkhy0zENCMg9bMahT2sa%2BQ%2BpgpUlKwjkDow8%2BuMDxAJZEUjOaU6DBUlhtakyyvSP5bLwex%2F21FQGGuSshAmyLTFVakyKRR5w59TZLNY5as49WP%2BPFbcj%2BREL%2Bjzz6a9D1w9MjVt%2FQRiED3ukm9n%2FpoL2gxvb2mkyU%2F44eH7%2FfxpGvoRbY%2FxFjdNfFvdST0kGAYitAoilDqzVLPjSHlXtP46F%2FXlTyT3L69rOelvLKwjk4ZUa3LYTefFh8dwOhWd1eG91na%2Fjto39EXX2685glsIQ0V3LG9D1DoHUgvPl%2FEsUPXmBO2qcSBA22HmSaj5Ik1AwQL5hCsSn01BPTpdbGDwnIwm%2BYJ3j%2FZnmhe[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_overrider_smart_virtual_ptr.cpp[tag=content]
+----
+
+The method takes a plain `virtual_ptr`, and the overrider a smart one.
+
+Use the same kind in both: `virtual_ptr<Plus>` for `virtual_ptr<Node>`,
+`shared_virtual_ptr<Plus>` for `shared_virtual_ptr<Node>`. A plain pointer
+cannot be turned into a smart one, so the overrider takes what the method
+holds.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_smart_virtual_ptr.cpp[tag=content]
+----
+
+If the overrider is meant to share ownership of the node, make the method
+take a `shared_virtual_ptr<Node>` instead.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_smart_virtual_ptr_2.cpp[tag=content]
+----
+
+'''
+
+[#overrider_parameter_type]
+#### `non-virtual parameter types must match exactly`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUktr20AQ%2FiuLCsHGql2nhxJF8aFE0B5qmTj0EgWxltbS0tXusg87xqi%2FvbN62AooUOkgzXyPeTBnLxPcEG68AL2cPXOSBP4gyWzFPR99BFdScJf2B8EaVx2akyinRqh38NZg4%2FCzR3P4LAFjmBeNYjZzVC2syhqLT5RnzOYEhVRoowiuVglP%2BDVdGiN1sFjsBOBCFfOCmtLu5lQshCS8IqYUeYsOEvNSysbIasoLxKFhLXFGUEMMgivz3rGgss0MWsM86JxwBM%2BBKmMxQ39dcjJFDygne2yZAUE9FG2Y1SjotO%2BQ6pQqUlCITkDo5JdUEBxhklAKRjNKdBAoyw2tSJqVJPujV73ZdRX7wYK%2Bx%2FH2OY030fpX9PwjfpxImGtP33w06TpPpVGh62rlI21ymLmV30x9dBA0n96P%2BaTx7%2Bjp6edjNGnXMG7rZr7Ydm3dIKF7636JQqMwRIk3Szy3toR7de2j%2Fz0v8kYy%2B%2FFxXY5o5MAcnTKimpTDbr8uvziA0Z1uT5x3VZqLcNChpS%2Fvbr36FWIhDRXcsb3PMOkDWC%2B%2FXc2xQzeYE7YtxZEDbY%2BZJoPisTU9BAfhEKwKPSoBfzpudlRY9mFdv8L7D%2FHTSSo%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_overrider_parameter_type.cpp[tag=content]
+----
+
+The non-virtual parameters of an overrider have the same types as the
+method's. Here, `std::ostream&` would have to be cast to `std::ofstream&`,
+which cannot be done safely.
+
+Declare the parameter with the type of the method: `std::ostream&`. The
+overrider then receives the argument as the caller passed it.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_parameter_type.cpp[tag=content]
+----
+
+If the method is meant for file streams only, declare its parameter as
+`std::ofstream&` instead.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_parameter_type_2.cpp[tag=content]
+----
+
+'''
+
+#### `overrider return type is not convertible to method return type`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUk9vmzAU%2FyoWuyQKS5buMM1Lc5iKtB0WoqbaZVTIAResGduyn5NFEf3seyakSScqDQ7wfv8eD79jVGgFXEFEya9jBAfD8Q1B6RsVxeQtujFaBTi%2BKlas6dmSJ6UAbV%2FRG2AQ%2BGMkSnzMkZNMVZ1jMglSp70tuoh3QhXSl5wsHFihqmWmMnUBhUaYs%2BYfuAYwjs5mW428ttW0ElD77VTomTZcNRxqXZ7YK2BaG9MFeYediMIpnGEFJ52Q0ovyS1BhZ18AWeGQ5JgpgtdOWPBMkucAjsbklpT8iXkJaGivTWvpHaG99xXTHHLLK4HVAQW9%2FQWidI%2BTLIyWohDcUWq9AtHwvKh58dstz2Ff03TzkKfrZPUjefiW3o12THoek1H%2FhbkBuwjdl%2BOYCAXjQVee%2Fkzu77%2FfJYP2MEOwOygpPZ3O%2BPwjLAdvFcmiSRaF2TMVtW1M%2Fndx%2BB9e%2BLfX5mU9BlYnyIXktoMCd%2FNx%2FiEQUmzdaXlV36U71kDtTvL555uofcRaGxBaBXX0Hqe7xej5p0s4C%2ByaKS43td4rlD0x6fhV89TDmcJTDQyzlRu0YL4YDttbZs5l2z7i%2FRckRT1I[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_overrider_returns_string.cpp[tag=content]
+----
+
+An overrider returns the method's return type, or a type that converts to it,
+such as `Plus*` for `Node*`. If the method returns `void`, so does the
+overrider. Here, the method returns an `int`, and the overrider a
+`std::string`, which does not convert to `int`.
+
+Return the type of the method, `int`, from the overrider. The method returns
+what the overrider returns, so it must be able to convert it to its own return
+type.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_returns_string.cpp[tag=content]
+----
+
+If the overrider is right and the method is wrong, change the return type of
+the method instead.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_overrider_returns_string_2.cpp[tag=content]
+----
+
+'''
+
+#### `virtual_<> is not allowed in overriders`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUktvm0AQ%2FisrKkWOQu06PVQlDoeqVttDjRX7VkdoDWNYddld7cOOZdHf3lkghjSOVDjAfq%2BZgTkFmRQWhA0i8usU2KMCfEOQu0oEIXmLrpQUHg4HhwWtOjaHec6s1C%2FolaXW86eA5fiYIsepKBrHzY2XGul01kS8YyLjLgcyY9JYDbSKN2Ijeri0VploMtlK5KUuxgWzpduOmZxIBaICW8q8ZQfAuFSqCXKGiYIIbNgomgFphFHUK%2B%2B8Ciu7zJIFzkNOG0Hw2jNtHeXkjwdH1%2BSe5LCjjls01EPTkjtDos77gqmOqYaC4emIgs5%2BhqLogJPMlOQsY2CiSDthWQVpVkL228T%2FhCnse8eeUuY7bqfqIGytHWXWa0KylywfdUOkM9%2FdVRwSY3Mcvv3QV9dxU8Arz%2FEKp%2BltfrbXtsb1JUlW6zRZzhc%2F5%2Bvvydf0Yf7tx2o9fxh1UWjYg9Ysh9kwPPb2oK5D8r9bBk%2BQubd37LxLF%2FbMyxkH3UCeu%2F04%2FeAJzram3XTRVWkWw1P7Vj79fBvUj3iWyjIpvDp4j9%2FhHqOnn%2Fpw6tklFcBXpTwIlO0oNzAonjj7TOGv9AzVhblowXx2OeygqXo%2B1vUj3n8BwYlSkg%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_core_overrider_virtual.cpp[tag=content]
+----
+
+`virtual_` marks the parameters that a method dispatches on. An overrider does
+not dispatch: it is called once the dispatch is done. This message comes from
+the core API, as above. Through `BOOST_OPENMETHOD_OVERRIDE`, the same mistake
+gives <<override_not_found>>.
+
+Take the plain type in the overrider: `Plus&` where the method takes
+`virtual_<Node&>`. The method casts its argument to that type when it calls the
+overrider.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_core_overrider_virtual.cpp[tag=content]
+----
+
+'''
+
+#### `method parameter must be an unambiguous accessible base of corresponding overrider parameter`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNU0uP2jAQ%2FitWKq1Ay0LZHqpmszlUjdoeFtDCrawik5hkVMe2%2FIBFKP3tHSfhVYHU5JDMfI%2BZcSb7IJPCMmGDkPzaB3anGL5hkrtKBANyC66UFD49OAsmtOrQnCU5WKkv4Lml1uP7AHJ8jBHjVBSN4v7eU410OmssPoDIuMsZiUAaqxmt4qVYilO6tFaZcDRaScSlLoYF2NKthiBHUjFRMVvKvEXPEsNSqcbIGRAFEdiwUTRjpCGG4Yn55FlY2WWWTHAesl8KgtcGtHWUkz8%2B2euTZ5KzNXXcoqA%2BF824MyTstBdItUs1KwCjHRI6%2BTEVhlucJFKSQwbMhKF2wkLF0qxk2W8TH8wyTo0hLyBulVE40RreU%2FCztPN2KWy6HTI6cQZkIyHvdeOlyurIe8YDYmyOB9N%2BhLt%2B3JTw3GOByvdwoWy6%2BldKpOkfTlEaEkVkGTwsA39u3vLrdDpfpNNZMnlJFj%2Bm39LX5PvP%2BSJ57XV10GnDtIacRReV4z5aBHU9IP%2B7n%2BydZe72dh638MqGejpwppuUxx4%2FjT96gMPKtP%2BI6Ko0K%2BWhTUsff3kM6jeMpbIghWcHD3hCz2g9%2Fnwypx6dUcH4vJRbgbQ15YadFZ86e4DwU3uE6sJclaA%2FXDfbaqoOYV2%2F4f0XvypmRA%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_core_overrider_private_base.cpp[tag=content]
+----
+
+The same mistake as in <<override_not_found>>, made with the core API, which is
+given the method instead of looking for it.
+
+Make the inheritance public, as there: `class Minus : public Node`. The method
+can then cast a `virtual_ptr<Node>` to a `virtual_ptr<Minus>`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_core_overrider_private_base.cpp[tag=content]
+----
+
+### Classes and virtual pointers
+
+[#call_non_polymorphic]
+#### `no matching function for call to '_method_'`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU1Fr2zAQ%2FitCg%2BEQL1m6hzE3y8OoYXtYHJqyl7oExVbtA1kS1intZvzfJ9lJ4xQXBrPB9n3fd9%2BdjnNDMyWRS6QRuW8o%2FtbcfTlQ2ErSkLxFV1pJD4eDYM2qI5vzOAdU9QW9RYaebyjk7rVwnGCy6DKmUy81ytZZZ%2FEOZCZszskSlMGas2qVylSe4RJRm2g%2B3yvHq7qYFYCl3c9AzZXmsuJYqrxnB8Cs1Hr1%2FzZzkIDABPzhR8dUWgOyIJ0yis7SKDpAjZaJncb62gvdcWyGZO2GRJp2CG2ENSS6YL4lyfZul2zi9c%2F47ntyE2jn%2FwjPIQkGvkufsgqJQVfvOK%2F3k5AcFOSTUZ9d8iu%2Bvf1xEwepJO4at%2FUNvbYlypycSdMnK0OWS5LSaUpdsdbXA4mkYiCDF9HIZM5TDPouva4bgnaP64vOAg8dW8mUxUlfibZtSP51L%2Fkzz%2BzbW%2FmyfSOb6eUgeN1Bnrv6tPjoCQF70%2F8b8lilO6inDr188eWKtg8uVhpBSa%2BmH9w5vjrrxeezOfPshkkutqV6kk72yIThg%2BKJxRPlFsYzrC7MaIrzh3Gzp5rpU9i2D%2B7%2BC9MTXJo%3D[Compiler Explorer^]
 
 [source,c++]
 ----
 include::example$troubleshooting/compile_fail_call_non_polymorphic.cpp[tag=content]
 ----
 
-[cols="1,3"]
+[%autowidth,cols="1,3"]
 |===
 | Compiler | Diagnostic
 
@@ -143,13 +571,25 @@ type of the object. The default registry finds it with `typeid`, which yields
 the dynamic type only for a polymorphic class, so `virtual_ptr` does not accept
 `Node` or classes derived from it, and the call matches no overload. There is
 no `static_assert` here, because the mistake is not in a declaration that the
-library sees: it is the absence of a conversion.
+library sees: it is the absence of a conversion. For the same reason,
+`virtual_ptr<Node> p(plus)` reports that no constructor matches.
 
-The usual fix is to make the root of the hierarchy polymorphic by giving it a
-virtual destructor - which it needs anyway, if objects are ever deleted through
-a pointer to it. Alternatively, cpp:inplace_vptr_base[] gives a class a v-table
-pointer of its own, and a custom RTTI policy can find the dynamic type of
-non-polymorphic classes: see xref:custom_rtti.adoc[Custom RTTI].
+Make the root of the hierarchy polymorphic by giving it a virtual destructor -
+which it needs anyway, if objects are ever deleted through a pointer to it.
+`typeid` then yields the dynamic type of a `Node`, and the object converts to a
+`virtual_ptr`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_call_non_polymorphic.cpp[tag=content]
+----
+
+Where the classes must stay non-polymorphic, there are alternatives.
+cpp:inplace_vptr_base[] gives a class a v-table pointer of its own, and a
+custom RTTI policy can find the dynamic type of non-polymorphic classes: see
+xref:custom_rtti.adoc[Custom RTTI].
 
 Where the caller knows the exact class of the object, cpp:final_virtual_ptr[]
 makes a `virtual_ptr` without looking for the dynamic type. It takes the static
@@ -167,31 +607,1038 @@ class, OpenMethod has no way to find out, even with runtime checks enabled.
 Passed a `Node&` that refers to a `Plus`, `final_virtual_ptr` makes a
 `virtual_ptr` to a `Node`, and the call dispatches on `Node`.
 
-The same mistake made with `virtual_` instead of `virtual_ptr`, as in
-`BOOST_OPENMETHOD(postfix, (virtual_<Node&>, std::ostream&), void)`, is caught
-when the method is declared, and reported with a message of its own:
-`virtual_<> parameter is not a polymorphic class`.
+'''
+
+#### `class must be an accessible unambiguous base, repeated inheritance is not supported`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNkl9vmzAUxb%2BKxV5alSVL9zCN%2FpHWLdIeuhCNvi1V5JgbsGZsy75uFkXss%2B%2Ba0IZUqTR4AJ%2FfOccYe5cIoxE0Jhn7tUtwa4HeSFSh0UnK3sKNNTrK6WAw401PS5iWEo07wgVyjHyXyJIeE2KK66pLXFxEqzfBia7indRChRLYtTQeHfDmdqEX%2BiDXiNZn4%2FHKEDeuGlUS67AaSTM2FnQDWJtyTwfCqLa2Kwpe6opp%2BmBvuQDWGbPs4LyKLpo5CGQzWg%2FbLTSj60k6DFyxv1E8O2c3rIQ1Dwop0A5DcxU8y%2FrsEWm2SweVpNGWDH38RcqyDa3k2holhQSfZS5olA0sRQ3it799VXYPazyaptd%2Fyqo%2BCe4M1qTHXNq7%2Bsa7PC8elvl8Ovsxffief1t%2Bvf9SFNPiLHakw0TatZxTKmnblP3vuYA%2FIMLbp%2BJl90%2BcjGiXClwnRXb5cfIhAiVXfn82dT9Lt5URPe3tk8%2BXSftIY2NRGh3dyXuP5Q1VTz4dynmkc65BFbXZaLKtufIwmDwP%2BIzoX0bCXeVPRqhfni7bOG6fh237SPc%2FnTkyMA%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_diamond_inheritance.cpp[tag=content]
+----
+
+`Both` inherits `Node` twice, through `Left` and through `Right`, so a pointer
+to a `Both` cannot be converted to a pointer to a `Node`. A private base gives
+the same message.
+
+Derive `Left` and `Right` from `Node` virtually. A `Both` then contains a
+single `Node`, and the conversion is unambiguous. If the base is private
+instead, make it public.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_diamond_inheritance.cpp[tag=content]
+----
+
+'''
+
+#### `use_classes: a class is incomplete`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNkl9P2zAUxb%2BKlb2ACO3KHqaZP9IGlfYwmkrhbUWV61wSa45t2dd0VRU%2BO9dpoQUVieQhued37rGdm3UmrUEwmHH2d53hygG9kahja7KcfYRbZ02S871iItotrWBcKbT%2BDS5RYOLrTFX0GBHTwtR9x8lJsgYbvewjvigjdayAXSgb0INor2ZmZnZyg%2BgCHw4Xlrj19aBW2MTFQNmhdWBawMZWG7onDBrn%2BqAYlKmZoQ0HJySw3sj5znmeXLRylMgmdB62nhlG16PyGIVmT0k8OmaXrIIHETVSQ7ffNNUxML7tfUPa1dxDrahakWHb%2FipxvqSTXDirlVQQOPfRoGphLhuQ%2F8LVu7BbRWfphV9FUd7Ni%2Bl4cju%2B%2B13czK%2F%2F%2FCzLcXmUtpD3%2B8k39mPyZ12Xs88OFP6DjB%2BP83VsB0aa7EqD76XEzr6Nviag1SJsfiqzXaWfQUKPG%2Fvox1nW3VNtHSprkjs7DVhdUvTo%2By5cJDoVBnTZ2KUh24PQAfYWLyK%2BIPpqiQhfh4MtlK8Ohy29cC9l193T%2FQx6QxpJ[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_classes_forward_declared.cpp[tag=content]
+----
+
+A class is registered where it is only declared.
+
+Register it after its definition. The library needs the complete class to find
+its bases among the other classes of the list.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_classes_forward_declared.cpp[tag=content]
+----
+
+'''
+
+#### `a registry must be the last element of the list`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUl9r2zAQ%2FyrCe2mplyzdw5jWFrYusIc2DrhvSwmKfLVFZUlIp2YheJ99JydpXEhh9oN9v38n6bTNpDUIBjPOfm8z3DigPwJ1bE2Ws%2Ffo1lmT4HxQzES7ZyuYVgqtf0OXKDDx20xV9JkQp4Wpe8fFRZIGG73sIz4oI3WsgF0pG9CDaG8WZmGOcIPoAh%2BPV5Z46%2BtRrbCJq5GyY%2BvAtICNrXbsABg1zvVBMShTM0MLDk5IYL2Q86PyW1JR5yiRzWg%2FbLswjJ4X5TEKzf4m8OycXbMKnkTUSIZuaJrrGBjfe98w7WbpoVZUbUiwt79CnK9pJ1fOaiUVBM59NKhaWMoG5HO4OYT9KIryYVnMp7P76cOv4ufy9u57WU7Ls0F83rfP%2B7Wckyvrupz97xThD8j4%2FgxfZ3VijkmuNPgeStzl58mnRGi1CrubZPZd%2BoNP1MtOPvl6mXWPVFuHypqkzj4GrK4pevLlGC4SOxcGdNnYtSHZk9ABBs2LiAeKzj0xwtfhpIXy1emwtRfuUHbdI73%2FAMoHFls%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_classes_registry_first.cpp[tag=content]
+----
+
+The registry is listed before the classes. A class list may end with a
+registry, and only its last element is taken as one.
+
+Move the registry to the end of the list.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_classes_registry_first.cpp[tag=content]
+----
+
+'''
+
+#### `do not wrap an object that has a boost_openmethod_vptr overload in a virtual_ptr...`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlUl9r2zAQ%2FyrCg5HSLFm6hzEvzdteu0L3tpSg2Ff7mHwS0ilZCN5n38lxEndLoVAbbN%2Fvn6Tz7bPCEgNxlquf%2B4x3DuRLQBMbysbqJbpxlhI8HhR3uunZEr6VyNY%2Fox9Yc%2BL3GZbymglnNFWd4%2Fo6SYONvugi3iEVJpag5mgDe9DNYklLOsM1swv5dLq2wltfTSrkOq4naKfWATXAtS0P7ACY1M51QTEgVYpkw8HpAlQnzPOz8mtSycqxYHUn51H7JSm5Nug5aqP%2BJHB0pW5VCU86GhZDOzTdmxhU3nufMc1u5aFCqXYi6O0nKM%2B3cpK5swYLhJDnPhJjA6uihuJXWBzD3tqKKZIzcvTVxrE%2F9aXf4g%2FwjextKFmtdYB5Ihb%2F9SKhF3uxsVgq55F4lDTvFcvz6h%2F%2FStL7YDfqBMm%2FpKxtx%2Bq1Mwe%2FoYgvT9xpsi5MXZKjAd9Bibv5NPuYCIPrcJh76lfpmpiozUE%2B%2B3KTtY9SW8doKamzD4HLW4mefT6H68TeawLzUNstiexJmwCDxb9HPlLyCxKjfRUuWiQfL4dtvXbHsm0f5f4LYhBXuQ%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_wrap_inplace_vptr.cpp[tag=content]
+----
+
+The object carries its own v-table pointer, here because it derives from
+cpp:inplace_vptr_base[]. It and a `virtual_ptr` serve the same purpose, fast
+access to the v-table pointer, so wrapping one in the other is rejected.
+
+Pass the object itself to methods: declare the parameter as `virtual_<Term&>`,
+and the method reads the v-table pointer from the object.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_wrap_inplace_vptr.cpp[tag=content]
+----
+
+'''
+
+#### `class must inherit from inplace_vptr_base`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlksFu2zAMhl9F8C4r6iZNdxjqpr3tuK5Aj0sRKDZrE5MpQaKSBYH37KMcJ3GBFChQ%2B2CT389fpMBdVlpiIM4K9XuX8daB%2FEnSxJayXL2HW2cppfNR8KjbgVbwo0K2%2Fg1%2BZs2J7zKs5DMTZjTVfcXlZZIGG33ZW3xBKk2sQM3RBvag24cFLeiUbphdKKbTlRVufT2pkZu4mqCdWgfUAje22tNRYtI41xvFgFQrkoaD0yWoXlgUJ%2BVdUsnJsWT1KPOo3YKUPGv0HLVR%2F1Ly64W6VxW86mhYCrpx0ZOJQRVD7RvSbpceapRoK4Kh%2FJgqio1MMnfWYIkQisJHYmxhWTZQ%2FgkPB7PPXsUUyRkZfbl27I%2F3MrT4E%2BnYfa7GymUFHtdQzXtJ3iuGnrKuy9VHdwT%2BQhnf35DjJpzZkiRHA75PJXbzbXadgMFV2O8pDaf0Qye03stntzdZ9yKxdYyWkjq7Clzdi%2FXs%2B8lcJ%2FqkCcxzYzcksldtAowO%2FxX5gOTKEtG%2BDmdLxB%2FPm228doew617k%2FQ8G%2FDwG[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_inplace_vptr_derived_not_base.cpp[tag=content]
+----
+
+The bases passed to cpp:inplace_vptr_derived[] are themselves `inplace_vptr`
+classes, but `Node` is not.
+
+Derive the root of the hierarchy from `inplace_vptr_base`: here, `Node` derives
+from `inplace_vptr_base<Node>`. The root holds the v-table pointer, and
+`inplace_vptr_derived` sets it to the v-table of `Minus`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_inplace_vptr_derived_not_base.cpp[tag=content]
+----
+
+'''
+
+#### `registry can be specified only for root classes`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlksGO0zAQhl%2FFChfQhpYuB4Tp9sZ1Wanc6KpyndlkhGNb9rilqsKzM07TNkVdCYnkkMx8%2F%2Fz2jOZQaGcJLBVS%2FDgUtPfAf5w0qbVFKV7DrXc2p8tR8KjagVbwtUJy4QovSVHmhwIr%2FsyYGWXrvuLuLkujS0H3Fm%2FQapMqEHN0kQKodrGyK3tJN0Q%2Byul045i7UE9qpCZtJuimzoNtgRpXHekoMWm8741SRFsLyxeOXmkQvVDKi%2FJLVvHJSZN45H7EYWUFP1sMlJQRv3Py7TvxICp4UckQF3TjoieTopBD7RVp9%2BsANXK0Z8FQfk5JueNO5t4Z1AhRypAsYQtr3YD%2BGRcns%2F8dxRStN9z6euspnOcyXPE7hJbvNpasNyrCPIPFX%2F0sU9ZmUl5XVBBwC9WcBeXAR70PNkXXleJfNwt%2BgU6v79V5f27sVpajgdCnMrv%2FOPuQgcFNPG63HU7pR5XR9iiffb4vumeOnSd0NquL95GqB7aefbqYq0yflAWzbNzOsuxFmQijw78lOiGeXSYq1PFmCfvjbbNdUP4Udt0zv38AkJNQVw%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_inplace_vptr_derived_registry.cpp[tag=content]
+----
+
+`Sum` names a registry, but it is not the root of its `inplace_vptr`
+hierarchy.
+
+Name the registry at the root instead, as in
+`inplace_vptr_base<Term, my_registry>`. Its derived classes inherit it.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_inplace_vptr_derived_registry.cpp[tag=content]
+----
+
+'''
+
+#### `the rtti policy deems this class polymorphic, so it must provide dynamic_type`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNVN9v2jAQ%2FlesTKpApTC6h2ku5G2vXbXytlaRSUxymmNb9hmKUPa37xwCBEQlEinY3%2FfdD%2Fvu2CW50Sg1Jpz92SW4tZJWBKpQ62TEPqNra3SER73Ns6g7tpA%2FC0DjzuhXFBj5XQIF%2FUyJU0KXrcX9fZR6E1zeuvgCOlehkGwWQ2boBKBP3%2FQ5DnplCOzDYDw6KeoLuEK0nk8mS0O8ceW4BKzCcgxmYqzUtcTKFHu2B4wra1tHwYMumabzeStyyVoh5yflU1RR5JAje6bjs92bZvSswWEQiv2L4GDI5qyQKxEUkkHTN3pRwTPe2Z4x9TZzsgTabUnQmR8hzjd0kpk1CnKQnnMXNEIts7yS%2BV%2BfXnGGCOSoZxGBLl%2BUtVVUplmuhPfsdxcl3bOdk5U%2BJeIPllesF%2BmJ8lR8yBl1k0f5YV28QsXAZ5THtjbOVsTOSVZwfo5m69kibc9wexgR0HTrLDYK3fxDytpWgqKfcXycxOA0u2s7qhgshk8nvtkvm8tyxTu7oSzddR%2BrsDYU3jrQOIiVvmOavsOLZsksulmkR%2BdhUmYHrT4m86aTphmxW0dSfsg8fD6Qx8G7MpRRDkq6Forc47fp10goWPr934LuorRjEan1Xj798Zg077Q3FoEqH7EHKvGcXE%2B%2Fn5yLyL4ILdVrZTaaZCuhvOwF%2FxXwQFEBIiNc6a%2BakH%2B47mzjhD1sm%2Bad3v9BHbWX[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_rtti_without_dynamic_type.cpp[tag=content]
+----
+
+A custom cpp:rtti[] policy that reports a class as polymorphic must also be
+able to find the dynamic type of its objects. See
+xref:custom_rtti.adoc[Custom RTTI].
+
+Give the policy a `dynamic_type` function that returns the `type_id` of the
+dynamic type of its argument, or make `is_polymorphic` false for that class.
+Here, `dynamic_type` uses `typeid`, which matches `is_polymorphic`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_rtti_without_dynamic_type.cpp[tag=content]
+----
+
+'''
+
+#### `the rtti policy does not deem this class polymorphic`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUsFu2zAM%2FRXBA4YUTZOlOxRT29x2G7oCPS5FoMiqTUymBIlKZgTet49ynMbdUmDWweJ7j4%2BixH2hHZJBKqT4sS%2Bo9YZ3DNrUYDEV79GNd5jh6Sh4UM3AluZrCeTCG%2FqJFGV%2BX0DJvwVzVmHVZ1xeZml0Keje4gOgtqk04g5cpGBUs1zhCk9wTeSjnM83jnkXqlkFVKfNDNzceYONodqVB3YEzGrve6MUASuBfODolTaiF0p5Ut5mFVdOmsQD9yP2KxT8bSFQUlb8zuDkQtyL0ryoZIkTunHSo01RyCH3DdO062Aq4KhlwZD%2BCkm5407uvLOgwUQpQ0KCxqx1bfTPuPzL7BuQCXyeAd06KIUPgDQZmI%2FCHjYXxxb%2BrdgXa0c1t57CUsqy5RsCvc7h5GiTG11h0XVT8b8DYX4Znd4fh9dnPzMSWQ7WhB7K3PXnxadMWNjEw1DiUKV%2Fw0xtD%2FLFl%2Buie%2BbYeQKHWV1cRSrv2XpxczJXmX1UaOxT7XbIshdloxkV%2F57oSPGtZ0aFKp5NYX84b7YLyh%2FDrnvm9QdGtzTO[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_rtti_not_polymorphic.cpp[tag=content]
+----
+
+The converse. The library never asks for the dynamic type of a class that its
+rtti policy does not deem polymorphic, so this message only comes from code
+that calls the vptr policy directly, or from a custom `virtual_traits`.
+
+Ask for the dynamic type only of a class that the rtti policy deems
+polymorphic. With the default registry, that is a class with a virtual
+function: here, give `Literal` a virtual destructor.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_rtti_not_polymorphic.cpp[tag=content]
+----
+
+### Registries
+
+See xref:registries_and_policies.adoc#registry_affinity[Registry Affinity] for
+how a class, a parameter and a method come to belong to a registry.
+
+'''
+
+[#registry_mismatch]
+#### `registry mismatch`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUsGK2zAQ%2FRXhwuKwbtJsD6VqNofSQC%2BNA9lbswRFVmxRWRLSKNkQ3G%2FvyHY2XshCbbA97715M2PNOeFGg9CQUPL7nMDJCvxCUIVaJxl5j66t0RHOBsGS1T1biEUhwbg39BoYRP6cyAJfU%2BQU02WbcX8fpd4Ex1uLD1JzFQpBZtJ4cILV843e6CtcAVhPJ5OdQd64clxKqMJuLM3EWKFrAZUpOnYAjCtrW6PgpS6Jxoa9ZVyQVkjpVfktqrBy4ECWOA85bzTB6yAdBKbI3wimI%2FJICrFnQQEmNMOklQqe0D73DVOftk6UEqMTCvr0V4jSI04ys0ZJLoWn1AUNshZbXgn%2Bx88vZt%2FzfP20zVeL5a%2FF08%2F8R9r1Z3GOvXzJSNp3urXgZrGLeUY8FDhj9z%2FvRhk5GFlkw35GrXWECWdKpXGIO2LxObr8gL5AGsHekZsAMbPZ6KRpMvK%2FeyJeBA%2Fvb8nrNtzYlCiXSrgWitzD5%2BmnSCi5892u6r5Ke7SROnTy6deHpHnG2FiQRkd18hHneETr6ZerOYvsimmh1pU5apTtmfJiUDwPcKHwZCPDXOlvpqC%2FvG12dMxewqZ5xvsfLDs4og%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_registry_mismatch.cpp[tag=content]
+----
+
+A `virtual_ptr`, an overrider or a `virtual_any` belongs to a registry other
+than the method's. Here, `virtual_ptr<Node>` belongs to the default registry,
+and the method to `my_registry`.
+
+Put the parameter in the registry of the method: name the registry in the
+`virtual_ptr`, as below, or declare an affinity for `my_registry` in `Node`,
+which makes `virtual_ptr<Node>` belong to it.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_mismatch.cpp[tag=content]
+----
+
+'''
+
+#### `registry mismatch: the parameter belongs to another registry`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNU11vmzAU%2FSsWkyqi0qTpHqbRJA9TI%2B1lIVL6tlTIMQ5YM7blj3woor%2B910ACbVNpIAE%2B59xz7wFzCogUlgobxOjvKbBHReEJQO5KEUToK7pUUng46i0WuGzZjM4zZqV%2BR68stp4%2FBSyD2xg4jkVeV9zeeqmRTpPa4hsThLuMogmTxmqKy9larEUHF9YqE49GGwm81PkwZ7ZwmyGTI6moKKktZNawPWBYKFUbOcNEjgQMbBQmFNXCOO6Uj14FnR2xaAF50GktEBw7pq3DHL16MBygKcroFjtuoaDqFy25Myhua98x5THVNGewOoKgLb9AcbyHJBMlOSOMmjjWTlhW0pQUlPwzsw9m84PSn2bz4IfZPN%2BErqOmXdJumGl%2FtEueX0myek6T5XzxZ%2F78O3kKGzMFLlt2iFDYtk0nvu3NLELGZvAqm892M4jQTrIs%2BhR0ULt7DhHMeVhXIwrXwTlQ2yP0YGtLpLO%2BslqLoKoi9L97kh4ocV%2FvyMvOu7IrvZxxqmvIcw%2Ffx%2Fee4Gxjmv9CtF3qd%2BupXSMf%2F3wIqhdYS2WZFF4d3EGOKViPf3Tm2LNLLChfFXIvQLbF3NBe88TZMwUf3jNY5%2BZqCfiz62Z7jdV5WVUvcL4Bhe1fow%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_registry_mismatch_parameter.cpp[tag=content]
+----
+
+The class of a virtual parameter declares an affinity for a registry, or the
+parameter names one, and the method names another.
+
+Name the registry that the class declares on the method.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_mismatch_parameter.cpp[tag=content]
+----
+
+Or name none: a method that names no registry takes the one its parameters
+carry.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_mismatch_parameter_2.cpp[tag=content]
+----
+
+'''
+
+#### `registry mismatch: a class declares an affinity for another registry`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNkl1P2zAUhv%2BKld2AyNoVLiYyirSPSLsYTaVwt6LIdQ6JNce2%2FEGpqvDbOU4KCaVISy4Sn%2Bd9z4d1dhFT0oF0UUL%2B7iK31YB%2FGBS%2BkVFMPsKNVjKE49FhQZs9LSEtuVPmDc4ddYHvIl7iZ4ZMUFl1jrOzILXKG9al%2BMQlE74EcsWVdQZoc72SKzmEa%2Be0TabTtUKuTDWpuKv9esLVVGmQDbhalT0dBSa11l0ib7msiMSGraYMSCdMkkH5LaiwsmeOLHAesltJgs8DN85TQZ5C8OSUzEkJ99QLh4Z2bFoKb0my974hzbYwUHE8bVGwt7%2BGkmSDk1xpJTjjYJPEeOl4AwWrgf2z1wfJ0kdt3vUWgge9Bd4P3Y1aDJMOzczHrR3Ok%2FsGu%2B3L9eBHluW3RbZMFzfp7e%2FsV%2FHzz%2Fc8T%2FOTIIqDIX433Sk6o7aNyf%2FuEjwC8x9v0uvGHNmmIOcCTBcK7Pxi9iUAwde232e5r9LdSUAPvXx2eR61d3hW2nElgzr6bF05x9Szr0NyGuiSShB5rTYSZfdUWBgVz7x7QXiPgVBT2aMWzM%2BPJ9sYql%2BObXuH7zPcJEcm[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_registry_mismatch_classes.cpp[tag=content]
+----
+
+A class list names a registry, and one of the classes declares an affinity for
+another.
+
+List the registry that the classes declare.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_mismatch_classes.cpp[tag=content]
+----
+
+Or list none: a list that names no registry takes the one its classes agree
+on.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_mismatch_classes_2.cpp[tag=content]
+----
+
+'''
+
+#### `virtual parameters carry conflicting registries`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNU9Fu2jAU%2FRUrk1BQUxjdw7QUeJiGtJcRJPpWKmQcN7Hm2JZ9XYpQ9u27TgKkHZWWSCE%2B59zje5zLMWJaAVcQpeTxGMHBcHxDUPpKRQn5iK6MVgFOeoslrTo254tcgLZv6DVQCPwxEjn%2BTJCTVBVNxc1NkDrtLWssPgnFpM85mQrtwHJazTdqoy5wCWBcOh7vNPLaFqNCQOl3I6HH2nBVcSh13rI9YFQa0xh5J1RBFDbsDGWcNMI0vSjvgwp39gzIEvOQ40YRvF6EBU8l%2BRPAeEhmJOfP1EvAgrpftJLekbSrfcNUh63lhcDVAQVd%2BRlK0z0mmRotBRPcpan1CkTFt6zk7LebvzNbvBr7T28BfNdb4NvQTdTtJemlmVm%2FtXOe71m2fthmq8Xy1%2BLhZ%2FYjbs2MFQoSEnebbg3YaQg7T0gfCq0g5CDH022%2F5GCIEi3yYWMf3gijUsbhxAbE4DNpYg0Ix%2BfwlK7ZMG7pQHSmTHsITvVGRXWdkP8dUv7Kmf94RM%2BjeGVMg1xIbhsocHdfJp8DIcXOtX8U1e3SHHagXlr55NtdVD%2FhWhsQWgV1dIs5Zmg9%2BXoxp4FdUcXlutR7hbJnKh3vbZ55OFE4CYGhtnBXS9BfXDfbW2pOy7p%2BwvsvFhRlHA%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_registry_conflicting_carriers.cpp[tag=content]
+----
+
+The method names no registry, and its virtual parameters belong to different
+ones: `Node` to the default registry, `Expr` to `my_registry`.
+
+Make the parameters agree: `virtual_ptr<Node, my_registry>`. Naming the
+registry on the method is not enough here: a `virtual_ptr` always carries a
+registry, so `virtual_ptr<Node>` would then give <<registry_mismatch>>.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_conflicting_carriers.cpp[tag=content]
+----
+
+Or `virtual_<Node&>`, which adopts the registry of the method because `Node`
+declares none.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_conflicting_carriers_2.cpp[tag=content]
+----
+
+'''
+
+#### `the classes carry conflicting registry affinities - list the registry to say which one is meant`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNkstu2zAQRX%2BFUDcJotp1uijKxgH6ENBFaxlQdnUg0NJEIkqRBB9xDEP99g5px1ISB4i1sHjPneFcaHZJpaQD6RJK%2FuwSt9WAbygK38kkJa%2FhTisZ5HR0WLDuQGvIau6UeYILx1zgu4TX%2BDdDJphsYsXFRbBa5U0VW7zjshK%2BBnLFlXUGWHe9kis5yK1z2tLpdK2QK9NMGu5av55wNVUaZAeuVfWejoRJq3Vs5C2XDZE4sNWsAhKNlA7OL8GFN%2FvKkQXmIbuVJPi758Z5Jsi%2FIJ6dkzmp4Y554bCgHxcthbeEHmqfkG5bGmg4nrZoOJQfJUo3mORKK8ErDpZS46XjHZRVC9Vfe%2F2sWfagzYvZgvhstsD3oWPUckg6DDMfj3bM8y3Pi5syX2aL39nNz%2FxH%2Bf3X16LIirMQLY050zjGOdqTvk%2FJW%2FcEHqDyr2%2FJcRtObEqwcwEmSoFdfpx9CEDwtd3vqjzcEvMGdL%2B3zz5fJv0tnpV2XMngTt5bV8%2Bx9ezT0JwFumQSRNGqjUTbHRMWRpfn3j0i%2FBiBMNPYkyXYn59utjFMPx77%2Fhaf%2F%2BmTOWQ%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_registry_conflicting_affinities.cpp[tag=content]
+----
+
+A class list mixes classes that declare different affinities, or, as here,
+classes that declare one with classes that declare none.
+
+Here, `Node` and `Plus` belong to the default registry, and `Expr` to
+`my_registry`. Register them in separate lists: each list then takes the
+registry its classes agree on.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_conflicting_affinities.cpp[tag=content]
+----
+
+When all the classes are meant for the same registry, add it at the end of
+the list instead.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_conflicting_affinities_2.cpp[tag=content]
+----
+
+'''
+
+#### `cannot tell which registry this class belongs to...`
+
+*Example* - link:https://godbolt.org/clientstate/eNqdU0uP2jAQ%2FitWKlXQzULZHqqmLIeqSL2UIMGtrCKTDIlVx7b84CGU%2FvaOkyxks6xUlRzA32O%2BGWc4B6kUFoQNIvLrHNiTAvyFIHelCELyFl0qKTwcdg4LWrZsBvOMWalf0CtLrefPAcvwa4IcpyKvHXd3Xmqk02ld4h0TKXcZkCmTxmqg5WwjNuIKF9YqE43HW4m81PkoZ7Zw2xGTY6lAlGALmTVsBxgVStWFnGEiJwIbNoqmQGphFF2VX70Kk11qyQLnIeeNIPjZM20d5eSPBwdD8kgy2FHHLRqqrmnJnSFR633BlKdEQ87wdEJBa79AUXTASaZKcpYyMFGknbCshCQtIP1tZr1i86PSr3rzYK83z%2B80A5ER6qxsBk6u817yB978YUjuZ91G%2B9OtQZevYj3437He3MT2b6SfvXIl3ptvM2z7aOhvcbxaJ%2FFyvvg5X%2F%2BIvw8UZu3YMSSDtsVEWT1F%2Bywkxmb4upvVej8MyV6ybIhlgqoKyb8uOhwhdW%2Bv%2BWWdb6y6lzMOuoY89%2FBp8tETnG1N82cTbUp9Z57aN%2FLJl4egesKzVJZJ4dXBPc7ziKUnn6%2FFqWeXVABfFfIgULaj3EAnPHb2mcKr9QzVublpwfrsdrGDpur5WFVP%2BPwF1n9%2Bqw%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_registry_ambiguous_bases.cpp[tag=content]
+----
+
+The class inherits different affinities from several bases, or inherits one
+from a private base.
+
+Declare the affinity in the class itself. Its own declaration takes precedence
+over the ones it inherits.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_ambiguous_bases.cpp[tag=content]
+----
+
+'''
+
+#### `boost_openmethod_registry must return a registry`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUk2P2jAQ%2FStWKlWgTaFsD1VT4FAVqZcCEnsrq8gkJhnVsS17zIdQ%2Bts7TrIbdstKTQ7JvPfmzYw9lyjTCoXCKGG%2FLhGejaA%2FAqWvVBSzt%2BjKaBXg%2BCpY8qpjc7HIAbV9QW%2BQY%2BAvEeT0mRAnuSqajLu7IHXa26yxeAcqkz4XbAraoRW8mm%2FVVvVwiWhcMh7vNPHaFqMCsPS7EeixNkJVAkudt%2BwVMCqNaYy8A1UwRQ07wzPBGmGS9MqvQUWVfYZsSfOwy1Yxeg5g0XPJ%2FgRwMGQzlos99xIpob5OWkvvWNLlvmCqc2pFARSdSdClP0NJcqRJpkZLyEC4JLFeIVQizUqR%2FXbzV2aLk7H%2F9BbAV70Fvh26GTXtJ%2B2bmTFQ%2FRzfVqvNQ7paL5Y%2FFw8%2FVt8HhvL2cIrZoCuUGrTTUGseM4c5HV97Ve%2BHMTtoyIfkE9V1zP53ccRJZP7ttXlejxurE%2BQghW2gwN1%2FmnwMhISda5dXdVWaAwjUoZVPvtxH9SPF2iBoFdTRB5pnRtaTz705D%2ByaKyE3pT4qku25dOKq%2BMrjE0W3ExhuC3czhfzhttnRcvMU1vUjvX8BFYc%2FzA%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_registry_not_a_registry.cpp[tag=content]
+----
+
+The affinity declaration names a type that is not a registry.
+
+Name a registry: a class derived from cpp:registry[], such as
+`default_registry` or `my_registry`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_not_a_registry.cpp[tag=content]
+----
+
+'''
+
+#### `this class declared its registry affinity after it was first mentioned...`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNU9uO2jAQ%2FRUrlVZBm4WyfaiaBR6qIvWlgMS%2BlRUyzpBYdWzLFy5C6bd3nATI7rJSEymJzzlzPDOenCKmpAPpopT8PkXuqAG%2FEBS%2BlFFCPqJLrWSAk85iRsuWzWCacafMK3rpqAv8KeIZvobICSrzOuL%2BPkit8obVFp%2B4ZMJnQEZcWWeAlpOVXMkrXDinbToYbBTyyuT9nLvCb%2FpcDZQGWYIrVNawHaBfaF0bectlTiQmbDVlQGphml6VT0GFO3vmyAzrIaeVJHjtuHGeCvI3gHGPjEkGW%2BqFw4CqG7QQ3pK0jX3FlMe1gZzj6oiCNvwCpekeKxlpJTjjYNPUeOl4CWtWAPtjJ2%2FMpgdt3uUWwDe5dfi1dmYUJBMi4XAmm47UfVhf23DNdNzN%2B1Ls9%2Fl8%2BbyeL6azX9Pnn%2FMfscb4LT8kJH63W0Ksy7DHzXne9RKyUzzr1T7hizAqRBykdwTw2TvX1XrGAWxNmPIuRFYrGVVVQv53NOEAzH88mJcBvDGcQc4FmBoK3OOX4edACL6xze8h213qLgZq18iH3x6j6gXXSjuuZFBHD1jHGK2HX6%2FmNLALKkEsC7WXKNtSYaGz%2Bdy7M4XnHxhqcnszBP35bbO9ofq8rKoXvP8BlexiuQ%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_registry_declared_late.cpp[tag=content]
+----
+
+`virtual_ptr<Expr>` was formed - here, inside `Expr` itself - before the
+affinity declaration was seen, and kept the default registry.
+
+Move the declaration up, to the top of the class, so that it precedes every
+use of the class.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_declared_late.cpp[tag=content]
+----
+
+Or name the registry where the class is first used.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_registry_declared_late_2.cpp[tag=content]
+----
+
+### Smart pointers
+
+#### `std::shared_ptr cannot be passed by non-const lvalue reference`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU91r2zAQ%2F1eEB8Ghbrx0D2NumoexwF4WB9K3phhFVmwxWRLSKWkI3t%2B%2Bk%2BN8FFIYzAZbd78P%2BU7nQ8S0Aq4gysjLIYK94bjCpPSNihLyEdwYrUI6uQrmtOnRks9KAdq%2Bg5dAIeCHSJT4GiMmqao6xd1doDrtLessPgnFpC85mQjtwHLaTFdqpS7pGsC4LE3XGnFtq1EloPbrkdCpNlw1HGpdHtGrxKg2pjPyTqiKKPxgZyjjpCNm2YX5GFi4s2dA5lgPOawUwWsrLHgqyZ%2BQjIfkiZR8Q70EFLTXooX0jmS99h3S7AvLK4HRHgm9%2FJzKsh1WMjFaCia4yzLrFYiGF6zm7Lebnsz%2BtxWpwHO12qQOysLV1PKyMGDPHfqe58vnIl%2FM5r9mzz%2FzH7FB%2FUa8JSTu2X0rgmoSypwOEoJm2MXjiQ2GCdlqUQ677w0rwqiUcejMgBh8Dk9d7b3jkOxNmPYQlO1KRW2bkH8dPv7Gmf949M4jdmP8Al1IbrtUwB6%2BjD8HQIq1O%2F4Aqt%2Bl62aAtkf6%2BNtD1L5irA0IrQI7usc6ntB6%2FPViTgO6oIrLZa13CmkbKh2%2F2jz3cIJwXAJCbeVuStBf3DbbWWpOYdu%2B4v0XxRtaNQ%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_shared_ptr_by_reference.cpp[tag=content]
+----
+
+A method may have to build the smart pointer from its argument, for example a
+`shared_virtual_ptr<Node>` from a `std::shared_ptr<Plus>`. The result is a
+temporary, which a non-const lvalue reference cannot bind to.
+
+Pass a `std::shared_ptr`, or a `shared_virtual_ptr`, by value or by const
+reference.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_shared_ptr_by_reference.cpp[tag=content]
+----
+
+Or by const reference.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_shared_ptr_by_reference_2.cpp[tag=content]
+----
+
+'''
+
+#### `cast only allowed to a shared_ptr`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU11vmzAU%2FSsWk6JEYWHpHqa5lIepkbaHhaip9jIq5IAD1oxt%2BSNpFLHfvmtCPtql0qTBA%2Ficc8%2FlfrAPCiksFTbA6Oc%2BsDtF4Q1A7hoRhOgtulFSeDi8OMxJ07MlnZXMSv2CXlpiPb8PWAmPKXCciKqLGI%2B91Eini87iHRMFdyVFMZPGakqaJBOZOMO1tcrgKFpJ4KWuJhWztVtNmIykoqKhtpblgb0AJrVSnZEzTFRIwAcbRQqKOiHGZ%2BWtV0FmV1g0h3rQPhMIrg3T1hGOfntwOEJ3qKRr4riFgPYyaMGdQbiPfcE0u1zTisFpB4I%2B%2FARhvIVKYiU5Kxg1GGsnLGtoXtS0%2BGWSo9n%2FtiJiMFctVWRsmZuaaFrmyupTh76k6fIxTxez%2BffZ49f0fnioX4HLmj2HaNh3Io9hQ4xFYIPx2Sf2hSeDJDwQ%2FRAHoxBtJCtHt9dS5OmP2cPDt%2FvZX7lem%2FvmJgOk4PEqAZLmmOM4MmlQHKMsGGeBH1ImgrYN0b8uM32mhXt7lU8re2WdvZxxqjvIczcfpx88wdnKHH4o0WfppuOpzUE%2B%2FXwTtE9wlsoy6K%2FH3kOhd2A9%2FXQ2J55dEEH5spZbAbI14YZeJE%2BdPVKwfp4hujJXQ8CfXTfbaqKOx7Z9gvsPutRxhw%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_shared_ptr_overrider.cpp[tag=content]
+----
+
+The method takes a `std::shared_ptr`, and the overrider something else in the
+same position: here, a non-const reference.
+
+The overrider takes a `std::shared_ptr` too, in the same form as the method:
+`const std::shared_ptr<Plus>&`. The method casts its argument to a new
+`std::shared_ptr<Plus>`, which a non-const reference cannot bind to.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_shared_ptr_overrider.cpp[tag=content]
+----
+
+'''
+
+#### `a std::weak_ptr cannot be wrapped in a virtual_ptr; use weak_virtual_ptr`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlkk1v2zAMhv%2BK4F1SNIuX7jBMS3PbtSvQ41IEiszaQmVKkKh4QeD99lGO89EhBQbMBiyTz0tKpLgvtEMCpEKKn%2FuCdh74j502tVhMxXu49Q6ze3phPKh2pBV8rwy58AY%2FkaLM94WpeJkzswrrIeL2NkujS0EPKT4Y1DZVIBbGRQqg2uUKV3h2N0Q%2ByrLcOOYu1LPaUJM2M%2BNK5wFboMZVB3rhmDXeD4lSNFgL5ANHrzSIQSjlWfktq3jnpEk8cD1iv0LBz9YESsqK39k5uRH3ooIXlSxxQH8Z9GhTFHKMfUPa3TpAbdjasWAMP7mk7LiShXfWaANRypCQTAtr3YB%2Bjctjsv9tRWn4XoPzZaRq3YF6XXsKp%2F5snalEp0g3E%2BZ8plGwyPUsBfL35q%2BWDPiKeCn8ZNDnDq2w6Pup%2BNdJgl%2Bg0%2FtzdJqXK7OU5cZCGFyZ3X2ef8rAmk08TDOOuwytyWh7kM%2B%2F3hX9M9vOk3GY1cVHruyeU8%2B%2FnJOrTB8Vgn1qXIcse1E2wsXmPxIdEd99JirU8WoI5zfXk3VB%2BaPZ98%2F8%2FgGEBkmB[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_weak_ptr_in_virtual_ptr.cpp[tag=content]
+----
+
+A `virtual_ptr` refers to an object that exists, so that a method can dispatch
+on it. A `std::weak_ptr` may outlive its object.
+
+Use cpp:weak_virtual_ptr[] to keep a weak reference together with its v-table
+pointer. Its `lock()` returns a cpp:shared_virtual_ptr[], which can be passed
+to a method.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_weak_ptr_in_virtual_ptr.cpp[tag=content]
+----
+
+'''
+
+#### `a weak pointer cannot be a virtual parameter; call lock() first`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU0uL2zAQ%2FivChcVh3bjZHkrdrA%2BlgV4aB7K3ZjGKrNhiZUlIo2RDcH97R47zWMhCofbBmu8xI43Gh4hpBVxBlJHfhwj2huMKQelbFSXkPbo1WgU4uQrmtB3Yis8qAdq%2BoZdAIfCHSFT4mSAnqap7x%2F19kDrtLetTfBCKSV9xMhXageW0zVdqpS5wA2BclqZrjby29bgW0Pj1WOhUG65aDo2ujuwVMG6M6RN5J1RNFG7YGco46YVZdlF%2BCyqs7BmQOZ6HHFaK4LMVFjyV5E8A4xF5JBXfUC8BDd21aSG9I9ngfcO0%2B9LyWmC0R8FgP0NZtsOTTI2Wggnussx6BaLlJWs4e3H5Kdn%2FtiIVeK9Wm9RBVe44fSkN2HN%2FvhfF8qksFrP5r9nTz%2BJHbNC9Ea8JiYcOlFM04mYH5zQcNM8T0qPDnd2NErLVohr1Ow4rwqiUMc6Ug6PSNdTyqs8QOpbfEYOf0andQ9n4Rq24Fw4FmfYQqnQrFXVdQv51VPkrZ%2F79QT0P5I1hDXIhue2hwD18nnwKhBRrd%2Fxd1FCl732gtkf55OtD1D1jrA0I7EXAPuI5HjH15MslOQ3sgioul43eKZRtqHT8qnjh4UThcAWG2trdtGB%2BcTvZzlJzCrvuGd%2B%2FqfVqww%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_method_takes_weak_pointer.cpp[tag=content]
+----
+
+A method cannot dispatch on an object that may no longer exist.
+
+Make the parameter a `std::shared_ptr`. Lock the weak pointer before the call,
+and pass the resulting shared pointer if the object still exists.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_method_takes_weak_pointer.cpp[tag=content]
+----
+
+### `any` and type erasure
+
+See xref:interop_any.adoc[Interoperation with any] and
+xref:interop_type_erasure.adoc[Interoperation with Boost.TypeErasure].
+
+'''
+
+#### `requires standard RTTI`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU02P2jAQ%2FStWKq1Am0LZHqq6LIeqSL0UkNjbsoqMY5JRHdvyByxC6W%2FvOCTArlip1SaHxO%2FNvBnPxyHhWnmhfELJ4yHxeyPwD0EZKpWk5C26MlpFOL04zFjVsrmY5uC1fUEvPfORPySQ42eEnGSqaDxub6Op08HyRuIDKC5DLsgYtPNWsGqyUit1hkvvjaPD4Vojr20xKMCXYT0APdRGqEr4UudH9gIYlMY0QsGBKojChJ1hXJDGkNKz5bdohZED92SG9yGHlSL4bMH6wCT5E8Fen9yTXGxYkB4d6kunhQyO0Nb3BVPtMysKwNMeDVr3E0TpDm8yNloCB%2BEotUF5qETGS8F%2Fu0kn9t5SDLsIQ4d9AZ5Z76Gtz7u1AWfGaoPSecbU%2FlT2tgJdxP%2BowkWSpxJ8n8%2BXD9l8MZ39mj78nP%2FoHVtkMJkNPKek1zYrG%2BMQuxg2pxTTuZmkx%2F92tG76KdlqyNPXifWbMJEinEnZeyVDFDa3301GG7YXwVaf6%2BCjRr1SSV2n5F8XSDwLHt5en9OaXFmhaA5S2AaK3N3n0adISFi74xKrNkrTtUhtj%2Bajr3dJ%2FYRnbTzgTSP2Ee9xj9KjL2dxFtkFU0IuS71TaLZh0omL4PPgOwobHhlmC3fVBfXhutjOMtMd6%2FoJ37%2FrPqQA[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_any_custom_rtti.cpp[tag=content]
+----
+
+Dispatching on the content of an `any` keys on its `std::type_info`, so the
+registry uses cpp:std_rtti[], or a policy derived from it.
+
+Declare the method in a registry that uses `std_rtti`, here the default
+registry. If the rest of the program needs cpp:static_rtti[], keep the methods
+that dispatch on an `any` in a registry of their own: registries are
+independent of each other.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_any_custom_rtti.cpp[tag=content]
+----
+
+'''
+
+#### `virtual_any must be passed by reference`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU91r2zAQ%2F1eEB8WhXrx0D2Nu04exwF4WB9K3phhFVmwx%2BST0kTQE72%2FfyXY%2BOlIYzAZbd7%2BPs07nQ8QUOA4uysjzIXJ7zXGFSekbiBLyHtxoBSGdXARz2gxoyWelcMq8gZeOuoAfIlHia4KYpFB1itvbQLXKG9ZZfBDApC85eRDKOsNp87iCFZzTtXPaZmm6VogrU40r4Wq%2FHguVKs2h4a5WZY9eJMa11p2RtwIqAvjBVlPGSUfMsjPzPrCwsmeOzHE%2F5LACgtdWGOepJL9DMh6RKSn5hnrpUNBeihbSW5IN2jdIsy8MrwRGeyQM8lMqy3a4kwetpGCC2ywzHpxoeMFqzn7Zx6PZ%2F7YiFXiuRunUurKgsD%2B15lueL5%2BKfDGb%2F5w9%2Fci%2FxxqFG%2FGakHjYfDFIEoILbFp%2FQDejhGyVKEfd54UVYVTKODTihmh8jv5q4tGHQGjStOPc94yhZhyQoQxT3gXvdgVR2ybkX6eRv3Lm35%2FF08xdmcdAF5KbLhWwu8%2BTTwGQYm37PwKGKl17A7Tt6ZOvd1H7grHSTigI7Ogj7mOK1pMvZ3Ma0AUFLpe12gHSNlRaflE89%2B4I4fwEhJrKXpWgv7hutjNUH8O2fcH7D7M3X7c%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_method_takes_virtual_any_by_value.cpp[tag=content]
+----
+
+A `virtual_any` passed by value would copy the `any`, and its content, on every
+call.
+
+Pass it by reference: `const virtual_std_any&`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_method_takes_virtual_any_by_value.cpp[tag=content]
+----
+
+Or `virtual_std_any&`, if the overriders modify the content.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_method_takes_virtual_any_by_value_2.cpp[tag=content]
+----
+
+'''
+
+#### `an owning type_erasure::any must be passed by reference`
+
+*Example* - link:https://godbolt.org/clientstate/eNqdU9uO2jAQ%2FRUrlVagpVC2D1W9wENVpL4UkNi3ZRUZZ0isOrblCxeh9Ns7TsJlW1ZaFSSIzzlzJnPxMeFaeVA%2BoeT5mPiDAXxCUIZSJT3yFl0arSLcuzrMWNmyGUwz4bV9RS8985E%2FJiLDvyFykqm8jri%2Fj1Kng%2BW1xQehuAwZkJHQzltg5WSlVuoCF94bRweDtUZe27yfC1%2BEdV%2FogTagSvCFzhr2CugXxtRGwQmVE4Uv7AzjQGohpRflY1Rh5sA9mWE95LhSBD9bYX1gkvyOYKdLxiSDDQvSY0B1HbSQwRHaxr5iykNqIRd4OqCgDT9DlO6wkpHRUnABjlIblBclpLwA%2FstNTmaXVjRFlkYOtsCxF22Rfwvi7FKwzAULA6YO75Gtg5BeqH%2Bk%2F9f9gcBVsto0RHqd6TyYy0g8YHPbuVxLHy%2FzwypSFRs8bobjgVLERm0UtoTSpiejSHFtDinuczMHsZYwmvTqIAuS7SGbTGrzb%2FP58imdL6azn9OnH%2FPvHYN2G7HvkU47%2FnR0So0Gzme4Oc2W3nV7ZKtF1q2N4hPhTMpOnfX8vnck%2FnZPO9XadyLY2nEdfPSoViqpqh5579WDPfDw9sU7X7Ably%2FKhQRbQ5F7%2BDz8FAkp1q65%2FqrNUvc3UttGPvz6kFQveNbGC6w0Yh%2BxjjFaD79czFlkF0yBXBZ6p1C2YdLBVfJ58CcKhxQZZnN3MwT9xW2znWXmdKyqF%2Fz%2BAZUjuKU%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_method_takes_erased_by_value.cpp[tag=content]
+----
+
+The same, for a Boost.TypeErasure `any` that owns its value.
+
+Pass it by reference, as a `std::any`: `virtual_<const any_node&>`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_method_takes_erased_by_value.cpp[tag=content]
+----
+
+Or dispatch on a reference form, `any<C, _self&>` or `any<C, const _self&>`.
+These are handles that do not own their value, and may be passed by value.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_method_takes_erased_by_value_2.cpp[tag=content]
+----
+
+'''
+
+#### `do not wrap a virtual_any in a virtual_ptr...`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlkk1v2zAMhv%2BK4AFDimZx0x2Kqmluu7YFelwKQ7FZW5hMCRKVLAi83z7KcT5apECB2geb7%2FOSMmlus9IiAVImxe9tRhsH%2FMaiiS1mY%2FERbp3FJI9PggfVDrSCX5Um69%2FgZ1KU%2BDbTFT%2BmzIzCus%2B4vEzWYKMv%2BxLfNJYmViBm2gbyoNr5Ahd4lBsiF2SeLy1z6%2BtJramJy4m2uXWALVBjqx09ESaNc32hGDTWAvmDg1MliN4o5dF5l1x8cixJPHA%2FYrtAwddKe4rKiH9JHF2Ie1HBq4qGOKE7TXoyMQg55L4h7abwUGuONmwY0g%2BSlGvuZOas0aWGIKWPSLqFomyg%2FBPm%2B2JfHUWu%2Bb966%2FJAVaFwcxjNyupKOM94NDRbDJbvArmbi3ejKBz52TvnXLhR701TWWDWdWPx2e2Bv1DGj3fnsCNn9ifZtQHfS4ld%2F5xeJWD0Muw2GIdT%2BnEktNrZp7fXWffCsXWkLSZ39oO7uefS05tjcZXok0Iwz41dI9telQlwcvhjpD3i%2F52I8nU4m8L19flia6%2FcPuy6F77%2FA%2BPVRiA%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_wrap_virtual_any.cpp[tag=content]
+----
+
+A `virtual_any` already carries the v-table pointer of its content.
+
+Pass the `virtual_any` itself, by reference, to a method that takes a
+`virtual_std_any&`. It plays the part that a `virtual_ptr` plays for a class.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_wrap_virtual_any.cpp[tag=content]
+----
+
+'''
+
+#### `use of deleted function ... final_virtual_ptr`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlkk1v2zAMhv%2BK4AFDimbx0h2KqR%2B3XbsCPS6FociKTUymBIlKFgTebx%2FlOB8FUmBA7YPN93lJmTR3hXZIBqmQ4teuoK03%2FMaiTR0WU%2FEe7rzDLE%2FPgifVjbQ2P2ogF97gF1KU%2Ba6Amh9zZlZhM2RcX2drdCnoocQnQG1TbcQ9uEjBqO5xgQs8yS2Rj7Isl465C82sAWrTcgaudN5gZ6h19Z6eCbPW%2B6FQioCNQP7g6JU2YjBKeXLeZRefnDSJJ%2B5H7BYo%2BFpDoKSs%2BJvFyZV4ELVZqWSJE%2FrzpGebopBj7hvSbatgGuBoy4Yx%2FShJueFO7r2zoMFEKUNCgs5UujX6d3w8FPvoKErg%2FxqcLyPVlcLtcTRrB7XwgfGEkZTMPgvkNq4OM1gBKluNk6g8hcmA8wQWWPT9VPzvppg%2FRqf39%2BS4Dxd2JdvBmjBImd18m3%2FNwMIy7rcVx1OG1jNa7%2B3z7zdF%2F8qx8wQOs7v4wr0%2BcOn57am4yvRZobEvrdsg21bKRnN2%2BM9EB8T%2FNhMVmngxhevD5WKboPwh7PtXvv8BNIQ91g%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_final_virtual_ptr_any.cpp[tag=content]
+----
+
+cpp:final_virtual_ptr[] would use the v-table of the `any` class itself, not
+that of its content, so the overloads for `any` types are deleted. Clang says
+`call to deleted function`, and MSVC
+`attempting to reference a deleted function`.
+
+Hold the object in a cpp:virtual_std_any[] instead of a `std::any`, and pass it
+by reference to a method that takes a `virtual_std_any&`. It acquires the
+v-table pointer of its content once, when it is built - without a lookup, when
+it is built from a value - and the method uses that pointer as it is.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_final_virtual_ptr_any.cpp[tag=content]
+----
+
+'''
+
+#### `no matching function for call to ...cast`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU11vmzAU%2FSsWk6JEYcnSPUylNA9TkbaHhaip9lIq5IAD1oxt%2BSNpFLHfvms%2BEjql0qTBA9xzzj3Gx5eTlwluCDdegJ5PnjlKAm8AMltxz0fv0ZUU3MH%2BoFjhqmNzEuXUCPWG3hhsHH%2FyaA6PBXAM86LpmE6dVAurssbiA%2BUZszlBIRXaKIKrZcITfoFLY6QO5vOtAF6oYlZQU9rtjIq5kIRXxJQib9kBMCulbIysprxAHD5YS5wR1AiD4KK8cypY2WYGrWA%2F6JRwBNeeKmMxQ78dOJ6ge5STHbbMQEM9bFozq1HQ9b5hqmOqSEGhOoKgaz9DQXCAnYRSMJpRooNAWW5oRdKsJNkvvezN%2FjeKOYVzVUK2RIr58RzO1zjePKXxOlr9iJ6%2BxQ9jCYodffXRuNt%2BGsJYaNPHBs2jpY%2B0ySHC9rhGEx%2FtBc0nd9cc0%2Fhn9Pj4%2FSEaWLvARn%2BZIKF7n%2F4AhEZhiBJvmngu8oR7de2jfx1N8koy%2B%2F5gngfwynA6OWVENZDjbj4vPjmC0a1ufw%2FerdLE4qh9K1%2Fc3nj1C9RCGgrBOewjbPQerBdfLubYsWvMCduU4sBBtsNMk8HisTU9BcPkGKwKfbUF%2FOl1s4PCsi%2Fr%2BgXuP%2B6nYJo%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_any_cast_mutable_reference.cpp[tag=content]
+----
+
+The overrider takes the content of the `any` by a kind of reference that the
+`any` cannot provide: a mutable reference to the content of a const `any`, as
+here, or an rvalue reference to the content of an lvalue `any`. MSVC says
+`no matching overloaded function found`.
+
+Take the content by a reference that the `any` provides: here, `const Plus&`,
+since the method takes a `const boost::any&`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_any_cast_mutable_reference.cpp[tag=content]
+----
+
+### Policies
+
+See xref:registries_and_policies.adoc[Registries and Policies].
+
+'''
+
+#### `+the `state` of a policy that defines `initialize` must be copyable...+`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlVN9v2jAQ%2FlesTKpAZTC6h2kpjbR1SHvYCBp9GxUyjgnWHDuLz1CGsr99ZyckKaJSpZEHcvd9990PX3wMmFbAFQQh%2BXkM4JBzfEOntJkKBuQlOMu1cu5Bx5jRrEYTPk0E6OIZvAAKDj8GIsG%2FMWKSqtRHXF87qtG2YF7ijVBM2oSTCdhc8miplqr1CW2g4DQ7c28BchOORmuNuC7SYSpga9dDoUc65yrjsNVJhXYcw22eeyFrhEqJwiZMThknnhiGLfPWsTCzZUBm2CM5LhXB304UYKkkf52z1yd3JOEbaiVgQNkNmktrSFjHPkOyw6rgqUDrgIQ6vHGF4R47meRaCia4CcPCKhAZX7EtZ79MdBJrR5HxTBeH6P%2BnMxJKgKBS%2FOHNoOqaGcX0K1%2FU4TSKaoYMDzrF%2FDiJLsnX6FjAs1wiZ8IkNYb8qNuMKrSW36iTaMdp3A51%2FRWWhKFV4rfFTFBMhIKIJBTobcsrm%2BQXCrh3O%2F4EA%2BLN4XBI4hyEVibqFkBBMLLTIiHtTHr4eRg4CVyhgrd9RX5zJ7USikZX%2FW7lZfVani%2BJn1jyinXojrZZgc9xvHhYxfPp7Pv04Wv8ZXX%2F7dNiMV303NIN%2FAYOzlP0fWTTWa8ps%2B1zchYS9VwQthCU5YC89mLgT5zZl6%2BF5vO%2FcDU4upC88C6H3bwfv3OAFGtTXU6qzuJX2EG7ij7%2BeBOUj2jr6iic7y2e0B1Kjz%2B04tShc6q4XGz1XiFtQ6XhneSxhROEZ%2BUQWqTmYgjqi8ti%2B4LmJ7MsH%2FH5Bx535Kc%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_policy_state_not_copyable.cpp[tag=content]
+----
+
+`initialize` saves the `state` of each policy that has an `initialize`
+function, and restores it if another policy throws. A `std::unique_ptr` member
+makes it impossible to copy.
+
+Hold the data in a `std::shared_ptr`, so that the state can be copied.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_state_not_copyable.cpp[tag=content]
+----
+
+Or hold the data by value.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_state_not_copyable_2.cpp[tag=content]
+----
+
+'''
+
+#### `+the `state` of a policy that defines `initialize` must be nothrow move-assignable...+`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlVF1v0zAU%2FStWkKaOdS0dD4jQRoJRiQdYJ7o3NlWe4yUWjh3Z19tKFX47147bpmFDk0geknvPucf3w%2FYmYVoBV5Ck5McmgXXN8Q%2Bd0lUqGZLn4KrWyruHHeOCVhHN%2BTwXoM0BvAQKHt8kIsfPBDFJVREiTk481WpnWJB4JRSTLudkCq6WPLtW12rvE9qC4bTquUuA2qbj8a1GXJtiVAgo3e1I6LGuuao4lDpv0Y5jVNZ1EHJWqIIoLMLWlHESiGm6Z37wLFzZMSAXWCPZXCuCz70w4Kgkv71zcExmJOd31EnAgKYbdCmdJWmMPUCq9crwQqC1RkIM37nS9AErmdZaCia4TVPjFIiKr1jJ2U%2BbbcX%2BtxVjoQQIKsUvvutKTJBRXGsVMlhv624bxnCqhca8ZwekkJBnAa9qiZwpk9Ra8j3WlLVolL9TW9GO0%2FoN0%2FW3GDp7Tf4bx11ro8DR81zqQBMs31Ds0awXdJrF34Pwfwq0%2FIPYXvb%2BMRycUeQ1lML2Emr2ZnOwWK%2BJ5%2F5QPsKQBHM0GpFFDQLTz7pNpCAYudciJ%2Fu5xiKjwBEqxKLzNA1HbRqVUDTDSjr5x%2BSa%2Fq4OU89fsH%2B722O3Zz8tFsur1eJyfvFtfvVl8Xl1%2FvXjcjlfDvwpGYYjM%2BwvcRwid5UNdmnu65z2QrKBD8ISkqYZkpfeZPyRM%2Ff8Pba7r564yzxdSG6Cy2NnbydvPCDFrW1vUxVXCcfQQ%2FctffL%2BLGlu0NbtKLzvFCc0Q%2BnJu7049eglVVwuS%2F2gkHZHpeWdxRcOthDOyiPUFPbJENQXT4s9GFpvzaa5wfcP5SYTbA%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_policy_state_move_may_throw.cpp[tag=content]
+----
+
+The state is restored from a destructor, while an exception is in flight, where
+throwing would terminate the program.
+
+Declare the move assignment `noexcept`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_state_move_may_throw.cpp[tag=content]
+----
+
+Or default the move assignment, and let the compiler generate it: a generated
+one is `noexcept` when those of the members are.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_state_move_may_throw_2.cpp[tag=content]
+----
+
+'''
+
+#### `two or more stateful policies in this registry share the same nested state type...`
+
+*Example* - link:https://godbolt.org/clientstate/eNq9lEuP2jAUhf%2BKlW5mNCkM00XVDCD1gdRFC6iZXRkh41wSq45t%2BTEUofS39zoJECioXRUW4Pude3ySG2cXMSUdSBcl5PsuclsN%2BA%2BLwpcyisk1XGolQznuLKa0bGkGk4w7ZU5w6qgLfBfxDH8GyASVed1xdxekVnnDaotXXDLhMyBDrqwzQMvxQi7ksVw4p23S768UcmXyXs5d4Vc9rvpKgyzBFSpraKfQK7SujbzlMicSA1tNGZBamCRH5WNQ4c6eOTLF6yG7hST4eeHGeSrIr1C8uSUjksGaeuGwoeo2zYW3JGl7T0i5XRrIOa62KGjbD6Uk2eCVDLUSnHGwSWK8dLyEJSuA%2FbDjMzOmEIPZx%2BPSEYmh7s%2FjMCqEXdau2724uQkMp5IrzDI6EdXNQeWg1AI1QyaoteRbm3Pc0NZ%2BLfemR2Mb5h1cm4iPDa%2FOk4Exyvw12onqv2WrMeo7A2uUV6bWvYHxaebD4D7MZunTcjafTL9Onj7PPi0%2FfnmfppP0Jjwqcf3cxH9ufIu9UVXF5F8PIfwE5q8fwcNRu3AMg5wLMHUpsIc3g%2FsABF%2FZ5kUg213qcxPQSyMfvHuIqmdcK%2B24kkEdvbYuG6H14O3RnAY6pxJEWqiNRNmaCgudzWfe7RHOIhBqcnuxBf35ZbONoXq%2FrKpn%2FP4GCA%2B0OQ%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_policy_shared_state.cpp[tag=content]
+----
+
+The registry keeps the states of its policies together, and finds each by its
+type.
+
+Give each policy a `state` type of its own, for example a nested struct. Here,
+each policy derives its `state` from `counter`, which keeps the members in one
+place.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_shared_state.cpp[tag=content]
+----
+
+'''
+
+#### `+the type_hash policy must appear before vptr_vector in the registry's policy_list+`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU11r2zAU%2FSvCe2mplyzdw5iXBvYR2MMWB9y3pRhFvrHFZElIV81C8H77JNtJ3OJCYfKDfe85537p%2BhgxJREkRgn5dYzwoMF%2FeadwtYxi8hJcayWDOx4YK1r3aAHLgqMyT%2BAMKQb8GPHCv2YeE1SWreLmJlCtcoa1Id5wyYQrgMy5smiA1ouN3MiLu0LUNplOt8rjypSTkmPlthOupkqDrAErVXTowDGptG4DOctlSaQv2GrKgLTEJLkwPwWWz%2BwYkpXvhxw3kvjzyA06Ksjf4Ly6JnekgB11Ar2gGYrWwlmS9NonSH3IDZTcWwdP6OVnV5LsfSdzrQRnHGySGCeR15CzCthvuzgF%2B99RTE8ZpjWXvKYi12B2wDCvqK3Og%2BprDj4oBnV30xgvXjkc1B92po256FvrpOFcSGM1zBfnZr%2BkaXafp%2Bvl6ufy%2Fnv6Lf%2F643OWLbOrMN64nXX8vMZrr4yaJiavXVv4A8y9vLTn5RxZ3EDnAkzrCtjt%2B9m7AAi%2Btd2vI%2Fss7T0E6LGjzz7eRs2Dt5VGrmRgR28tFnc%2B9OzDJTgN6JpKEFml9tLTdlRYGCRPHZ4gf2kBoaa0oxIfn48H2xuqT2bTPPjnH0dHcFE%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_policy_order.cpp[tag=content]
+----
+
+`vptr_vector` uses the hash computed by the `type_hash` policy, so it comes
+after it in the registry's policy list. `without` followed by `with` appends
+the policy at the end.
+
+Use `with` alone. It replaces a policy in place, so
+`default_registry::with<policies::minimal_perfect_hash<>>` puts the new hash
+where `fast_perfect_hash` was, ahead of `vptr_vector`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_policy_order.cpp[tag=content]
+----
+
+'''
+
+#### `minimal_cover_hash needs BMI2...`
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU91vmzAQ%2F1cs9tKqLDTdwzSWRlq7SHvYQiT6tlTIMVewamzLH8miiP3tOxOSUDXVJg0e4O73cefj2EVMSQfSRSn5uYvcVgO%2BYVL4RkYxeQtutJIhHQ%2BCOW16tIRZyZ0yL%2BDcURfwXcRLfIwRE1RWneLqKlCt8oZ1Fu%2B4ZMKXQCZcWWeANtOlXMpTunZO2zRJVgpxZapRxV3tVyOuEqVBNuBqVe7RQWJUa90ZectlRSQ2bDVlQDpimp6YnwMLK3vmyBzPQ3ZLSfBac%2BM8FeR3SF5ckltSwhP1wqGgHYoWwluS9toXSLMtDFQcoy0SevkxlaYbPMlEK8EZB5umxkvHGyhYDezZTg9m%2FzuK5FAhabjkDRUFU2swRU1tfRxT33GHQDloez%2BMv%2Fb%2B2noyPZ7gLsvyhyJbzOY%2FZg%2Ffsq%2FF%2FfcveT7LL8LM4m6A8avSlyiN2jYm%2F7qM8AuYf3sVjyt3Zh0DnQswXSpgNx%2FG1wEQfGX3P4Tsq3TTDdB6Tx9%2FuonaR4yVdlzJwI7eW1feovX448mcBnRBJYi8VhuJtCcqLAyKZ94dIPwYAaGmsmcl6M%2FPm20M1YewbR%2Fx%2FgOYqmJW[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_minimal_cover_hash_without_bmi2.cpp[tag=content]
+----
+
+cpp:minimal_cover_hash[] uses the x86-64 `PEXT` instruction, and the
+translation unit is compiled for a processor that may not have it. MSVC does
+not report the error for x64 builds: it compiles the instruction whatever the
+flags, so the program requires a processor that supports it.
+
+Compile every translation unit with `-mbmi2`, or with a `-march` that implies
+it, such as `-march=haswell`.
+
+*Fix*
+
+[source,cmake]
+----
+target_compile_options(my_app PRIVATE -mbmi2)
+----
+
+If the program must also run on processors without BMI2, or on other
+architectures, use cpp:minimal_perfect_hash[] instead, which is portable.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_minimal_cover_hash_without_bmi2.cpp[tag=content]
+----
+
+### C++26 reflection
+
+The examples need a compiler that supports reflection, such as GCC 16 with
+`-std=c++26 -freflection`.
+
+'''
+
+#### `a group holds reflections of namespaces, classes or registries`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUk9v2jAU%2FypWdmlVCqKHSssoh2nRtsMIKtxGGxnnkVhzbMt%2BLkNR9tn7HKBQiUqLD8n7%2FXu2X9pEGI2gMUnZ7zbBnQX6IlCFRicD9hHdWKMjPDgrZrw5sCVkpUTj3tEL5Bj5NpElvcbEKa6r3nFzE6XeBCf6iE9SCxVKYBNpPDrgzXSlV%2FoE14jWp6PR2hBvXDWsJNZhPZRmZCzoBrA25Z49A4a1tX1Q8FJXTNOGveUCWC9M05PyS1RR5yCQzeg8rF1pRs%2BLdBi4Yv8ieHXNHlgJGx4UkqE7N81V8Cw9eN8xza5wUEmqdiQ42N%2BgNN3SSSbWKCkk%2BDR1QaNsoBA1iD9%2Begz7mueLZZHPs9mvbPkj%2F1Y8Zt9%2FLpbZ49U%2BCVwhFPce%2FKR9fpYau%2Bk1GZOuG7D%2FHST8BRE%2BHuPbuC6MMsqlAhehanw%2FjpiSa7%2F%2Fj%2FShQX%2FtkXrZK8ef75LuiWpjURod1cmtx%2FKBUu%2Fu2e3GwUaBiNypCY%2FlnGtQi9psNXk2XHk420Qe8EjRCCLDXeUvWqiZvBy2ddwey657ovUKPw0bbw%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_register_classes_not_a_class.cpp[tag=content]
+----
+
+A group passed to `register_classes` contains a reflection of something else,
+such as a fundamental type, an enumeration or a function.
+
+List only namespaces, classes and registries: here, the classes `Node` and
+`Plus`.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_register_classes_not_a_class.cpp[tag=content]
+----
+
+'''
+
+#### `a group holds one kind of reflection...`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUs1v2jAU%2F1es7NKqFEQPleZRDlOjbYcRVLiNEhnnkVh1bMsfZSjK%2FvY%2BByipRKUlB%2Bf9vt6zXpqEa%2BVB%2BYSSP03i9wbwC0EZapUMyGd0bbSK8KBXzFh9ZAtIC%2BG1%2FUAvPPORbxJR4DFGTjJVdo6bmyh1OljeRXwRistQAJkI7bwFVk9XaqXOcOW9cXQ02mjktS2HpfBV2AyFHmkDqgZf6eLA9oBhZUwXFJxQJVE4sDOMA%2BmElJ6V36IKOwfuyQzvQ5qVIvi8CusDk%2BRfBK%2BuyQMpYMuC9Gho%2B6a5DI7Qo%2FcDU%2B9zC6XAao%2BCo%2F0donSHN5kYLQUX4Ci1QXlRQ84r4C9uegr7nmWLZZ7N09nvdPkze8yf0h%2B%2FFsv06eqQBDbnkjkHbtKs13GMAVmv41Tx7M3QTq8xMGnbAfnfBcNf4OHz9b6v8cKKo1xIsBEqx%2FfjiEmxcYf%2FSx0bdOuI1OtBOf56l7TPWGvjhVZRndw6Xzxg6t09ud1a2ErgkTs3YbGcMwVyUemdQs%2BWSQe9IbLgTxSuJjLMlu6iBZuJy2E7y8ypbNtnfN8AXLQkHA%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_register_classes_mixed_group.cpp[tag=content]
+----
+
+A group mixes reflections of different kinds: here, two classes and a
+registry.
+
+Put the namespaces, the classes and the registries in groups of their own.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_register_classes_mixed_group.cpp[tag=content]
+----
+
+'''
+
+#### `order the groups as namespaces, classes, registries`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUs1v2jAU%2F1es7NKqFEQPleZRDlOjbYcRVLiNEhnnkVh1bMsfZSjK%2FvY%2BByipRKUlh%2Fj9vt6zXpqEa%2BVB%2BYSSP03i9wbwhKAMtUoG5DO6NlpFeNArZqw%2BsgWkhfDafqAXnvnIN4ko8DNGTjJVdo6bmyh1OljeRXwRistQAJkI7bwFVk9XaqXOcOW9cXQ02mjktS2HpfBV2AyFHmkDqgZf6eLA9oBhZUwXFJxQJVE4sDOMA%2BmElJ6V36IKOwfuyQzvQ5qVIvi8CusDk%2BRfBK%2BuyQMpYMuC9Gho%2B6a5DI7Qo%2FcDU%2B9zC6XAao%2BCo%2F0donSHN5kYLQUX4Ci1QXlRQ84r4C9uegr7nmWLZZ7N09nvdPkze8yf0h%2B%2FFsv06eqQBDbnkjkHbtKs172e7YAgEOcakPU6jtlOrzEyaSPznyuGv8DD5wt%2BX%2BSFJUe5kGAjVI7vxxGTYuMOf5g6NugWEqnXg3L89S5pn7HWxgutojq5db54wNS7e3K7tbCVwCN3bsJiOWcK5KLSO4WeLZMOekNkwZ8oXE5kmC3dRQs2E5fDdpaZU9m2z%2Fi%2BASS0JRQ%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_register_classes_group_order.cpp[tag=content]
+----
+
+The groups passed to `register_classes` are out of order: here, the registry
+comes before the classes.
+
+Pass the namespaces first, then the classes, then the registries.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_register_classes_group_order.cpp[tag=content]
+----
+
+'''
+
+#### `a listed class must be complete`
+
+*Example* - link:https://godbolt.org/clientstate/eNqNUktP4zAQ%2FitW9gKitCoHpDWlB0S0uweaivZGaeQ608Rax7b8oFtF2d%2FOOC20oCKRHJL5XjPOpEm4Vh6UTyh5ahK%2FNYBvCMpQq6RHvqJro1WEe0fFhNV7toC0EF7bD%2FTMMx%2F5JhEFPobISabKznFxEaVOB8u7iB9CcRkKICOhnbfA6vFCLdQBrrw3jg4GK428tmW%2FFL4Kq77QA21A1eArXezYI6BfGdMFBSdUSRQO7AzjQDohpQflTVRh58A9meB5SLNQBK8XYX1gkvyP4Nk5uSUFrFmQHg3tsWkqgyN07%2F3A1NvcQimw2qJgb3%2BHKN3gSUZGS8EFOEptUF7UkPMK%2BF83%2FhT2IPAsHXCXZbN5nk3TyUM6%2F53d54%2Fprz%2Bzefp4tosGm3PJnAM3apbLOFePLJedvx2fY0TStj3y3R3DP%2BDh6w2%2Fb%2FLElqNcSLARKofXw4hJsXK7X0ztG3QbidTLTjn8eZW0z1hr44VWUZ1cOl%2FcYurVNblcW1hL4JE7NGGxnDIFclbpjULPmkkHR0Nkwb9R%2BEEjw2zpTlqwmTgdtrHMvJVt%2B4z3K1w0JV4%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$troubleshooting/compile_fail_register_classes_incomplete.cpp[tag=content]
+----
+
+A class listed explicitly is only declared, not defined.
+
+Register the class after its definition.
+
+*Fix*
+
+[source,c++]
+----
+include::example$troubleshooting/fix_register_classes_incomplete.cpp[tag=content]
+----
+
+### Platform
+
+These two do not depend on the program, so they come without an example.
+
+'''
+
+#### `This implementation requires that size_t and void* have the same size.`
+
+The platform is not supported. No x86, x86-64, ARM or AArch64 target is
+affected.
+
+There is no fix in the program. OpenMethod reads type ids as unsigned
+integers, so it needs one as wide as a pointer: `std::uintptr_t`, or
+`std::size_t` where the standard library does not provide `std::uintptr_t`. A
+target that has neither cannot use the library.
+
+'''
+
+#### `+named_static_rtti requires __PRETTY_FUNCTION__ or __FUNCSIG__+`
+
+cpp:named_static_rtti[] derives class names from the predefined function name
+of GCC, Clang or MSVC, and the compiler provides neither.
+
+Use cpp:static_rtti[] instead, if the program is a single module. The names
+are what lets `named_static_rtti` merge the copies of a class that come from
+different modules; `static_rtti` identifies classes without them, but its type
+ids differ from one module to the next. A program that shares classes across
+shared libraries needs cpp:std_rtti[], or a custom RTTI policy: see
+xref:custom_rtti.adoc[Custom RTTI].
 
 ## Runtime errors
 
 Errors detected at run time are passed to the registry's
-cpp:error_handler[] policy. The one in cpp:default_registry[] writes a short
-description of the error to `stderr`, then the program is terminated with
-`abort`. xref:error_handling.adoc[Error Handling] explains how to change that,
-for example to throw an exception.
+cpp:error_handler[] policy. The one in cpp:default_registry[] writes the
+message to `stderr`, then the program is terminated with `abort`.
+xref:error_handling.adoc[Error Handling] explains how to change that, for
+example to throw an exception. Each section below names the error type that a
+custom handler receives.
 
-cpp:initialize[] always checks the classes, methods and overriders it is
-given, and a call that finds no overrider, or several ambiguous ones, is always
+cpp:initialize[] always checks the classes, methods and overriders it is given,
+and a call that finds no overrider, or several ambiguous ones, is always
 reported. The other checks made during a call - for an unregistered class, a
 call before `initialize`, a misused cpp:final_virtual_ptr[] - are made only if
 the registry contains the cpp:runtime_checks[] policy. `default_registry`
 contains it if
 xref:reference:BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS.adoc[BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS]
-is defined, which is recommended in debug builds. The symbol changes the
-definition of `default_registry`, so it must be defined in all the translation
-units of the program, or in none.
+is defined, which is recommended in debug builds.
 
-### Missing class registrations
+### Registration
+
+#### `unknown class _C_`
+
+Error type: cpp:missing_class[].
 
 Every class that appears in a virtual parameter, in a method or in an
 overrider, must be registered with
@@ -199,12 +1646,16 @@ xref:reference:BOOST_OPENMETHOD_CLASSES.adoc[BOOST_OPENMETHOD_CLASSES]. So must
 the class of every object passed as a virtual argument. cpp:initialize[]
 detects the first two omissions:
 
+*Example* - link:https://godbolt.org/clientstate/eNqlU91vmzAQ%2F1dO7IWoGSzdwzTSVuoWpE3aSlWqvaxV5IALVo1t%2BSPZFrG%2FfWcgCZOoNGnwgO9%2BH76zj31QSGGpsEEC3%2FeB%2FakorjDJXSOCObwEN0oKn56PghvSDGhJ05JZqf%2BCc0usx%2FcBK%2FGzQIwTUXWKszNPNdLporN4xUTBXUnhorZWmSSON1IadKyiitnabSImY6moaKitZdmjo0RUK3X1IP7XJmaCWUY4%2B0UHx7GnsZqJqks6gysQeABGkYJCZ5QkJ6elZ6HAFRauBWsIh%2F2DAHy2TFuH4e8%2BHc7gEkr6RBy3KGqXR9lKVpAcxW3n%2BCHL8vt1dpvefE3vP2Wr9ccv13me5iGSZ0uI4wOfGWiY8VVOyUIln%2BkcwqGWtbL6ohdezeawlaycTW%2BXfUvv7j6v0ikDLOGoPjSLBUVRhG15NyYsNISJcAyTjdTWwA6vB6jWUgOeqSEVTcCJZyF3AgpOjBka63Wnawp9oegetO0c%2FnVg6Q9auJfH9TiWEyPr6YxT3aU8dv528cYDnG1M%2F9OIYZduJjy07emL9%2BdB%2B4ixVJZJ4dnBa2PLS7RevDuZE4%2FeEkF5XmP7SHsi3NDR5pmzBwhHxSNEV2ZSgv5s2myniTqEbfuI7x9BeGMl[Compiler Explorer^]
+
 [source,c++]
 ----
 include::example$snippets/errors_missing_class_method.cpp[tag=classes]
 
 include::example$snippets/errors_missing_class_method.cpp[tag=init,indent=0]
 ----
+
+*Example* - link:https://godbolt.org/clientstate/eNqlk9tunDAQhl9lRG9YhUI3vajKJpHSLlIrtSEKUW%2BaaOUFB6wY2%2FJht%2B2KPnvHsAcqEalS4QJ7%2Fvm%2F8WHYBaUUlgobpPB9F9ifiuIIg9y1IojgJblVUvhwNJrckHavVjSrmJX6L7mwxHp9F7AKP3PUOBF17zg786lGOl32iFdMlNxVFC4aa5VJk2QtpUFiHdfMNm4dM5lIRUVLbSOrQR0F4kapqwfxv5iECWYZ4ewX3RPHTGM1E3UfdAZHIPAAjCIlhR6UpifSwmehwZUWrgVrCYfdgwB8Nkxbh9PfQzicwSVU9Ik4btHULY62pawhPZq7nvghz4v7VX6b3XzN7j%2Fly9XHL9dFkRXhkDZbQJL0RmagZcavcsoWKvlMIwj3a1kpqy8GwtUsgo1k1Wy6XP4tu7v7vMymAFj26D5sFlcTxzFuy9OYsNASJsKxTNZSWwNbvB6gWksNeKaG1DQFJ56F3AooOTHG72owne4o9KtEdNB1Efxrt9IftHQv9%2BqxJyf61aczTnUf8tr52%2FkbL3C2NsMfI%2FZV%2Bobw0mZIn78%2FD7pHnEtlmRQ%2BO3htbHWJ6Pm7E5x49ZYIyosG945pT4QbOiqeO3uQsE%2B8QnRtJi3IZ9OwrSbqMO26R3z%2FAMhXYe0%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -217,6 +1668,8 @@ The third one can be detected only during the call, and only if runtime checks
 are enabled. Otherwise, the call reads a v-table pointer that was never set up,
 and the behavior is undefined: it may call the wrong overrider, or crash.
 
+*Example* - link:https://godbolt.org/clientstate/eNqlU11vmzAU%2FSsWfSEqg6V7mEY%2FpHwgtVobqpDtZamQAy5YNdcIm6RbxH77riEh2ZZKkwYP4HPuOffa13drJRI0A2355NvW0t9Lhn8IiroAyyFv0UUpwcDO0WJGix2bsiDlWla%2F0ZGm2vBbi6f4GSInKGSt4vzchCpZV0lrcZayZw6MjMMwWsThYzB7CBa34TQOZqPxfRDPv8wWdw9BPLkNJp%2BjJSzhjEMi6pSRq1zrUvmet5JSYQ2Zm3Gd1yuXS0%2BWDAqmc5l27BHg5mV58%2F82HgeuORX8B9s5HnsqXXHIWrBW%2BEcAj0yVNGGkNfL9g9OliUJBnWgyAl5QQbZLIPiseaVrXP7sYHtArgmeF62FRlFz2cumMiN%2BLz4ixrUQaUuakJZZguf1OFek4MpUuIS%2FWjC5H0VRENmdr2MsBq3Bn5F2KV%2BYQ%2BxdvXGpq6tOdDNwyFry9LQuDr8G8%2FndNDhlgNl69f5AsHLXdXHrxo2DJgXlYPf0oSV2l9CA%2B63mLMHu9jBa0ZWstCIbbDdhVSUrgj1SNGM%2BqeEF5AZIIqhSe4tOaEq1OzOTBEuxmsYh%2Fzoz7JUl9dsT00%2FGiakx4VywqoUMd%2FFh%2BN4Qgq9UN7ewy9JeMkOtu%2FDhpwurecK1LDWXYKKtd0qn12g9%2FHgwp4Z9pMBElOP%2BMeyZCsWOkoe13lN4xQxDq0ydlKA%2FP222qWi5XzbNE76%2FAMRbjt8%3D[Compiler Explorer^]
+
 [source,c++]
 ----
 include::example$snippets/errors_missing_class_call.cpp[tag=classes]
@@ -224,13 +1677,33 @@ include::example$snippets/errors_missing_class_call.cpp[tag=classes]
 include::example$snippets/errors_missing_class_call.cpp[tag=use,indent=0]
 ----
 
-### Missing base classes
+Register every class, in a `BOOST_OPENMETHOD_CLASSES` that also lists its
+direct bases. `initialize` then knows the class and its place in the
+hierarchy, and sets up its v-table. Listing `Animal`, `Dog` and `Bulldog`
+together fixes all three examples.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_missing_class.cpp[tag=classes]
+
+include::example$snippets/fix_missing_class.cpp[tag=use,indent=0]
+----
+
+'''
+
+#### `missing base _B_ -<| _D_`
+
+Error type: cpp:missing_base[].
 
 `initialize` learns about inheritance relationships from the class
 registrations: each lists a class together with its direct bases. Two classes
 that are registered separately are unrelated, as far as OpenMethod is
 concerned. If an overrider implies that one derives from the other,
 `initialize` reports it:
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU91v0zAQ%2F1dO4SXVsoSOB0TaTRo0EkiwTsvEC5sqN7klFokd2ZeOUcLfzjnpF6hDSCQP8d3v4y5ne%2B1lWhEq8mL4svboqUFecbJqa%2BUF8BxcN1q5dHAQXIl6g%2BaY5JK0%2BQ1OSZDD157M%2BTNmrBKq6BUnJ45qdWuy3uKFVFnV5gjTkqixcRQttbbsWISFpLJdhlJHukFVI5U6H9CDRFg2zcWd%2Bl%2BbSCpJUlTyO24cDz0tGamKPtlaXoHiAdhGZAi9URzvnSaOxYI2I7hUshYVrO8U8LOShloOfw5pfwTnkOODaCtiUTfZyWa6gHgn7nrHKAKDhbSEBnOw2AjDQ66eArAaqESQqkQjSShuSlpQuELDPGTt2%2Fk8vV3Mr5OrT8nt%2B%2Fls8e7jZZomqT%2BUGE3%2BQuFeRn0DfzL8Rn%2FFAPzNXy0aMtPB72IUwErL%2FLhuMf%2Bc3Nx8mCXHDLjaTr0dG%2F95GIY8IOcmFUEtpPIPYbHUhiw88kYDGqMN8O5YUWAMtbT9hi2Fxe1ET6c%2F3IgH%2BX7ffdcvF%2FG6LoB%2FvQH4DbP2%2BfO%2FO%2BdH7oCjywpNn3LY2avxSwdUcmmHW6g2VfpD5qDVQB%2B%2FOfO6e451Q1Irx%2FZOLeXnbD1%2BvTcXDr0WCqu01I%2BKaQ%2BisnhQfN7SFuKz5xBhCntUwv7yuNmjEc027Lp7fn8BA8V%2Byw%3D%3D[Compiler Explorer^]
 
 [source,c++]
 ----
@@ -239,26 +1712,107 @@ include::example$snippets/errors_missing_base.cpp[tag=classes]
 include::example$snippets/errors_missing_base.cpp[tag=init,indent=0]
 ----
 
-The message names the base class first, then the derived class. The fix is to
-register the classes together:
+The message names the base class first, then the derived class.
+
+Register the two classes in the same `BOOST_OPENMETHOD_CLASSES`. A class list
+tells `initialize` which of its classes derive from which, so it learns that
+`Dog` derives from `Animal`.
+
+*Fix*
 
 [source,c++]
 ----
 include::example$snippets/errors_missing_class_call.cpp[tag=fix]
 ----
 
-### Calls that cannot be dispatched
+### Dispatch
 
-A call reports `not implemented` if no overrider is applicable to the dynamic
-types of its virtual arguments, and `ambiguous` if several are, and none of
-them is more specialized than all the others. See
-xref:multiple_dispatch.adoc[Multiple Dispatch].
+#### `not implemented`
 
-Neither is a mistake by itself: a method may well be meant for some
-combinations of classes only. However, cpp:initialize[] already knows about
-every such combination, and says how many there are in its report. A program
-can check it, and set the `BOOST_OPENMETHOD_TRACE` environment variable to
-`1` to find out which methods and classes are involved:
+Error type: cpp:no_overrider[].
+
+No overrider is applicable to the dynamic types of the virtual arguments:
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU1tvmzAU%2FisWeyEqg6V7mEYvUtcgbdJWqlLtZakiBxxizdiWfZx0i9hv3zEkJJuoNGnwAOd8l2Pjj11QKglMQpCSb7sAfmiGb9gUrpFBRF6CG62kb0cnxR1t9mjFsoqDMn%2FABVDw%2BC7gFT6miAkq605xduapVjlTdhavuCyFqxi5XANomybJUimLjnVcc1i7ZcxVojSTDYO1qnr0pBGvtb6ey%2F%2B1SbjkwKngP9necS6d5bImEvdqNS0Z6TRpehRdeJYF40ogN5I3VJDdXBK8NtyAw%2FJX3w4n5IpUbEWdABS1F4NspmqSDuIT4JbCX8Bcfsjz4nGR32d3X7LHj%2Flscfv5piiyIuxpkXeLvHIySg%2B1%2Bs4iEu4Xt9BgLnvl9SQiG8Wrcd0i%2F5o9PHyaZWMGOHJQH3afJCSOY9ynd%2BMSSEO5DAf4%2BKnDfqBv%2Bv2umODPQwdd6FIZsGSLJ0iYMcoQPAtLa5YSqYDwRgvWYOBY1Uv8%2BsLOxRvj%2BKBtI%2FKvaWbPrHQvZ3nI7EiePZ0LZrqWx87fTt94QPCl7f8ouZ%2FSpchDm54%2BfX8etE9YKw1cSc8OXluortB6%2Bu5oTj16TyUTxVptJdJWVFh2Mjx3cIAwQx6hprajEvTn42ZbQ%2FWhbNsnvH8DcC1rbg%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$snippets/errors_not_implemented.cpp[tag=classes]
+
+include::example$snippets/errors_not_implemented.cpp[tag=use,indent=0]
+----
+
+This is not a mistake by itself: a method may well be meant for some classes
+only. See <<finding_undispatchable_calls>> to find out, at `initialize` time,
+whether any call can end like this.
+
+Add an overrider for `Animal`. It serves as a default: it is called for every
+class that has no more specialized overrider of its own.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_not_implemented.cpp[tag=classes]
+
+include::example$snippets/fix_not_implemented.cpp[tag=use,indent=0]
+----
+
+Or add one for `Cat`. It covers `Cat` alone: an `Animal` that is neither a
+`Dog` nor a `Cat`, or a class added later, still has no overrider.
+
+*Alternative fix*
+
+[source,c++]
+----
+include::example$snippets/fix_not_implemented_2.cpp[tag=classes]
+
+include::example$snippets/fix_not_implemented_2.cpp[tag=use,indent=0]
+----
+
+'''
+
+#### `ambiguous`
+
+Error type: cpp:ambiguous_call[].
+
+Several overriders are applicable, and none of them is more specialized than
+all the others:
+
+*Example* - link:https://godbolt.org/clientstate/eNqlU91vmzAQ%2F1cs9kJUBkv3MI1%2BSN2CtElbqUrVl6aKDLhgCWzLPjdrI%2Fa37wwJSSU6dRo8wN3v485wt%2FEKKYAJ8GJyt%2FHgSTF8w2RjW%2BEF5DW4VVK4dHAQXNJ2i5YsKTlI%2FQLOgILDNx4v8TFHrKGi6hVHR45qpNVFb%2FGOi6KxJSOnNYAycRTlUhp0rMKKQ23zkMtIKiZaBrUsB%2FQgEdZKnS%2FF%2F9pEXHDgtOHPbOu4FNZwURGBZzWKFoz0mjjei04cy4C2BZALwVvakM1SELweuQaL4e8h7c%2FIGSnZA7UNoKg7GWULWZF4FHe945c0zW5W6VVy%2BTO5%2BZYuVl9%2FXGRZkvkDLXCi2STTbxmDgPjb8isF%2BnQQnQdkIjnDrOTltNkqvU2ur78vkje7Yl%2Bj5e5LRBEJwxDP%2FM8lnNtfu54swQWQlnLhj%2FD%2Bz%2FrDQV3SfXcjpFRPAalZgYMyQmhHc6nBkDVODmFaS01wBgytWExom%2FPKSmsGsuvbf2nkimArXtcF5K2LxH6xwr6%2BRuO6TKySo%2FOG6T7lsOOP8w8OaHhuhmUW2yr9ADvocaDPPx973T3GUgGXwrG99wbKM7Sef9qbU4deUcGarJZrgbQH2hh2UDy1sINwrh1CdWUmJejPp83Wmqpd2HX3eP8B%2FAuVhg%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$snippets/errors_ambiguous.cpp[tag=classes]
+
+include::example$snippets/errors_ambiguous.cpp[tag=use,indent=0]
+----
+
+Both overriders accept two `Dog`{empty}s, and each is more specialized than
+the other in one argument. See xref:multiple_dispatch.adoc[Multiple Dispatch].
+
+Add an overrider for `(Dog, Dog)`. It is more specialized than both of the
+others, so it is the one called for two `Dog`{empty}s.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_ambiguous.cpp[tag=classes]
+
+include::example$snippets/fix_ambiguous.cpp[tag=use,indent=0]
+----
+
+'''
+
+[#finding_undispatchable_calls]
+#### Finding the calls that cannot be dispatched
+
+cpp:initialize[] already knows about every combination of classes that ends
+in `not implemented` or `ambiguous`, and says how many there are in its
+report. A program can check it, and set the `BOOST_OPENMETHOD_TRACE`
+environment variable to `1` to find out which methods and classes are
+involved:
 
 [source,c++]
 ----
@@ -269,327 +1823,157 @@ The trace lists the classes, the methods, their overriders and the dispatch
 tables that `initialize` builds from them. Its format is not specified, and
 may change from one version to the next.
 
-## Message index
+### Calls
 
-Each table quotes enough of a message to search for. Where a diagnostic is not
-a `static_assert`, the wording depends on the compiler, and the table quotes
-gcc.
+#### `not initialized`
 
-### Methods and overriders
+Error type: cpp:not_initialized[].
 
-[cols="2,3"]
+A method was called before cpp:initialize[]:
+
+*Example* - link:https://godbolt.org/clientstate/eNqNU91vmzAQ%2F1cs%2BkJURpbuYRr9kNIEqdXaUIVsL0uFHHDAmjlb2DTrIva37wz5mkalwgO%2B%2B33cHRxbJ5VgGBgnID%2B2jnlVDE%2BYFHUJjkfegkslwaa9k2BGyx2asTDjRlb%2FwLGhxuJbh2f4GCEmKOSt4vzcUrWsq7S1OONryNia3EZRvEiip3D2GC7uomkSzsa3D2Ey%2FzZb3D%2BGyeQunHyNl3CGZA7s%2FXwGGV8vAU8cUlFnjFwVxigdDIcrKTX2nvs5N0W98rkcSsWgZKaQWYeeJPxCqRtrVGsOOQF8B1rRlJGWGARH5qVlaVPVqSFj4CUVZLsEgtcLr0yN4Z8u7Q7INcGBaC0MiprLg2wqcxIcxE3r%2BN%2FIk4dxHIex29E8Kxr0Ml0lfzKPuLvyiTLVVSe6GXjkRfKsX5dE38P5%2FH4a9hlgtYN6P99wSHzfx0msGwdDSsrBPYU5cMOp4L8ZpguqCUhDVowBSakQLOuIdnwNUqrXtq%2Bdlq5kZTTZ4NcirKpkRfATaJqzoHU5Wu9cbNNuZ2Pnw6acpvHIe7eb%2FWJp%2FfZuH3a4Z78tnQtWtSmLXXwafbSA4Cvd%2FWGwq9Juj4VeOvroy4XTPGMsleESLNv5oE12jdajz0dzatEnCkzEhdwA0tZUaHZSPKrNHsKlsgitct0rQX%2Feb7apqNqHTfOM91%2BRGWsy[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$snippets/errors_not_initialized.cpp[tag=classes]
+
+include::example$snippets/errors_not_initialized.cpp[tag=use,indent=0]
+----
+
+This is detected only with runtime checks; otherwise, the behavior is
+undefined.
+
+Call `initialize` before the first method call, typically at the start of
+`main`: it builds the dispatch tables that the call reads. A shared library
+loaded at run time adds classes, methods and overriders, so call it again after
+loading one. See xref:shared_libraries.adoc[Shared Libraries].
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_not_initialized.cpp[tag=classes]
+
+include::example$snippets/fix_not_initialized.cpp[tag=use,indent=0]
+----
+
+'''
+
+#### `invalid call to final construct: static type = _S_, dynamic type = _D_`
+
+Error type: cpp:final_error[].
+
+cpp:final_virtual_ptr[] takes the static type of its argument for its dynamic
+type, without checking it, unless runtime checks are enabled:
+
+*Example* - link:https://godbolt.org/clientstate/eNqlVF9v2jAQ%2FyqnVJqCymB0D9NCqURppFZrSUXYXkYVmcQEa%2BEcxQ6Moeyz7xxDYBqVKi08JL7fn%2FOdfeycWKLmqB0Pvu8cvc05fVEwK1fotOE1eJVLNOH2yWLMVns04X4itCz%2BgkPNtMF3jkjo1SMsY5jWistLQ1WyLOLa4kIsMOELuA2CcBoFz%2F74yZ%2FeB3eRPx7ePvrR5Ot4%2BvDkR6N7f%2FQlnOEFkQXyt%2FM5JmIxQ%2FoSGGdlwuF6qXWuvG53LqWivaedVOhlOe8I2ZU5xxXXS5lY9CTQWeb5zf%2FbdAUKLVgmfvG94wxLJTAFpK6qnMUcao3nHUV9w1K6KGMNQxQrlsFuhkDPWhS6pOVvG3ZbMABqESszTaKq38juZApeI65qx3%2BaOHochqEfupbWNqLWWaabyx%2B8De4%2BfZTr4tqKblptWEuRnNdFwTd%2FMnm4888ZULZGfaiv24VOp0OVGDeBGlZMoNvAx2a6NqEJmlIVSplv%2BzZgd%2FYOmK1%2BcESbJGwuC61gQ0cIvChkAXQYiqXcaygC15QpgZhlGWgJdA%2FJjMbGdtgDRfdexGBmh3Icephs6WCPYdqcdTQNcGuP6KQJrt1jy1RDNTtV1Ya3jiP%2FyePy9WFshu7MQBq6yHhRhwx29bH3wQCZmCv7l4D7LPXlNNDa0nufr5zqhdYy14KaYWLvlU4GZN37dDRnBn1myLNwKTdItAXLFD9JHpT6AFFHDcKKVJ2VkL84b7YpWH5YVtUL%2Ff4A%2F1qqoQ%3D%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$snippets/errors_final.cpp[tag=use,indent=0]
+----
+
+Pass `final_virtual_ptr` an object whose static type is exactly its dynamic
+type - here, `snoopy` itself - or use cpp:virtual_ptr[], which finds the
+dynamic type.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_final.cpp[tag=use,indent=0]
+----
+
+### Builds
+
+#### `conflicting definitions of _R_`
+
+Error type: cpp:odr_violation[].
+
+`BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS` changes the definition of
+`default_registry`, so it must be defined in all the translation units of the
+program, or in none. When it is defined in some and not in others,
+cpp:initialize[] reports it before anything else:
+
+*Example*
+
+[source,c++]
+----
+include::example$snippets/errors_odr_violation.cpp[tag=init,indent=0]
+----
+
+Define the symbol in the build system, for every translation unit, rather than
+in source files. In CMake, `add_compile_definitions` in the top-level
+`CMakeLists.txt`, before any `add_subdirectory`, applies to every target of the
+project. This one defines the symbol in debug builds only.
+
+*Fix*
+
+[source,cmake]
+----
+add_compile_definitions(
+    $<$<CONFIG:Debug>:BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS>)
+----
+
+### Hash tables
+
+The `type_hash` policy maps type ids to the indexes of the v-tables. Its
+`initialize` searches for a function that does that for the registered classes,
+and reports an error if it cannot find one. Each policy has its own:
+
+[cols="2,2"]
 |===
-| Message | Cause and remedy
-
-| `cannot find '...' method that accepts the same arguments as the overrider`
-| See <<_the_overrider_matches_no_method>> above.
-
-| `BOOST_OPENMETHOD_OVERRIDE: the overrider does not match the method`
-| The overrider was matched to a method, but one of its parameters is not
-  acceptable. It is accompanied by a more specific message, such as
-  `registry mismatch`.
-
-| `method has no virtual parameters`
-| A method needs at least one parameter declared with `virtual_` or
-  `virtual_ptr`. Without one, it is an ordinary function.
-
-| `virtual_<> parameter is not a polymorphic class`
-| See <<_the_class_is_not_polymorphic>> above.
-
-| `virtual_traits not specialized for type`
-| A `virtual_` parameter must be a reference (or a pointer, or a smart pointer
-  that OpenMethod supports): `virtual_<Node&>`, not `virtual_<Node>`.
-
-| `virtual_<> is not allowed in overriders`
-| An overrider takes the plain type: `Plus&` where the method takes
-  `virtual_<Node&>`.
-
-| `virtual_ptr<> is required in overrider in same position as in method`
-| Where the method takes a `virtual_ptr`, the overrider must take one too.
-
-| `different virtual_ptr<> reference categories`
-| A `virtual_ptr` parameter is passed by value in the method and by reference
-  in the overrider, or vice versa. Use the same form in both.
-
-| `overrider parameter discards const qualifier`
-| See <<_the_overrider_discards_const>> above.
-
-| `overrider return type is not convertible to method return type`
-| The overrider returns the method's return type, or a type that converts to
-  it, such as `Plus*` for `Node*`. If the method returns `void`, so does the
-  overrider.
-
-| `different virtual_ptr<> pointer kinds`
-| A `virtual_ptr` holds a plain pointer in the method and a smart pointer in
-  the overrider. Use the same kind in both: `virtual_ptr<Plus>` for
-  `virtual_ptr<Node>`, `shared_virtual_ptr<Plus>` for
-  `shared_virtual_ptr<Node>`.
-
-| `virtual_ptr category mismatch`
-| Follows one of the two messages above, from the code that calls the
-  overrider. Fix the first one.
-
-| `non-virtual parameter types must match exactly`
-| The non-virtual parameters of the overrider must have the same types as the
-  method's.
-
-| `method parameter must be an unambiguous accessible base of corresponding overrider parameter`
-| The same mistake as in <<_the_overrider_matches_no_method>>, detected by the
-  core API rather than by the macro.
-|===
-
-### Classes
-
-[cols="2,3"]
-|===
-| Message | Cause and remedy
-
-| `class must be an accessible unambiguous base, repeated inheritance is not supported`
-| A class inherits the same base more than once, without virtual inheritance.
-  OpenMethod cannot convert a pointer to the derived class to a pointer to that
-  base.
-
-| `use_classes: a class is incomplete`
-| A class is registered where it is only declared. Register it after its
-  definition.
-
-| `a registry must be the last element of the list`
-| A class list names its registry last:
-  `BOOST_OPENMETHOD_CLASSES(Animal, Dog, my_registry)`.
-|===
-
-### Virtual pointers and smart pointers
-
-[cols="2,3"]
-|===
-| Message | Cause and remedy
-
-| `no matching function for call to ‘boost::openmethod::virtual_ptr<_C_>::virtual_ptr(_C_&)’`
-| The class is not polymorphic, so `virtual_ptr` cannot find its dynamic type.
-  See <<_the_class_is_not_polymorphic>>.
-
-| `do not wrap an object that has a boost_openmethod_vptr overload in a virtual_ptr`
-| The object carries its own v-table pointer, for example because it derives
-  from cpp:inplace_vptr_base[]. Pass the object itself to methods.
-
-| `class must inherit from inplace_vptr_base`
-| A base class passed to `inplace_vptr_derived` is not itself an
-  `inplace_vptr` class.
-
-| `registry can be specified only for root classes`
-| Only the root of an `inplace_vptr` hierarchy names the registry; its derived
-  classes inherit it.
-
-| `virtual_ptr<> takes a class or a smart pointer: virtual_ptr<Node>, not virtual_ptr<Node*>`
-| `virtual_ptr` is a pointer already. Its argument is the class itself, or a
-  smart pointer to it.
-
-| `virtual_ptr<> must be passed by value or by const reference`
-| A virtual parameter is declared as `virtual_ptr<Node>&` or
-  `virtual_ptr<Node>&&`. A method can take a `virtual_ptr` only by value,
-  `virtual_ptr<Node>`, which is cheap, or by const reference,
-  `const virtual_ptr<Node>&`.
-
-| `std::shared_ptr cannot be passed by non-const lvalue reference`
-| Pass a `std::shared_ptr` or a `shared_virtual_ptr` by value, or by const
-  reference.
-
-| `cast only allowed to a shared_ptr`
-| The method takes a `std::shared_ptr`, and the overrider takes something
-  else in the same position. It must take a `std::shared_ptr` too.
-
-| `a std::weak_ptr cannot be wrapped in a virtual_ptr; use weak_virtual_ptr`
-| Use cpp:weak_virtual_ptr[] to keep a weak reference together with its
-  v-table pointer.
-
-| `a weak pointer cannot be a virtual parameter; call lock() first`
-| A method cannot dispatch on an object that may no longer exist. Lock the
-  pointer, and pass the resulting shared pointer.
-|===
-
-### Registries
-
-See xref:registries_and_policies.adoc#registry_affinity[Registry Affinity] for
-how a class, a parameter and a method come to belong to a registry.
-
-[cols="2,3"]
-|===
-| Message | Cause and remedy
-
-| `registry mismatch`
-| A `virtual_ptr`, an overrider or a `virtual_any` belongs to a registry
-  other than the method's. The rest of the message, if any, says which.
-
-| `registry mismatch: the parameter belongs to another registry`
-| A virtual parameter names a registry, or its class declares an affinity for
-  one, and the method names another.
-
-| `registry mismatch: a class declares an affinity for another registry`
-| A class list names a registry, and one of the classes declares an affinity
-  for another.
-
-| `virtual parameters carry conflicting registries`
-| The virtual parameters of a method that names no registry belong to
-  different registries. Name the registry on the method, or make the
-  parameters agree.
-
-| `the classes carry conflicting registry affinities - list the registry to say which one is meant`
-| A class list mixes classes that declare different affinities, or a class
-  that declares one with a class that declares none. Add the registry at the
-  end of the list.
-
-| `cannot tell which registry this class belongs to`
-| The class inherits different affinities from several bases, or inherits one
-  from a private base. Declare its affinity in the class itself.
-
-| `boost_openmethod_registry must return a registry`
-| The affinity declaration names a type that is not a registry.
-
-| `this class declared its registry affinity after it was first mentioned`
-| A `virtual_ptr` of the class, or a method over it, was formed before the
-  affinity declaration was seen - through a forward declaration, or from
-  inside the class itself - and kept the default registry. Move the
-  declaration up, or name the registry where the class is first used.
-|===
-
-### `any` and type erasure
-
-See xref:interop_any.adoc[Interoperation with any] and
-xref:interop_type_erasure.adoc[Interoperation with Boost.TypeErasure].
-
-[cols="2,3"]
-|===
-| Message | Cause and remedy
-
-| `requires standard RTTI`
-| Dispatching on the content of an `any` keys on its `std::type_info`, so the
-  registry must use cpp:std_rtti[], or a policy derived from it.
-
-| `virtual_any must be passed by reference`
-| A `virtual_any` method parameter passed by value would copy the `any`, and
-  its content, on every call.
-
-| `an owning type_erasure::any must be passed by reference`
-| The same, for a Boost.TypeErasure `any` that owns its value. The reference
-  forms, `any<C, _self&>` and `any<C, const _self&>`, may be passed by value.
-
-| `do not wrap a virtual_any in a virtual_ptr`
-| A `virtual_any` already carries the v-table pointer of its content. Pass it
-  by reference instead.
-
-| `use of deleted function ‘void boost::openmethod::final_virtual_ptr(...)’`
-| cpp:final_virtual_ptr[] would use the v-table of the `any` class itself, not
-  that of its content. Use a `virtual_any` instead.
-
-| `no matching function for call to ‘...::cast<...>(...)’`
-| The overrider takes the content of the `any` by a kind of reference the
-  `any` cannot provide: a mutable reference to the content of a const `any`,
-  or an rvalue reference to the content of an lvalue `any`.
-|===
-
-### Policies
-
-[cols="2,3"]
-|===
-| Message | Cause and remedy
-
-| `must be copyable: initialize() saves it`
-| The `state` of a policy that defines `initialize` must be copy-assignable:
-  `initialize` saves it, and restores it if another policy throws.
-
-| `must be nothrow move-assignable`
-| The state is restored from a destructor, while an exception is in flight,
-  where throwing would terminate the program.
-
-| `two or more stateful policies in this registry share the same nested state type`
-| Each stateful policy must define its own `state` type.
-
-| `the type_hash policy must appear before vptr_vector in the registry's policy_list`
-| `vptr_vector` uses the hash computed by the `type_hash` policy, so it must
-  come after it in the registry's policy list.
-
-| `minimal_cover_hash needs BMI2`
-| Compile every translation unit with `-mbmi2`, or with a `-march` that
-  implies it, or use cpp:minimal_perfect_hash[], which is portable.
-
-| `This implementation requires that size_t and void* have the same size.`
-| The platform is not supported.
-|===
-
-### C++26 reflection
-
-[cols="2,3"]
-|===
-| Message | Cause and remedy
-
-| `order the groups as namespaces, classes, registries`
-| The groups passed to `register_classes` are out of order.
-
-| `a group holds one kind of reflection`
-| Put the namespaces, the classes and the registries in groups of their own.
-
-| `a group holds reflections of namespaces, classes or registries`
-| A group contains a reflection of something else, such as a function.
-
-| `a listed class must be complete`
-| A class listed explicitly is only declared, not defined.
-|===
-
-### Runtime messages
-
-Each message is written by the default error handler. The second column names
-the error type that a custom handler receives.
-
-[cols="2,1,3"]
-|===
-| Message | Error | Cause and remedy
-
-| `unknown class _C_`
-| cpp:missing_class[]
-| See <<_missing_class_registrations>>.
-
-| `missing base _B_ -<\| _D_`
-| cpp:missing_base[]
-| See <<_missing_base_classes>>.
-
-| `not implemented`
-| cpp:no_overrider[]
-| See <<_calls_that_cannot_be_dispatched>>.
-
-| `ambiguous`
-| cpp:ambiguous_call[]
-| See <<_calls_that_cannot_be_dispatched>>.
-
-| `not initialized`
-| cpp:not_initialized[]
-| A method was called before cpp:initialize[]. Detected only with runtime
-  checks; otherwise the behavior is undefined.
-
-| `invalid call to final construct: static type = _S_, dynamic type = _D_`
-| cpp:final_error[]
-| cpp:final_virtual_ptr[] was given an object whose dynamic type is not its
-  static type. Detected only with runtime checks.
-
-| `conflicting definitions of _R_`
-| cpp:odr_violation[]
-| `BOOST_OPENMETHOD_ENABLE_RUNTIME_CHECKS` is defined in some translation
-  units and not in others, so `default_registry` has several definitions.
+| Message | Policy
 
 | `could not find hash factors after _N_ attempts using up to _M_ buckets`
-| `fast_perfect_hash::search_error`
-| cpp:fast_perfect_hash[] could not build a collision-free table for the
-  registered type ids. Use another `type_hash` policy, such as
-  cpp:minimal_perfect_hash[].
+| cpp:fast_perfect_hash[], the default
 
 | `could not place _N_ type ids after trying _M_ multipliers`
-| `minimal_perfect_hash::search_error`
-| The same, for cpp:minimal_perfect_hash[].
+| cpp:minimal_perfect_hash[]
 
 | `+could not place N type ids in a table of up to 2^B slots+`
-| `two_level_hash::search_error`
-| The same, for cpp:two_level_hash[].
+| cpp:two_level_hash[]
 
 | `the smallest bit cover of _N_ type ids is _B_ bits wide, more than the _M_ allowed`
-| `minimal_cover_hash::too_many_bits`
-| Increase the limit, or use another `type_hash` policy.
+| cpp:minimal_cover_hash[]
 |===
+
+With the default limits, the first three are unlikely with ordinary type ids,
+and cannot be provoked by a small program. The last two policies take their
+limits as template arguments, so it takes a registry configured to fail:
+
+*Example* - link:https://godbolt.org/clientstate/eNqtU9tq20AQ%2FZVBfXGIatluS4niGNLG0Ic2DjhvdTBraSwtrHaX3VHS1Kjf3lnJtwYHCq30oJ05c85ctLOJMqMJNUUpfN9E9GyRT%2BxUdaWjGF6DK2t0cMdHxq2otmiO01yScX%2FAcxIU8E0kc%2F4MGVNCFy3j%2FDyEelO7rJV4I3Wm6hxhXBJZnybJyhjPikW%2FkFTWq740ibGoK6TS5B165OiX1k4W%2Bl9lEmuUzCT6pJJaVkItLbo1ZrQshS%2F%2FVxKWJimU%2FIlbxWNNT07qonXWnk%2BgecreigyhFUrTg9JliGJCnRFct%2FXCZqGBn0fpqGbzV%2BfuncEV5LgWtSImNZd72o0pIN2Tm2PF0DLmS4eFZM9zJ5zuZPb%2BNH3irse7yaXpqdGN38dw8SGGwWSyy%2FJpNpvfL2d309tv0%2Fsvs5vl56%2FX8%2Fl03uuKiUNp8csizlqq1ASVkJrb2vabJCBWxpGHUAygc8YBz82LAtN9SGZqlYM2BFaFgY4gXHCQuQexJnTAGcLIB1Bxh9Iqic537MM%2FG78oadILRTULHTVNDH%2B7M%2FgDs%2Fr1jdlvxomtCeFSoWtdARu9Gw4CoOTKd3urt1naGxOgxy58eDGKmge2jSVpdIiO3nrKr1h6%2BPEgLgJ6JzSqeWmeNIethfJ4lHxW0w7i2xIQ4Qp%2FksL68rTYkxN2ZzbNA7%2B%2FAdt5mfM%3D[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$snippets/errors_hash_search.cpp[tag=classes]
+
+include::example$snippets/errors_hash_search.cpp[tag=init,indent=0]
+----
+
+*Example* - link:https://godbolt.org/clientstate/eNqtU01v2zAM%2FSuEd0nRNE6ywzA3DdCtAXbYmgLubSkC2WZsArJkSHKyLnB%2F%2Byg7X1tTYMBmHyzy8T1%2BWNwGqVYOlQsi%2BL4N3HOFfGKnrEsV9OEtuKy08u7%2BiXEvyh2a4Swjp81vcOyE8%2Fg2oIw%2FI8akUHnLuLz0oVbXJm0l3pFKZZ0hTArnKhuFYaK1ZcV8kJMr6mRAOtQVqhJdobMOPXEMiqqaLtS%2FyoSVlpQS2rAkRaWQy1Sv0SwLYYv%2FlYKFHQlJP3GneKppnSGVt87a8gkUz9hWIkVohaLoqHTto5hQpw5u22phu1DAz5qMq9l86dy9C7iBDFeilo5JzfWBdqdziA7k5lSxbRyzpcGc2PXcKUd7nYM%2Fijbc9mQ%2FuCh6PbnJcDrdq3%2Baz%2BPH5fxhdv9t9vhlfrf8%2FPU2jmdxryui70vqv0p%2B0XJJOSgFKe5n12gYgki0cRZ8EYDGaAM8MCtyjA4hrkCwLC7ROkho1xvoFYzB33CgzAJZGHnQS2XYh1IbZKZQLX0ITNcbzDrR4z%2Bc%2FFnqtOeLbRYqaJo%2B%2FO0K4Q9M67cX6LAoZ5bIh5NE07o8Nn4%2FGnpAUmK7NVa7LO0V8tC6Cx99HAfNE9u6cqSVjw6urMtuWHr0Aa7KpKTxMYfwQQ9CoYwLvVEcvRLS4kkN89rtIb5FHhEmt2cpnIbOi22MqPZm0zzx%2BwsIIqG4[Compiler Explorer^]
+
+[source,c++]
+----
+include::example$snippets/errors_too_many_bits.cpp[tag=classes]
+
+include::example$snippets/errors_too_many_bits.cpp[tag=init,indent=0]
+----
+
+The type ids that a policy fails on usually come from a custom RTTI policy.
+
+Raise the limit: `MaxSeeds`, the third template argument of
+cpp:minimal_perfect_hash[], or `MaxBits`, the only one of
+cpp:minimal_cover_hash[]. Here, their defaults, 16 and 24, are enough. Or use
+another `type_hash` policy: see
+xref:shared_libraries.adoc#type_ids_across_modules[Type ids across modules] for
+how the policies compare.
+
+*Fix*
+
+[source,c++]
+----
+include::example$snippets/fix_hash_search.cpp[tag=classes]
+
+include::example$snippets/fix_hash_search.cpp[tag=init,indent=0]
+----
