@@ -235,7 +235,7 @@ hash costs memory as well as time.
 A plugin host that registers more than a few hundred classes is the program
 most likely to meet both problems. A plugin that registers no classes of its
 own, and only adds overriders for the program's, contributes no type ids, and
-does not cause them.
+does not cause either problem.
 
 ### The alternatives
 
