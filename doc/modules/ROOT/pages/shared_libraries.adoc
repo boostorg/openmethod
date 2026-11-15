@@ -235,12 +235,12 @@ hash costs memory as well as time.
 A plugin host that registers more than a few hundred classes is the program
 most likely to meet both problems. A plugin that registers no classes of its
 own, and only adds overriders for the program's, contributes no type ids, and
-does not cause them.
+does not cause either problem.
 
 ### The alternatives
 
 Three other cpp:type_hash[] policies avoid the problem, and cpp:vptr_map[]
-removes the hash altogether:
+removes the need for a hash altogether:
 
 [cols="1,3"]
 |===
