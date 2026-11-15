@@ -192,6 +192,20 @@ namespace policies {
 //! @tparam MaxBits Refuse a cover wider than this; the table is `8 << bits`
 //!   bytes.
 //!
+//! The code generated for a call to `hash`, by x86-64 clang 22 with
+//! `-O2` and `-mbmi2`, where `st` stands for the registry's state:
+//!
+//! @code
+//! auto hash_of(type_id type) -> std::size_t {
+//!     return policies::minimal_cover_hash<>::fn<hashed_registry>::hash(type);
+//! }
+//! @endcode
+//!
+//! @code
+//!     pext rax, rdi, qword ptr [rip + st+48]
+//!     ret
+//! @endcode
+//!
 //! @par Example
 //! include:policies.cpp#minimal_cover_hash
 //!

@@ -305,6 +305,12 @@ here). Add the flag to the invocation before pasting any output:
 - `objdump -dC -M intel --no-show-raw-insn`
 - `gcc -S -masm=intel` / `clang -S -masm=intel`
 
+The doc comment of each hash policy (`fast_perfect_hash`, `minimal_perfect_hash`,
+`two_level_hash`, `minimal_cover_hash`) carries the assembly of a call to its `hash`, as built by
+`doc/modules/ROOT/examples/hash_call_<policy>.cpp` with clang 22, `-std=c++17 -O2`
+(`-mbmi2` for `minimal_cover_hash`). It is a pasted snapshot: nothing checks it, so regenerate it
+when a hash changes. The mangled `registry_state<...>::st` operand is written `st`.
+
 ### Compiler Requirements
 Tests require these C++17 features (checked by Boost.Build):
 - auto nontype template params

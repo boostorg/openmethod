@@ -102,6 +102,26 @@ namespace boost::openmethod::policies {
 //!   defeats one multiplier usually defeats them all at that `Lambda` and
 //!   `LoadPercent`; lower `Lambda` or `LoadPercent` instead.
 //!
+//! The code generated for a call to `hash`, by x86-64 clang 22 with
+//! `-O2`, where `st` stands for the registry's state:
+//!
+//! @code
+//! auto hash_of(type_id type) -> std::size_t {
+//!     return policies::minimal_perfect_hash<>::fn<hashed_registry>::hash(type);
+//! }
+//! @endcode
+//!
+//! @code
+//!     imul rdi, qword ptr [rip + st+48]
+//!     movzx eax, byte ptr [rip + st+56]
+//!     shrx rax, rdi, rax
+//!     mov rcx, qword ptr [rip + st+72]
+//!     mov edx, dword ptr [rcx + 4*rax]
+//!     imul rdx, rdi
+//!     mulx rax, rax, qword ptr [rip + st+64]
+//!     ret
+//! @endcode
+//!
 //! @par Example
 //! include:policies.cpp#minimal_perfect_hash
 //!
