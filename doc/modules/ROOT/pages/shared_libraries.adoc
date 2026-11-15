@@ -240,7 +240,7 @@ does not cause either problem.
 ### The alternatives
 
 Three other cpp:type_hash[] policies avoid the problem, and cpp:vptr_map[]
-removes the hash altogether:
+removes the need for a hash altogether:
 
 [cols="1,3"]
 |===
