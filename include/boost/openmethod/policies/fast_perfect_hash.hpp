@@ -66,6 +66,22 @@ namespace policies {
 //! range of integers. In other words, a lot of space may be wasted in presence
 //! of large sets of type_ids.
 //!
+//! The code generated for a call to `hash`, by x86-64 clang 22 with
+//! `-O2`, where `st` stands for the registry's state:
+//!
+//! @code
+//! auto hash_of(type_id type) -> std::size_t {
+//!     return policies::fast_perfect_hash::fn<default_registry>::hash(type);
+//! }
+//! @endcode
+//!
+//! @code
+//!     imul rdi, qword ptr [rip + st+48]
+//!     movzx eax, byte ptr [rip + st+56]
+//!     shrx rax, rdi, rax
+//!     ret
+//! @endcode
+//!
 //! @par Example
 //! include:policies.cpp#fast_perfect_hash
 //!

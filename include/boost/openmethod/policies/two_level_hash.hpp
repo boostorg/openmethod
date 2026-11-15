@@ -86,6 +86,27 @@ namespace boost::openmethod::policies {
 //!   a pathological input ask for a table orders of magnitude larger than the
 //!   program needs.
 //!
+//! The code generated for a call to `hash`, by x86-64 clang 22 with
+//! `-O2`, where `st` stands for the registry's state:
+//!
+//! @code
+//! auto hash_of(type_id type) -> std::size_t {
+//!     return policies::two_level_hash<>::fn<hashed_registry>::hash(type);
+//! }
+//! @endcode
+//!
+//! @code
+//!     imul rdi, qword ptr [rip + st+48]
+//!     movzx eax, byte ptr [rip + st+56]
+//!     shrx rax, rdi, rax
+//!     mov rcx, qword ptr [rip + st+72]
+//!     mov eax, dword ptr [rcx + 4*rax]
+//!     imul rax, rdi
+//!     movzx ecx, byte ptr [rip + st+64]
+//!     shrx rax, rax, rcx
+//!     ret
+//! @endcode
+//!
 //! @par Example
 //! include:policies.cpp#two_level_hash
 //!
