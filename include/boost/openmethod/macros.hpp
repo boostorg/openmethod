@@ -189,23 +189,6 @@ inline constexpr bool method_not_found = false;
 //! prior to calling `abort`. `error` may prevent termination by throwing an
 //! exception.
 //!
-//! For each virtual argument `arg`, the dispatch mechanism calls
-//! `virtual_traits::peek(arg)` and deduces the v-table pointer from the
-//! `result`, using the first of the following methods that applies:
-//!
-//! @li If `result` is a `virtual_ptr`, get the pointer to the v-table from it.
-//!
-//! @li If
-//! [boost_openmethod_vptr](xref:reference:boost/openmethod/boost_openmethod_vptr.adoc)
-//! can be called with `result` and a `Registry*`, and it returns a
-//! `vptr_type`, call it.
-//!
-//! @li If `virtual_traits` provides a `vptr` function, call it.
-//!
-//! @li Call the
-//! [dynamic_vptr](xref:reference:boost/openmethod/policies/VptrFn/dynamic_vptr.adoc)
-//! of the registry's `vptr` policy.
-//!
 //! The macro creates an ordinary inline function in the current scope, with the
 //! `virtual_` decorators removed from the parameter types. `virtual_ptr`
 //! parameters are preserved.
@@ -254,6 +237,7 @@ inline constexpr bool method_not_found = false;
 //! @param PARAMETERS The method's parameter list, in parentheses.
 //! @param ... The method's return type, optionally followed by the registry.
 //!
+//! @see @ref boost::openmethod::method
 //! @see [Methods and Overriders](xref:ROOT:basics.adoc)
 //! @see [Header and Implementation Files](xref:ROOT:headers.adoc)
 #define BOOST_OPENMETHOD(ID, PARAMETERS, ...)                                  \

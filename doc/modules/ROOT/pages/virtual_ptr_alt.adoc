@@ -40,6 +40,9 @@ can be called with the virtual argument (passed by const reference) and a
 pointer to a registry, and returns a `vptr_type`. If one is found, it is called
 to acquire the vptr.
 
+See xref:vptr_acquisition.adoc[How the vptr is acquired] for the other ways a
+method can obtain the vptr of a virtual argument.
+
 This is specific to `virtual_` parameters. `virtual_ptr` does not use the
 function - it is an alternative to it, not a client of it - and wrapping an
 object that provides one is rejected at compile time.

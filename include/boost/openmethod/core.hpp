@@ -905,6 +905,7 @@ BOOST_FORCEINLINE auto use_reflected_classes(
 //!
 //! @see @ref inplace_vptr_base
 //! @see [Virtual Pointer Alternatives](xref:ROOT:virtual_ptr_alt.adoc)
+//! @see [How the vptr is acquired](xref:ROOT:vptr_acquisition.adoc)
 //! @see [Custom RTTI](xref:ROOT:custom_rtti.adoc)
 void boost_openmethod_vptr(...);
 
@@ -2322,8 +2323,10 @@ auto class_of_vptr(vptr_type vptr, type_id declared) -> type_id {
     return found;
 }
 
-// The class of a virtual argument, for a `bad_call`, read through the routes
-// `method::vptr` takes to dispatch it. `Parameter` is the parameter's type,
+// The class of a virtual argument, for a `bad_call`. The routes are those of
+// `method::vptr`, with one difference: an object that is polymorphic according
+// to the rtti policy is identified by its dynamic type, before the ADL function
+// and the `virtual_traits` are tried. `Parameter` is the parameter's type,
 // stripped of `virtual_`: its `virtual_traits` may read the class of a value a
 // type-erased argument (an `any`) holds.
 template<class Registry, typename Parameter, typename Arg>
@@ -4128,6 +4131,8 @@ struct VirtualTraits {
     //! `vptr` must return a *reference*, not a value, so that the caller
     //! observes the current v-table pointer if the registry contains the
     //! @ref policies::indirect_vptr policy and `initialize` is called again.
+    //!
+    //! @see [How the vptr is acquired](xref:ROOT:vptr_acquisition.adoc)
     //!
     //! @param arg The object returned by @ref peek.
     //! @return A reference to the v-table pointer for `arg`.

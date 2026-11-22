@@ -190,7 +190,7 @@ load, and it pays for that in size - the pointer sits next to the `any` - and
 in having to acquire it up front.
 
 `openmethod_vptr` is implemented via the cpp:boost_openmethod_vptr[] ADL
-customization point.
+customization point. See xref:vptr_acquisition.adoc[How the vptr is acquired].
 
 Binding a value to such an `any` also _registers_ its type, as a class derived
 from the owning `any` - the registrar is instantiated along with the
