@@ -1,6 +1,7 @@
 :example: ../examples
 
 [#multiple_dispatch]
+= Multiple Dispatch
 
 A method can have more than one virtual parameter. This is often called
 "multi-method" or "multiple dispatch". All the virtual parameters participate
@@ -40,7 +41,7 @@ include::{example}/rolex/7/main.cpp[tag=approve]
 Because `approve` understands inheritance, we don't have to specify an overrider
 for every combination (5 role classes x 6 expense classes = 30 combinations).
 
-### Ambiguities
+## Ambiguities
 
 Just like with overload resolution, ambiguities can arise. Let's look at another
 example - matrix addition:

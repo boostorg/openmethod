@@ -1,5 +1,6 @@
 
 [#performance]
+= Performance
 
 Open-methods can be as fast as ordinary virtual member functions when
 compiled with optimization.

@@ -1,7 +1,7 @@
 :example: ../examples/virtual_ptr_alt
 
 [#virtual_ptr_alt]
-## Alternatives to virtual_ptr
+= Alternatives to virtual_ptr
 
 Virtual arguments can also be passed as plain references, plain pointers, or
 smart pointers, i.e. without using `virtual_ptr`. In a method declaration,
@@ -27,7 +27,7 @@ inline auto postfix(const Node& node, std::ostream& os) -> void {
 }
 ```
 
-### `boost_openmethod_vptr`
+## `boost_openmethod_vptr`
 
 By itself, `virtual_` does not provide any benefits. Passing the virtual
 argument by reference almost compiles to the same code as creating a
@@ -75,7 +75,7 @@ mov	rcx, qword ptr [rip + value::fn+88]
 jmp	qword ptr [rax + 8*rcx]         # TAILCALL
 ----
 
-### `inplace_vptr`
+## `inplace_vptr`
 
 cpp:inplace_vptr_base[] and cpp:inplace_vptr_derived[] automate the creation and
 management of embedded vptrs. They are both

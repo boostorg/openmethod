@@ -1,6 +1,7 @@
 :example: ../examples/rolex
 
 [#Headers]
+= Headers and Implementation Files
 
 Typically, `BOOST_OPENMETHOD` is used in headers, while
 `BOOST_OPENMETHOD_CLASSES` and `BOOST_OPENMETHOD_OVERRIDE` are used in

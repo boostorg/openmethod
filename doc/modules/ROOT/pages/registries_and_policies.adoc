@@ -1,5 +1,6 @@
 
 [#registries_and_policies]
+= Registries and Policies
 
 Methods are scoped in a registry. A method can only reference classes in the
 same registry. If a class is used as a virtual parameter in methods using
@@ -52,7 +53,7 @@ it could also be found in namespace `boost::openmethod` - `registry` in
 particular.
 
 [#registry_affinity]
-### Registry affinity
+## Registry affinity
 
 `BOOST_OPENMETHOD_DEFAULT_REGISTRY` is a whole-program answer: one registry, for
 every class. A class can instead name its own, by declaring a

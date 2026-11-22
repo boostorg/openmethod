@@ -1,6 +1,7 @@
 :example: ../examples/core_api/1
 
 [#core_api]
+= Core API
 
 OpenMethod provides a macro-free interface: the core API. This is useful in
 certain situations, for example when combining open-methods and templates.
@@ -104,7 +105,7 @@ include::{example}/core_api.cpp[tag=main]
 
 :example: ../examples/core_api/2
 
-### Methods and Templates
+## Methods and Templates
 
 The primary purpose of the core API is to make open-methods inter-operate with
 templates.

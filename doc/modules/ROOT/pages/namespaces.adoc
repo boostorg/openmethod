@@ -1,6 +1,7 @@
 :example: ../examples/rolex
 
 [#namespaces]
+= Namespaces
 
 Note;; This section uses overrider containers, described in the
 xref:headers.adoc[Headers and Implementation Files] section.

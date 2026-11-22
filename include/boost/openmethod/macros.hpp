@@ -114,7 +114,7 @@ inline constexpr bool method_not_found = false;
 //!
 //! @param ID The method's name.
 //!
-//! @see [Header and Implementation Files](xref:ROOT:headers.adoc)
+//! @see [Headers and Implementation Files](xref:ROOT:headers.adoc)
 #define BOOST_OPENMETHOD_OVERRIDERS(ID)                                        \
     BOOST_PP_CAT(BOOST_OPENMETHOD_ID(ID), _overriders)
 
@@ -239,7 +239,7 @@ inline constexpr bool method_not_found = false;
 //!
 //! @see @ref boost::openmethod::method
 //! @see [Methods and Overriders](xref:ROOT:basics.adoc)
-//! @see [Header and Implementation Files](xref:ROOT:headers.adoc)
+//! @see [Headers and Implementation Files](xref:ROOT:headers.adoc)
 #define BOOST_OPENMETHOD(ID, PARAMETERS, ...)                                  \
     struct BOOST_OPENMETHOD_ID(ID);                                            \
     using BOOST_OPENMETHOD_GENSYM =                                            \
@@ -364,7 +364,7 @@ inline constexpr bool method_not_found = false;
 //! @param PARAMETERS The overrider's parameter list, in parentheses.
 //! @param ... The overrider's return type.
 //!
-//! @see [Header and Implementation Files](xref:ROOT:headers.adoc)
+//! @see [Headers and Implementation Files](xref:ROOT:headers.adoc)
 #define BOOST_OPENMETHOD_DECLARE_OVERRIDER(ID, PARAMETERS, ...)                \
     template<typename...>                                                      \
     struct BOOST_OPENMETHOD_OVERRIDERS(ID);                                    \
@@ -430,7 +430,7 @@ inline constexpr bool method_not_found = false;
 //! @param PARAMETERS The overrider's parameter list, in parentheses.
 //! @param ... The overrider's return type.
 //!
-//! @see [Header and Implementation Files](xref:ROOT:headers.adoc)
+//! @see [Headers and Implementation Files](xref:ROOT:headers.adoc)
 #define BOOST_OPENMETHOD_DEFINE_OVERRIDER(ID, PARAMETERS, ...)                 \
     BOOST_OPENMETHOD_DETAIL_REGISTER_OVERRIDER(ID, PARAMETERS, __VA_ARGS__)    \
     auto BOOST_OPENMETHOD_OVERRIDER(                                           \
@@ -516,7 +516,7 @@ inline constexpr bool method_not_found = false;
 //! @param ... The overrider's return type.
 //!
 //! @see [Methods and Overriders](xref:ROOT:basics.adoc)
-//! @see [Header and Implementation Files](xref:ROOT:headers.adoc)
+//! @see [Headers and Implementation Files](xref:ROOT:headers.adoc)
 //! @see [Namespaces](xref:ROOT:namespaces.adoc)
 //! @see [Friends](xref:ROOT:friends.adoc)
 #define BOOST_OPENMETHOD_OVERRIDE(ID, PARAMETERS, ...)                         \
@@ -564,7 +564,7 @@ inline constexpr bool method_not_found = false;
 //! @param PARAMETERS The overrider's parameter list, in parentheses.
 //! @param ... The overrider's return type.
 //!
-//! @see [Header and Implementation Files](xref:ROOT:headers.adoc)
+//! @see [Headers and Implementation Files](xref:ROOT:headers.adoc)
 #define BOOST_OPENMETHOD_INLINE_OVERRIDE(ID, PARAMETERS, ...)                  \
     BOOST_OPENMETHOD_DECLARE_OVERRIDER(ID, PARAMETERS, __VA_ARGS__)            \
     BOOST_OPENMETHOD_DETAIL_REGISTER_OVERRIDER_AUX(                            \

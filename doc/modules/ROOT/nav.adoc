@@ -3,7 +3,7 @@
 ** xref:basics.adoc[Methods and Overriders]
 ** xref:performance.adoc[Performance]
 ** xref:smart_pointers.adoc[Smart Pointers]
-** xref:headers.adoc[Header and Implementation Files]
+** xref:headers.adoc[Headers and Implementation Files]
 ** xref:namespaces.adoc[Namespaces]
 ** xref:friends.adoc[Friends]
 ** xref:multiple_dispatch.adoc[Multiple Dispatch]

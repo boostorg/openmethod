@@ -1,5 +1,6 @@
 
 [#motivation]
+= Motivation
 
 Consider a class hierarchy that represents and evaluates arithmetic
 expressions:

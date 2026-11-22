@@ -1,5 +1,5 @@
 [#vptr_acquisition]
-## How the vptr is acquired
+= How the vptr is acquired
 
 For each virtual argument, the method calls cpp:virtual_traits[]`::peek` to get
 the object to dispatch on, then takes the v-table pointer from the first of the

@@ -1,5 +1,6 @@
 
 [#basics]
+= Methods and Overriders
 
 An _open-method_ is a free-standing function that has one or more _virtual_
 _parameters_. When it is called, it forwards to an _overrider_ selected from a
