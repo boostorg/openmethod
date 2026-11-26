@@ -2800,10 +2800,13 @@ class method<Id, ReturnType(Parameters...), Registry> :
     //! @tparam Fn One or more functions to the overrider list
     template<auto... Fn>
     class override {
+        // decay_t: MSVC 19.52 gives `decltype(Fn)` for a free function in an
+        // auto parameter pack the function type rather than the pointer type,
+        // which does not match override_aux's partial specialization.
         boost::mp11::mp_apply<
             detail::tuple,
-            boost::mp11::mp_unique<
-                boost::mp11::mp_list<override_aux<Fn, decltype(Fn), false>...>>>
+            boost::mp11::mp_unique<boost::mp11::mp_list<
+                override_aux<Fn, std::decay_t<decltype(Fn)>, false>...>>>
             impl;
     };
 
@@ -2829,10 +2832,11 @@ class method<Id, ReturnType(Parameters...), Registry> :
     // right time.
     template<auto... Fn>
     class inline_override {
+        // decay_t: see override.
         boost::mp11::mp_apply<
             detail::tuple,
-            boost::mp11::mp_unique<
-                boost::mp11::mp_list<override_aux<Fn, decltype(Fn), true>...>>>
+            boost::mp11::mp_unique<boost::mp11::mp_list<
+                override_aux<Fn, std::decay_t<decltype(Fn)>, true>...>>>
             impl;
     };
 
