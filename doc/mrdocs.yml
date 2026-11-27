@@ -23,6 +23,8 @@ exclude-symbols:
   - 'boost::openmethod::registry::finalize'
   - 'boost::openmethod::boost_openmethod_bases'
   - 'boost::openmethod::registry_state::st'
+  - 'boost::openmethod::policies::*::no_checks'
+  - 'boost::openmethod::policies::*::with_checks'
 
 # Macros. Only the public macros carry a doc comment, and with
 # `extract-all-macros` off (the default) MrDocs extracts only documented ones.

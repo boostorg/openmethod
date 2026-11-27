@@ -1,12 +1,12 @@
 
 [#interop_any]
-## Interoperation with `any`
+= Interoperation with `any`
 
 OpenMethod can take `any` (both the `std` and `boost` flavors) as virtual
 arguments, and dispatch on the type of the contained value. For this purpose, it
 regards the types as "deriving" from `any`.
 
-#### Requirements
+## Requirements
 
 Dispatch keys on the `std::type_info` returned by `any::type()`, so the
 registry's `rtti` policy must be cpp:std_rtti[], or a policy derived from it.
@@ -14,7 +14,7 @@ registry's `rtti` policy must be cpp:std_rtti[], or a policy derived from it.
 cpp:static_rtti[] identifies classes by a different kind of `type_id`, and would
 look up the wrong v-table; the requirement is enforced with a `static_assert`.
 
-#### `std::any`
+## `std::any`
 
 Support is provided by `<boost/openmethod/interop/std_any.hpp>`. It is not
 included by `<boost/openmethod.hpp>`, so it must be included explicitly.
@@ -40,7 +40,7 @@ that has no more specific overrider - in the example below, `float`, which the
 include::example$virtual_any.cpp[tag=content]
 ----
 
-#### Mixing with ordinary virtual parameters
+## Mixing with ordinary virtual parameters
 
 A multi-method can take any combination of ordinary virtual parameters and
 virtual `any` in the same call:
@@ -55,7 +55,7 @@ BOOST_OPENMETHOD_OVERRIDE(
 }
 ```
 
-#### Reference categories
+## Reference categories
 
 All three reference categories are supported, and they determine what the
 overriders may take:
@@ -95,7 +95,7 @@ auto bump_dog(Dog& dog) -> std::string {
 BOOST_OPENMETHOD_REGISTER(bump_method::override<bump_dog>);
 ```
 
-#### `virtual_std_any`
+## `virtual_std_any`
 
 Every call above looks the v-table up in a hash table, keyed on the type the
 `any` contains. cpp:virtual_std_any[] - an alias for `virtual_any<std::any>` -
@@ -131,7 +131,7 @@ contained value's, but whose static type is the `virtual_std_any` - which is
 deliberately not a registered class. The combination is rejected at compile
 time, cpp:final_virtual_ptr[] included. Pass it by reference instead.
 
-#### `boost::any`
+## `boost::any`
 
 `boost::any` is supported as well, by
 `<boost/openmethod/interop/boost_any.hpp>`, with cpp:virtual_boost_any[] - the
@@ -147,6 +147,6 @@ overriders to register the types they name, like the `std::any` and
 functions. Boost.TypeErasure's `any` is supported on the same model - see
 xref:interop_type_erasure.adoc[Interoperation with Boost.TypeErasure].
 
-### Acknowledgment
+## Acknowledgment
 
 This interop is based on a design contributed by Steven Watanabe.

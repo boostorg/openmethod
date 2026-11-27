@@ -1,0 +1,21 @@
+[#vptr_acquisition]
+= How the vptr is acquired
+
+For each virtual argument, the method calls cpp:virtual_traits[]`::peek` to get
+the object to dispatch on, then takes the v-table pointer from the first of the
+following that applies:
+
+. If the argument is a `virtual_ptr`, the vptr it carries.
+. A cpp:boost_openmethod_vptr[] function found by ADL on the peeked object.
+. The `vptr` function of the parameter's `virtual_traits`, if it has one.
+. The `dynamic_vptr` function of the registry's cpp:policies::vptr[] policy,
+  which looks the object's dynamic type up via the cpp:policies::rtti[] policy.
+
+Steps 2 and 3 are for objects that can supply the vptr more directly than step
+4 can: an object that embeds it, or one - like a `std::any` - whose dynamic type
+is not the type to dispatch on.
+
+NOTE: This is the order dispatch uses. When it reports a cpp:bad_call[], the
+library identifies the class of each virtual argument a little differently: an
+object that is polymorphic according to the `rtti` policy is identified by its
+dynamic type, before the ADL function and `virtual_traits` are consulted.

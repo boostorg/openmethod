@@ -1,9 +1,10 @@
 :example: ../examples/rolex
 
 [#friendship]
+= Friends
 
 Note;; This section uses overrider containers, described in the
-xref:headers.adoc[Headers] section.
+xref:headers.adoc[Headers and Implementation Files] section.
 
 `friend` is a controversial feature. OpenMethod aims to interact well with all
 of C++, as much as feasible for a library, and leaves the choice of using

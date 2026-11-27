@@ -1,6 +1,7 @@
 :shared: ../examples/shared_libs
 
 [#shared_libraries]
+= Shared Libraries
 
 OpenMethod works with shared libraries on Linux, other POSIX-like platforms,
 and Windows. A program and its shared libraries can all contribute classes,

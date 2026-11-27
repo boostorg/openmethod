@@ -3,6 +3,7 @@
 :toc-title: Contents
 
 [#troubleshooting]
+= Troubleshooting
 
 // The theme draws a rule in a very light grey; on this page, rules separate
 // the entries, so they need to stand out.

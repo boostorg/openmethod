@@ -1,5 +1,6 @@
 
 [#smart_pointers]
+= Smart Pointers
 
 If we want maximum performance, we want to use `virtual_ptr`{empty}s in place of
 ordinary pointers or references. However, we may also want to use smart pointers

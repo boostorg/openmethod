@@ -2,6 +2,7 @@
 :example: ../examples/custom_rtti
 
 [#custom_rtti]
+= Custom RTTI
 
 The original motivation for the policy mechanism is to make it possible to
 interface OpenMethod with custom RTTI systems.

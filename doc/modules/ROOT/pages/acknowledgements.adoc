@@ -1,5 +1,6 @@
 
 [#Acknowledgements]
+= Acknowledgements
 
 I would like to thank the C++ Alliance for their support, in particular
 Joaquín M. López Muñoz for encouraging me to submit my library and being the

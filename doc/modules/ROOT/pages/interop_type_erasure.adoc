@@ -1,6 +1,6 @@
 
 [#interop_type_erasure]
-## Interoperation with Boost.TypeErasure
+= Interoperation with Boost.TypeErasure
 
 Methods can take
 link:https://www.boost.org/doc/libs/release/doc/html/boost_typeerasure.html[Boost.TypeErasure]
@@ -10,7 +10,7 @@ xref:interop_any.adoc[Interoperation with `any`].
 Support is provided by `<boost/openmethod/interop/boost_type_erasure.hpp>`. It
 is not included by `<boost/openmethod.hpp>`, so it must be included explicitly.
 
-#### Requirements
+## Requirements
 
 Dispatch resolves on the type returned by `boost::type_erasure::typeid_of`, so
 the ``any``'s concept must include `boost::type_erasure::typeid_<>`.
@@ -42,7 +42,7 @@ example below, `int` is registered by the `weigh` overrider, and, having no
 include::example$type_erasure.cpp[tag=content]
 ----
 
-#### Reference categories
+## Reference categories
 
 The `any` is passed by reference, in any of the three categories -
 passing it by value would copy the bound value on every call, and is rejected
@@ -86,7 +86,7 @@ case, moving the value out of the `any` is performed by the interop code
 itself: an overrider taking `Dog&&` receives the bound value ready to be moved
 from, and the `any` still owns the moved-from object afterwards.
 
-#### `any` references
+## `any` references
 
 Boost.TypeErasure also has non-owning ``any``'s, `any<Concept, _self&>` and
 `any<Concept, const _self&>`, which hold a _reference_ to a value stored
@@ -107,7 +107,7 @@ For the same reason as for `std::any`, cpp:final_virtual_ptr[] is _deleted_
 for `type_erasure::any`: it would silently produce the v-table of the root
 class rather than the one for the bound value.
 
-#### `virtual_any`
+## `virtual_any`
 
 Every call above looks the v-table up in a hash table, keyed on the type the
 `any` binds. cpp:virtual_any[] removes that cost: it bundles an `any` with the
@@ -132,7 +132,7 @@ with `type_erasure::any` for the same reason it works with `std::any` and
 types of the `any`. See xref:interop_any.adoc[Interoperation with `any`] for
 the details.
 
-#### The `openmethod_vptr` concept
+## The `openmethod_vptr` concept
 
 cpp:openmethod_vptr[] is an alternative to `virtual_any`, pursuing the same
 goal - constant-time access to the v-table pointer - from the other side.
@@ -190,7 +190,7 @@ load, and it pays for that in size - the pointer sits next to the `any` - and
 in having to acquire it up front.
 
 `openmethod_vptr` is implemented via the cpp:boost_openmethod_vptr[] ADL
-customization point.
+customization point. See xref:vptr_acquisition.adoc[How the vptr is acquired].
 
 Binding a value to such an `any` also _registers_ its type, as a class derived
 from the owning `any` - the registrar is instantiated along with the
@@ -221,7 +221,7 @@ neither a `vptr` policy nor any policy that one depends on, like `type_hash`.
 `registry<policies::static_rtti>` will do. Note that this does not make the
 program RTTI-free: Boost.TypeErasure itself uses `typeid`.
 
-#### Empty ``any``s
+## Empty ``any``s
 
 An empty relaxed `any` reports `typeid(void)`, which is not a registered
 class, so dispatching on it is a cpp:missing_class[] error. A catch-all
@@ -230,6 +230,6 @@ overrider does not help: dispatch never reaches it. Check with
 concept, the failure mode differs: calling a concept operation on an empty
 relaxed `any` throws `boost::type_erasure::bad_function_call`.
 
-### Acknowledgment
+## Acknowledgment
 
 This interop is based on a design contributed by Steven Watanabe.
