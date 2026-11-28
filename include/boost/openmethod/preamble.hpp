@@ -1126,16 +1126,17 @@ struct with_aux<Policies> {
     using type = Policies;
 };
 
+// Whether a policy is already in the category is asked directly. Comparing the
+// list before and after the replacement cannot tell "absent" from "replaced by
+// itself", and appended a second copy of a policy the registry already had.
 template<class Policies, class Policy, class... MorePolicies>
 struct with_aux<Policies, Policy, MorePolicies...> {
-    using replace = mp11::mp_replace_if_q<
-        Policies,
-        mp11::mp_bind_front_q<
-            mp11::mp_quote_trait<std::is_base_of>, typename Policy::category>,
-        Policy>;
+    using in_category = mp11::mp_bind_front_q<
+        mp11::mp_quote_trait<std::is_base_of>, typename Policy::category>;
     using replace_or_add = std::conditional_t<
-        std::is_same_v<replace, Policies>, mp11::mp_push_back<Policies, Policy>,
-        replace>;
+        mp11::mp_any_of_q<Policies, in_category>::value,
+        mp11::mp_replace_if_q<Policies, in_category, Policy>,
+        mp11::mp_push_back<Policies, Policy>>;
     using type = typename with_aux<replace_or_add, MorePolicies...>::type;
 };
 

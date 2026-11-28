@@ -66,6 +66,14 @@ static_assert(std::is_same_v<
 static_assert(
     std::is_same_v<registry<foo1, bar1>::without<bar>, registry<foo1>>);
 
+// Adding a policy the registry already has changes nothing.
+static_assert(std::is_same_v<registry<foo1>::with<foo1>, registry<foo1>>);
+static_assert(std::is_same_v<
+    registry<foo1, bar1>::with<bar1, foo2>, registry<foo2, bar1>>);
+static_assert(std::is_same_v<
+    default_registry::with<policies::fast_perfect_hash>,
+    default_registry::registry_type>);
+
 BOOST_AUTO_TEST_CASE(test_registry) {
     using namespace policies;
 
